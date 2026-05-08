@@ -7,7 +7,6 @@ mod parser;
 mod renderers;
 mod routes;
 mod state;
-mod storage;
 
 use std::sync::Arc;
 
@@ -25,23 +24,18 @@ use tracing_subscriber::EnvFilter;
 use crate::config::Config;
 use crate::db::queries::Database;
 use crate::state::AppState;
-use crate::storage::spaces::SpacesStorage;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Load .env if present
     let _ = dotenvy::dotenv();
 
-    // Initialise tracing
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    // Load config
     let config = Config::from_env()?;
     tracing::info!("Starting Typeset on {}:{}", config.host, config.port);
 
-    // Database pool
     let pool = PgPoolOptions::new()
         .max_connections(10)
         .connect(&config.database_url)
@@ -49,28 +43,20 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Connected to database");
 
-    // Run migrations
     sqlx::migrate!("./migrations").run(&pool).await?;
     tracing::info!("Migrations complete");
 
-    // Storage
-    let storage = SpacesStorage::new(&config).await?;
-
-    // App state
     let state = AppState {
         db: Database::new(pool),
-        storage,
         render_semaphore: Arc::new(Semaphore::new(config.max_render_concurrency)),
         config: Arc::new(config.clone()),
     };
 
-    // CORS
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
 
-    // Routes requiring auth
     let authenticated = Router::new()
         .route("/api/render", post(routes::render::handle_render))
         .route("/api/preview", post(routes::preview::handle_preview))
@@ -84,7 +70,6 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/history", get(routes::history::get_history))
         .layer(middleware::from_fn(routes::auth::auth_middleware));
 
-    // Public routes
     let public = Router::new()
         .route("/health", get(routes::health::health_check))
         .route("/api/health", get(routes::health::health_check));
@@ -96,12 +81,10 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 
-    // Bind
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Typeset listening on {addr}");
 
-    // Graceful shutdown
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;

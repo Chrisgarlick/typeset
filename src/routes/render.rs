@@ -1,18 +1,23 @@
-use axum::{extract::State, Extension, Json};
+use axum::{
+    extract::State,
+    http::{header, StatusCode},
+    response::IntoResponse,
+    Extension, Json,
+};
 use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
 use crate::models::client_profile::ClientProfile;
-use crate::models::render_job::{RenderFormat, RenderRequest, RenderResponse};
+use crate::models::render_job::{RenderFormat, RenderRequest};
 use crate::routes::auth::UserId;
 use crate::state::AppState;
 
+/// Render endpoint — renders and returns the file as a download.
 pub async fn handle_render(
     State(state): State<AppState>,
     Extension(user): Extension<UserId>,
     Json(req): Json<RenderRequest>,
-) -> Result<Json<RenderResponse>, AppError> {
-    // Acquire render semaphore
+) -> Result<impl IntoResponse, AppError> {
     let _permit = state
         .render_semaphore
         .acquire()
@@ -21,7 +26,6 @@ pub async fn handle_render(
 
     let start = std::time::Instant::now();
 
-    // 1. Fetch client profile (or default)
     let profile = match &req.client {
         Some(slug) => state
             .db
@@ -31,87 +35,44 @@ pub async fn handle_render(
         None => ClientProfile::default_profile(),
     };
 
-    // 2. Parse markdown
     let mut doc = crate::parser::markdown::parse(&req.content);
 
-    // 3. Apply overrides
     if let Some(overrides) = &req.overrides {
         let fm = doc.frontmatter.get_or_insert_with(Default::default);
-        if let Some(t) = &overrides.title {
-            fm.title = Some(t.clone());
-        }
-        if let Some(s) = &overrides.subtitle {
-            fm.subtitle = Some(s.clone());
-        }
-        if let Some(r) = &overrides.recipient {
-            fm.recipient = Some(r.clone());
-        }
-        if let Some(d) = &overrides.date {
-            fm.date = Some(d.clone());
-        }
-        if let Some(a) = &overrides.author {
-            fm.author = Some(a.clone());
-        }
+        if let Some(t) = &overrides.title { fm.title = Some(t.clone()); }
+        if let Some(s) = &overrides.subtitle { fm.subtitle = Some(s.clone()); }
+        if let Some(r) = &overrides.recipient { fm.recipient = Some(r.clone()); }
+        if let Some(d) = &overrides.date { fm.date = Some(d.clone()); }
+        if let Some(a) = &overrides.author { fm.author = Some(a.clone()); }
     }
 
-    // 4. Brand engine
     let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
         .map_err(|e| AppError::RenderError(e.to_string()))?;
 
-    // 5. Render
-    let render_id = uuid::Uuid::new_v4().to_string();
-    let mut pdf_url = None;
-    let mut docx_url = None;
-    let mut total_size = 0i32;
-
-    match req.format {
+    let (bytes, content_type, ext) = match req.format {
         RenderFormat::Pdf | RenderFormat::Both => {
-            let bytes = crate::renderers::pdf::render(&branded)
+            let b = crate::renderers::pdf::render(&branded)
                 .map_err(|e| AppError::RenderError(e.to_string()))?;
-            total_size += bytes.len() as i32;
-            let key = format!("renders/{}.pdf", render_id);
-            let url = state
-                .storage
-                .upload(&key, bytes, "application/pdf")
-                .await
-                .map_err(|e| AppError::StorageError(e.to_string()))?;
-            pdf_url = Some(url);
+            (b, "application/pdf", "pdf")
         }
-        _ => {}
-    }
-
-    match req.format {
-        RenderFormat::Docx | RenderFormat::Both => {
-            let bytes = crate::renderers::docx::render(&branded)
+        RenderFormat::Docx => {
+            let b = crate::renderers::docx::render(&branded)
                 .map_err(|e| AppError::RenderError(e.to_string()))?;
-            total_size += bytes.len() as i32;
-            let key = format!("renders/{}.docx", render_id);
-            let url = state
-                .storage
-                .upload(
-                    &key,
-                    bytes,
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                )
-                .await
-                .map_err(|e| AppError::StorageError(e.to_string()))?;
-            docx_url = Some(url);
+            (b, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx")
         }
-        _ => {}
-    }
+    };
 
     let render_ms = start.elapsed().as_millis() as u64;
-    let expires_at = chrono::Utc::now()
-        + chrono::Duration::days(state.config.output_expiry_days);
+    let render_id = uuid::Uuid::new_v4().to_string();
 
-    // 6. Content hash
+    // Content hash
     let content_hash = {
         let mut hasher = Sha256::new();
         hasher.update(req.content.as_bytes());
         format!("{:x}", hasher.finalize())
     };
 
-    // 7. Log to DB (non-blocking, errors logged but not returned)
+    // Log to DB
     let format_str = match req.format {
         RenderFormat::Pdf => "pdf",
         RenderFormat::Docx => "docx",
@@ -121,31 +82,24 @@ pub async fn handle_render(
     if let Err(e) = state
         .db
         .log_render(
-            &render_id,
-            user.0,
-            req.client.as_deref(),
-            &req.document_type.to_string(),
-            format_str,
-            Some(&content_hash),
-            None,
-            pdf_url.as_deref(),
-            docx_url.as_deref(),
-            None,
-            Some(total_size),
-            render_ms as i32,
-            Some(expires_at),
+            &render_id, user.0, req.client.as_deref(),
+            &req.document_type.to_string(), format_str,
+            Some(&content_hash), None, None, None, None,
+            Some(bytes.len() as i32), render_ms as i32, None,
         )
         .await
     {
         tracing::error!("Failed to log render: {e}");
     }
 
-    Ok(Json(RenderResponse {
-        success: true,
-        render_id,
-        pdf_url,
-        docx_url,
-        expires_at: expires_at.to_rfc3339(),
-        render_ms,
-    }))
+    let disposition = format!("attachment; filename=\"document.{ext}\"");
+
+    Ok((
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, content_type.to_string()),
+            (header::CONTENT_DISPOSITION, disposition),
+        ],
+        bytes,
+    ))
 }
