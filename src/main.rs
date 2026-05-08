@@ -76,9 +76,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/preview", post(routes::preview::handle_preview))
         .route("/api/clients", get(routes::clients::list_clients))
         .route("/api/clients", post(routes::clients::create_client))
-        .route("/api/clients/{slug}", get(routes::clients::get_client))
+        .route("/api/clients/:slug", get(routes::clients::get_client))
         .route(
-            "/api/clients/{slug}",
+            "/api/clients/:slug",
             delete(routes::clients::delete_client),
         )
         .route("/api/history", get(routes::history::get_history))

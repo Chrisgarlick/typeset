@@ -1,0 +1,27 @@
+slug: acme
+name: Acme Corp
+colour_primary: "#1A365D"
+colour_secondary: "#2D4A7C"
+colour_accent: "#E53E3E"
+colour_text: "#1A202C"
+colour_background: "#FFFFFF"
+colour_table_header: "#EBF4FF"
+colour_table_border: "#BEE3F8"
+colour_callout_bg: "#EBF8FF"
+font_heading: Helvetica
+font_body: Helvetica
+font_mono: Courier
+font_size_base: 11
+font_size_h1: 26
+font_size_h2: 19
+font_size_h3: 14
+line_height: 1.6
+page_size: A4
+margin_top: 25.4
+margin_bottom: 25.4
+margin_left: 25.4
+margin_right: 25.4
+cover_enabled: true
+cover_template: minimal
+header_enabled: true
+footer_enabled: true

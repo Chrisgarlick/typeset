@@ -1,5 +1,5 @@
 use aws_sdk_s3::Client;
-use aws_sdk_s3::config::{Credentials, Region};
+use aws_sdk_s3::config::{BehaviorVersion, Credentials, Region};
 use aws_sdk_s3::primitives::ByteStream;
 
 use crate::config::Config;
@@ -22,6 +22,7 @@ impl SpacesStorage {
         );
 
         let s3_config = aws_sdk_s3::Config::builder()
+            .behavior_version(BehaviorVersion::latest())
             .region(Region::new(config.spaces_region.clone()))
             .endpoint_url(&config.spaces_endpoint)
             .credentials_provider(credentials)
