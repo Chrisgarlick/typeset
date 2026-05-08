@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 # HTTP server
 axum = { version = "0.7", features = ["multipart"] }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 
@@ -34,22 +34,8 @@ thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dotenvy = "0.15"
-
-# Font handling
-rusttype = "0.9"
-
-# Image handling (for logos in documents)
-image = "0.25"
-
-# Hex colour parsing
-csscolorparser = "0.7"
-
-# Password hashing for API keys
 sha2 = "0.10"
-hex-literal = "0.4"
 
 [profile.release]
 opt-level = 3
-lto = true
-codegen-units = 1
 strip = true

@@ -11,7 +11,13 @@ set -e
 cd /var/www/typeset
 
 git pull
-docker compose up -d --build
+
+# Login to GitHub Container Registry
+echo $GHCR_TOKEN | docker login ghcr.io -u chrisgarlick --password-stdin 2>/dev/null || true
+
+# Pull pre-built images and restart
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 
 sleep 3
 curl -sf http://localhost:3200/health && echo " ✓ API running"
