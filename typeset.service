@@ -1,0 +1,20 @@
+[Unit]
+Description=Typeset Render Service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=typeset
+WorkingDirectory=/opt/typeset
+ExecStart=/opt/typeset/typeset
+Restart=always
+RestartSec=5
+Environment=RUST_LOG=info
+
+# Resource limits — protect other services on same droplet
+MemoryMax=256M
+CPUQuota=40%
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

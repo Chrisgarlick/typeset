@@ -1,0 +1,8 @@
+target/
+.git/
+team/
+*.md
+!README.md
+.env
+.env.*
+update-team.md

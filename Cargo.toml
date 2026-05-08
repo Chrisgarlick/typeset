@@ -1,0 +1,59 @@
+[package]
+name = "typeset"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# HTTP server
+axum = { version = "0.7", features = ["multipart"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Markdown parsing
+pulldown-cmark = "0.12"
+
+# PDF generation
+printpdf = "0.7"
+
+# DOCX generation
+docx-rs = "0.4"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono"] }
+
+# Serialisation
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# File storage (DO Spaces = S3-compatible)
+aws-sdk-s3 = "1"
+aws-config = "1"
+
+# Utilities
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dotenvy = "0.15"
+
+# Font handling
+rusttype = "0.9"
+
+# Image handling (for logos in documents)
+image = "0.25"
+
+# Hex colour parsing
+csscolorparser = "0.7"
+
+# Password hashing for API keys
+sha2 = "0.10"
+hex-literal = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

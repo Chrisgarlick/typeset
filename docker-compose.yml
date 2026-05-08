@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: typeset
+      POSTGRES_USER: typeset
+      POSTGRES_PASSWORD: typeset
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  typeset:
+    build: .
+    ports:
+      - "3200:3200"
+    environment:
+      PORT: 3200
+      HOST: 0.0.0.0
+      RUST_LOG: info
+      DATABASE_URL: postgresql://typeset:typeset@db:5432/typeset
+      SPACES_KEY: ${SPACES_KEY:-}
+      SPACES_SECRET: ${SPACES_SECRET:-}
+      SPACES_BUCKET: ${SPACES_BUCKET:-typeset-renders}
+      SPACES_REGION: ${SPACES_REGION:-lon1}
+      SPACES_ENDPOINT: ${SPACES_ENDPOINT:-https://lon1.digitaloceanspaces.com}
+      API_SECRET_SALT: ${API_SECRET_SALT:-local-dev-salt}
+      MAX_RENDER_CONCURRENCY: 4
+      RENDER_TIMEOUT_SECS: 30
+      OUTPUT_EXPIRY_DAYS: 30
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
