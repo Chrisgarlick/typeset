@@ -28,7 +28,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/api:latest
+          tags: ${{ env.REGISTRY }}/chrisgarlick/typeset/api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -52,6 +52,6 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/frontend:latest
+          tags: ${{ env.REGISTRY }}/chrisgarlick/typeset/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
