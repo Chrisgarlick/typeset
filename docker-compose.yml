@@ -1,24 +1,24 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: typeset
       POSTGRES_USER: typeset
-      POSTGRES_PASSWORD: typeset
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-typeset}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   typeset:
     build: .
+    restart: unless-stopped
     ports:
       - "3200:3200"
     environment:
       PORT: 3200
       HOST: 0.0.0.0
       RUST_LOG: info
-      DATABASE_URL: postgresql://typeset:typeset@db:5432/typeset
+      DATABASE_URL: postgresql://typeset:${DB_PASSWORD:-typeset}@db:5432/typeset
       SPACES_KEY: ${SPACES_KEY:-}
       SPACES_SECRET: ${SPACES_SECRET:-}
       SPACES_BUCKET: ${SPACES_BUCKET:-typeset-renders}
@@ -30,6 +30,16 @@ services:
       OUTPUT_EXPIRY_DAYS: 30
     depends_on:
       - db
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://typeset:3200
+    depends_on:
+      - typeset
 
 volumes:
   pgdata:
