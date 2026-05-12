@@ -53,14 +53,22 @@ pub fn render(branded: &BrandedDocument) -> anyhow::Result<Vec<u8>> {
         page_number: 1,
         total_pages: 1,
         all_pages: vec![(page1, layer1)],
+        cover_rendered: false,
     };
 
-    if branded.profile.cover_enabled {
+    let has_title = branded
+        .doc
+        .frontmatter
+        .as_ref()
+        .and_then(|f| f.title.as_ref())
+        .is_some();
+    let render_cover = branded.profile.cover_enabled || has_title;
+
+    if render_cover {
         renderer.render_cover()?;
         renderer.new_page();
-    }
-
-    if branded.profile.header_enabled {
+        // new_page() already drew the header on page 2; no further header call needed.
+    } else if branded.profile.header_enabled {
         renderer.render_header()?;
     }
 
@@ -89,6 +97,7 @@ struct PdfPageRenderer<'a> {
     total_pages: u32,
     /// Store all (page, layer) indices for footer pass
     all_pages: Vec<(PdfPageIndex, PdfLayerIndex)>,
+    cover_rendered: bool,
 }
 
 impl<'a> PdfPageRenderer<'a> {
@@ -150,7 +159,8 @@ impl<'a> PdfPageRenderer<'a> {
         };
 
         let lh = pt_to_mm(size * self.branded.profile.line_height);
-        self.check_page_break(lh + spacing_before + 4.0);
+        let body_lh = pt_to_mm(self.branded.profile.font_size_base * self.branded.profile.line_height);
+        self.check_page_break(lh + spacing_before + 4.0 + body_lh * 3.0);
         self.cursor_y -= spacing_before;
 
         let layer = self.layer();
@@ -344,31 +354,55 @@ impl<'a> PdfPageRenderer<'a> {
         let lh = pt_to_mm(size * 1.4);
         let pad = 4.0_f32;
         let code_lines: Vec<&str> = code.lines().collect();
-        let bh = code_lines.len() as f32 * lh + pad * 2.0;
         let left = self.branded.page.margin_left_mm;
+        let right = left + self.branded.page.content_width_mm;
+        let bottom_limit = self.branded.page.margin_bottom_mm + 15.0;
+        let usable_per_page =
+            self.branded.page.height_mm - self.branded.page.margin_top_mm - bottom_limit;
 
-        self.check_page_break(bh.min(lh * 5.0));
-
-        // Dark background
-        {
-            let layer = self.layer();
-            layer.set_fill_color(rgb(0.12, 0.12, 0.14));
-            layer.add_rect(filled_rect(left, self.cursor_y - bh, left + self.branded.page.content_width_mm, self.cursor_y));
+        // If the whole block fits on a fresh page but not the current one, move it.
+        let full_height = code_lines.len() as f32 * lh + pad * 2.0;
+        let available_now = self.cursor_y - bottom_limit;
+        if full_height > available_now && full_height <= usable_per_page {
+            self.new_page();
         }
 
-        let mut y = self.cursor_y - pad - lh;
-        for code_line in &code_lines {
-            if y < self.branded.page.margin_bottom_mm + 10.0 {
-                self.new_page();
-                y = self.cursor_y - pad;
+        // Render segment-by-segment, painting a dark rectangle behind each segment.
+        let mut idx = 0;
+        while idx < code_lines.len() {
+            let available = self.cursor_y - bottom_limit - pad * 2.0;
+            let max_lines = ((available / lh).floor() as usize).max(1);
+            let take = max_lines.min(code_lines.len() - idx);
+            let segment_height = take as f32 * lh + pad * 2.0;
+
+            {
+                let layer = self.layer();
+                layer.set_fill_color(rgb(0.12, 0.12, 0.14));
+                layer.add_rect(filled_rect(
+                    left,
+                    self.cursor_y - segment_height,
+                    right,
+                    self.cursor_y,
+                ));
             }
-            let layer = self.layer();
-            layer.set_fill_color(rgb(0.85, 0.87, 0.89));
-            layer.use_text(*code_line, size as f32, Mm(left + 4.0), Mm(y), self.mono_font);
-            y -= lh;
+
+            let mut y = self.cursor_y - pad - lh;
+            for line in &code_lines[idx..idx + take] {
+                let layer = self.layer();
+                layer.set_fill_color(rgb(0.85, 0.87, 0.89));
+                layer.use_text(*line, size as f32, Mm(left + 4.0), Mm(y), self.mono_font);
+                y -= lh;
+            }
+
+            self.cursor_y -= segment_height;
+            idx += take;
+
+            if idx < code_lines.len() {
+                self.new_page();
+            }
         }
 
-        self.cursor_y -= bh + self.branded.profile.paragraph_spacing;
+        self.cursor_y -= self.branded.profile.paragraph_spacing;
         Ok(())
     }
 
@@ -390,44 +424,88 @@ impl<'a> PdfPageRenderer<'a> {
     }
 
     fn render_cover(&mut self) -> anyhow::Result<()> {
-        let layer = self.layer();
+        let page_w = self.branded.page.width_mm;
+        let page_h = self.branded.page.height_mm;
         let left = self.branded.page.margin_left_mm;
 
-        let title = self.branded.doc.frontmatter.as_ref().and_then(|f| f.title.clone()).unwrap_or_else(|| "Untitled".to_string());
-        let subtitle = self.branded.doc.frontmatter.as_ref().and_then(|f| f.subtitle.clone());
-        let recipient = self.branded.doc.frontmatter.as_ref().and_then(|f| f.recipient.clone());
-        let date = self.branded.doc.frontmatter.as_ref().and_then(|f| f.date.clone());
+        let fm = self.branded.doc.frontmatter.as_ref();
+        let title = fm.and_then(|f| f.title.clone()).unwrap_or_else(|| "Untitled".to_string());
+        let subtitle = fm.and_then(|f| f.subtitle.clone());
+        let recipient = fm.and_then(|f| f.recipient.clone());
+        let date = fm.and_then(|f| f.date.clone());
+        let author = fm.and_then(|f| f.author.clone());
 
-        // Title
-        let title_y = self.branded.page.height_mm * 0.55;
-        let [r, g, b] = self.branded.colours.primary;
-        layer.set_fill_color(rgb(r, g, b));
-        layer.use_text(&title, (self.branded.profile.font_size_h1 * 1.5) as f32, Mm(left), Mm(title_y), self.heading_font);
-
-        // Accent line
-        let line_y = title_y - 8.0;
+        let [pr, pg, pb] = self.branded.colours.primary;
         let [ar, ag, ab] = self.branded.colours.accent;
+        let [sr, sg, sb] = self.branded.colours.secondary;
+        let [tr, tg, tb] = self.branded.colours.text;
+        let [br, bg, bb] = self.branded.colours.table_border;
+
+        let layer = self.layer();
+
+        // Top accent band (full width, primary colour)
+        let top_band = 22.0_f32;
+        layer.set_fill_color(rgb(pr, pg, pb));
+        layer.add_rect(filled_rect(0.0, page_h - top_band, page_w, page_h));
+
+        // Bottom accent band (thinner)
+        let bottom_band = 8.0_f32;
+        layer.set_fill_color(rgb(pr, pg, pb));
+        layer.add_rect(filled_rect(0.0, 0.0, page_w, bottom_band));
+
+        // Title — large, ~55% from top
+        let title_size = self.branded.profile.font_size_h1 * 2.0;
+        let title_y = page_h * 0.58;
+        layer.set_fill_color(rgb(pr, pg, pb));
+        layer.use_text(&title, title_size as f32, Mm(left), Mm(title_y), self.heading_font);
+
+        // Accent rule under title
+        let rule_y = title_y - 6.0;
         layer.set_outline_color(rgb(ar, ag, ab));
-        layer.set_outline_thickness(1.0);
-        layer.add_line(make_line(left, line_y, left + 60.0, line_y));
+        layer.set_outline_thickness(1.5);
+        layer.add_line(make_line(left, rule_y, left + 80.0, rule_y));
 
         // Subtitle
         if let Some(sub) = subtitle {
-            let [sr, sg, sb] = self.branded.colours.secondary;
+            let sub_size = self.branded.profile.font_size_h2;
             layer.set_fill_color(rgb(sr, sg, sb));
-            layer.use_text(&sub, self.branded.profile.font_size_h2 as f32, Mm(left), Mm(line_y - 10.0), self.body_font);
+            layer.use_text(&sub, sub_size as f32, Mm(left), Mm(rule_y - 12.0), self.body_font);
         }
 
-        // Bottom
-        let bottom_y = self.branded.page.margin_bottom_mm + 30.0;
-        let [tr, tg, tb] = self.branded.colours.text;
-        layer.set_fill_color(rgb(tr, tg, tb));
-        if let Some(recip) = recipient {
-            layer.use_text(&format!("Prepared for: {recip}"), self.branded.profile.font_size_base as f32, Mm(left), Mm(bottom_y), self.body_font);
+        // Metadata pillar at the bottom: divider rule + label/value rows
+        let meta_size = self.branded.profile.font_size_base;
+        let label_size = (meta_size - 1.5).max(7.0);
+        let value_step = pt_to_mm(meta_size * 1.6);
+        let label_step = pt_to_mm(label_size * 1.5);
+
+        let mut rows: Vec<(&str, String)> = Vec::new();
+        if let Some(v) = recipient { rows.push(("PREPARED FOR", v)); }
+        if let Some(v) = author { rows.push(("BY", v)); }
+        if let Some(v) = date { rows.push(("DATE", v)); }
+
+        if !rows.is_empty() {
+            let block_height: f32 = rows
+                .iter()
+                .map(|_| label_step + value_step + 4.0)
+                .sum();
+            let meta_top = bottom_band + 30.0 + block_height;
+
+            layer.set_outline_color(rgb(br, bg, bb));
+            layer.set_outline_thickness(0.4);
+            layer.add_line(make_line(left, meta_top, left + 60.0, meta_top));
+
+            let mut y = meta_top - 8.0;
+            for (label, value) in &rows {
+                layer.set_fill_color(rgb(sr, sg, sb));
+                layer.use_text(*label, label_size as f32, Mm(left), Mm(y), self.body_font);
+                y -= label_step;
+                layer.set_fill_color(rgb(tr, tg, tb));
+                layer.use_text(value, meta_size as f32, Mm(left), Mm(y), self.heading_font);
+                y -= value_step + 2.0;
+            }
         }
-        if let Some(d) = date {
-            layer.use_text(&d, self.branded.profile.font_size_base as f32, Mm(left), Mm(bottom_y - 6.0), self.body_font);
-        }
+
+        self.cover_rendered = true;
         Ok(())
     }
 
@@ -454,7 +532,7 @@ impl<'a> PdfPageRenderer<'a> {
 
     fn apply_footers(&mut self) -> anyhow::Result<()> {
         let total = self.all_pages.len() as u32;
-        let start_idx = if self.branded.profile.cover_enabled { 1usize } else { 0 };
+        let start_idx = if self.cover_rendered { 1usize } else { 0 };
         let left = self.branded.page.margin_left_mm;
         let footer_y = self.branded.page.margin_bottom_mm - 5.0;
 
