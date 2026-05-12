@@ -5,7 +5,8 @@ pub struct Config {
     pub port: u16,
     pub host: String,
     pub database_url: String,
-    pub api_secret_salt: String,
+    pub api_token: String,
+    pub rate_limit_per_min: usize,
     pub max_render_concurrency: usize,
     pub render_timeout_secs: u64,
     pub fonts_dir: String,
@@ -19,8 +20,11 @@ impl Config {
                 .parse()?,
             host: env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
             database_url: env::var("DATABASE_URL")?,
-            api_secret_salt: env::var("API_SECRET_SALT")
-                .unwrap_or_else(|_| "default-dev-salt".to_string()),
+            api_token: env::var("TYPESET_TOKEN")
+                .map_err(|_| anyhow::anyhow!("TYPESET_TOKEN env var must be set"))?,
+            rate_limit_per_min: env::var("TYPESET_RATE_LIMIT_PER_MIN")
+                .unwrap_or_else(|_| "10".to_string())
+                .parse()?,
             max_render_concurrency: env::var("MAX_RENDER_CONCURRENCY")
                 .unwrap_or_else(|_| "4".to_string())
                 .parse()?,

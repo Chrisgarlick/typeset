@@ -2,20 +2,18 @@ use axum::{
     extract::State,
     http::{header, StatusCode},
     response::IntoResponse,
-    Extension, Json,
+    Json,
 };
 use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
 use crate::models::client_profile::ClientProfile;
 use crate::models::render_job::{RenderFormat, RenderRequest};
-use crate::routes::auth::UserId;
 use crate::state::AppState;
 
 /// Render endpoint — renders and returns the file as a download.
 pub async fn handle_render(
     State(state): State<AppState>,
-    Extension(user): Extension<UserId>,
     Json(req): Json<RenderRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let _permit = state
@@ -29,7 +27,7 @@ pub async fn handle_render(
     let profile = match &req.client {
         Some(slug) => state
             .db
-            .get_client_profile(slug, user.0)
+            .get_client_profile(slug)
             .await
             .map_err(|_| AppError::NotFound(format!("Client profile '{slug}' not found")))?,
         None => ClientProfile::default_profile(),
@@ -65,14 +63,12 @@ pub async fn handle_render(
     let render_ms = start.elapsed().as_millis() as u64;
     let render_id = uuid::Uuid::new_v4().to_string();
 
-    // Content hash
     let content_hash = {
         let mut hasher = Sha256::new();
         hasher.update(req.content.as_bytes());
         format!("{:x}", hasher.finalize())
     };
 
-    // Log to DB
     let format_str = match req.format {
         RenderFormat::Pdf => "pdf",
         RenderFormat::Docx => "docx",
@@ -82,7 +78,7 @@ pub async fn handle_render(
     if let Err(e) = state
         .db
         .log_render(
-            &render_id, user.0, req.client.as_deref(),
+            &render_id, req.client.as_deref(),
             &req.document_type.to_string(), format_str,
             Some(&content_hash), None, None, None, None,
             Some(bytes.len() as i32), render_ms as i32, None,

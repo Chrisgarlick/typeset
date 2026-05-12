@@ -214,7 +214,7 @@ date: <YYYY-MM-DD or free-form>
 
 # API in one paragraph
 
-`POST /api/render` with `Authorization: Bearer ts_<uuid>_<random>` and a JSON body of `{ "content": "<markdown>", "document_type": "proposal|report|brief|sop|invoice|general", "format": "pdf|docx", "client": "<optional-slug>" }`. Response is the raw PDF or DOCX bytes. See [`API.md`](./API.md) for full surface (client profiles, history, preview endpoint, error format).
+`POST /api/render` with `Authorization: Bearer $TYPESET_TOKEN` (single shared secret, set via env var on the server) and a JSON body of `{ "content": "<markdown>", "document_type": "proposal|report|brief|sop|invoice|general", "format": "pdf|docx", "client": "<optional-slug>" }`. Response is the raw PDF or DOCX bytes. Render endpoints are rate-limited to **10 req/min per IP** (configurable via `TYPESET_RATE_LIMIT_PER_MIN`). See [`API.md`](./API.md) for the full surface.
 
 ---
 

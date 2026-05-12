@@ -5,16 +5,15 @@ const API_URL =
     ? ""
     : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
 
-// Temp dev API key — replaced with real auth later
-const API_KEY =
-  process.env.NEXT_PUBLIC_API_KEY ||
-  "ts_00000000-0000-0000-0000-000000000000_dev";
+// Single shared secret. Must match the TYPESET_TOKEN env var on the API.
+// Set NEXT_PUBLIC_API_TOKEN at build time in production.
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || "dev-token";
 
 async function apiFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      Authorization: `Bearer ${API_KEY}`,
+      Authorization: `Bearer ${API_TOKEN}`,
       ...options.headers,
     },
   });

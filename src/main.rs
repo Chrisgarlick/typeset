@@ -4,6 +4,7 @@ mod db;
 mod error;
 mod models;
 mod parser;
+mod rate_limit;
 mod renderers;
 mod routes;
 mod state;
@@ -49,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         db: Database::new(pool),
         render_semaphore: Arc::new(Semaphore::new(config.max_render_concurrency)),
+        rate_limiter: rate_limit::RateLimiter::new(config.rate_limit_per_min),
         config: Arc::new(config.clone()),
     };
 
@@ -57,9 +59,15 @@ async fn main() -> anyhow::Result<()> {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    let authenticated = Router::new()
+    let rendering = Router::new()
         .route("/api/render", post(routes::render::handle_render))
         .route("/api/preview", post(routes::preview::handle_preview))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            rate_limit::rate_limit_middleware,
+        ));
+
+    let cheap = Router::new()
         .route("/api/clients", get(routes::clients::list_clients))
         .route("/api/clients", post(routes::clients::create_client))
         .route("/api/clients/:slug", get(routes::clients::get_client))
@@ -67,8 +75,14 @@ async fn main() -> anyhow::Result<()> {
             "/api/clients/:slug",
             delete(routes::clients::delete_client),
         )
-        .route("/api/history", get(routes::history::get_history))
-        .layer(middleware::from_fn(routes::auth::auth_middleware));
+        .route("/api/history", get(routes::history::get_history));
+
+    let authenticated = rendering
+        .merge(cheap)
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            routes::auth::auth_middleware,
+        ));
 
     let public = Router::new()
         .route("/health", get(routes::health::health_check))
@@ -83,9 +97,9 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    tracing::info!("Typeset listening on {addr}");
+    tracing::info!("Typeset listening on {addr} (rate limit {}/min)", config.rate_limit_per_min);
 
-    axum::serve(listener, app)
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 

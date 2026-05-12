@@ -2,19 +2,17 @@ use axum::{
     extract::State,
     http::{header, StatusCode},
     response::IntoResponse,
-    Extension, Json,
+    Json,
 };
 
 use crate::error::AppError;
 use crate::models::client_profile::ClientProfile;
 use crate::models::render_job::RenderRequest;
-use crate::routes::auth::UserId;
 use crate::state::AppState;
 
-/// Preview endpoint — renders and returns bytes directly, no S3 upload.
+/// Preview endpoint — renders and returns bytes inline (browser-displayable).
 pub async fn handle_preview(
     State(state): State<AppState>,
-    Extension(user): Extension<UserId>,
     Json(req): Json<RenderRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let _permit = state
@@ -23,20 +21,17 @@ pub async fn handle_preview(
         .await
         .map_err(|_| AppError::RenderError("Render capacity exceeded".to_string()))?;
 
-    // 1. Fetch client profile (or default)
     let profile = match &req.client {
         Some(slug) => state
             .db
-            .get_client_profile(slug, user.0)
+            .get_client_profile(slug)
             .await
             .map_err(|_| AppError::NotFound(format!("Client profile '{slug}' not found")))?,
         None => ClientProfile::default_profile(),
     };
 
-    // 2. Parse markdown
     let mut doc = crate::parser::markdown::parse(&req.content);
 
-    // 3. Apply overrides
     if let Some(overrides) = &req.overrides {
         let fm = doc.frontmatter.get_or_insert_with(Default::default);
         if let Some(t) = &overrides.title {
@@ -56,11 +51,9 @@ pub async fn handle_preview(
         }
     }
 
-    // 4. Brand engine
     let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
         .map_err(|e| AppError::RenderError(e.to_string()))?;
 
-    // 5. Render based on format
     let (bytes, content_type, filename) = match req.format {
         crate::models::render_job::RenderFormat::Pdf
         | crate::models::render_job::RenderFormat::Both => {

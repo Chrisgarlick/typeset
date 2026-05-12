@@ -1,13 +1,11 @@
-use axum::{extract::State, Extension, Json};
+use axum::{extract::State, Json};
 
 use crate::error::AppError;
 use crate::models::render_job::{HistoryQuery, RenderHistoryRow};
-use crate::routes::auth::UserId;
 use crate::state::AppState;
 
 pub async fn get_history(
     State(state): State<AppState>,
-    Extension(user): Extension<UserId>,
     axum::extract::Query(query): axum::extract::Query<HistoryQuery>,
 ) -> Result<Json<Vec<RenderHistoryRow>>, AppError> {
     let limit = query.limit.unwrap_or(20).min(100);
@@ -16,7 +14,6 @@ pub async fn get_history(
     let history = state
         .db
         .get_render_history(
-            user.0,
             limit,
             offset,
             query.client.as_deref(),

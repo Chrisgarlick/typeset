@@ -3,36 +3,42 @@
 Typeset turns markdown (with optional YAML frontmatter) into branded PDF or DOCX files. Send markdown in, get a file back.
 
 - **Base URL:** `https://typeset.chrisgarlick.com`
-- **Auth:** `Authorization: Bearer <api-key>` on every authenticated endpoint
+- **Auth:** `Authorization: Bearer <token>` on every authenticated endpoint
 - **Content type:** `application/json` for all request bodies
 
 ---
 
 ## Authentication
 
-API keys use the format:
+Single shared secret. Send it on every authenticated request:
 
 ```
-ts_<uuid>_<random>
+Authorization: Bearer <TYPESET_TOKEN>
 ```
 
-The middleware parses the embedded UUID and treats it as your user ID. Every authenticated endpoint scopes data (client profiles, render history) to that UUID, so **always reuse the same key** for the same caller — a different UUID is effectively a different account.
+`<TYPESET_TOKEN>` is whatever string was set as the `TYPESET_TOKEN` environment variable on the server. Any caller with the token has full read/write access — there is no per-user account model.
 
-### Generating a key
+Treat the token like a password:
+- Never commit it to git
+- Don't expose it in client-side JavaScript that ships to untrusted browsers (the frontend bundle that ships to *your* browser is fine, since you trust it)
+- Rotate by changing `TYPESET_TOKEN` on the server and updating any callers
 
-Pick a UUID v4 (any tool — `uuidgen`, an online generator, etc.) and append a random suffix. Example:
+---
+
+## Rate limiting
+
+`/api/render` and `/api/preview` are limited to **10 requests per minute per IP** by default. Beyond that limit you'll get:
 
 ```
-ts_550e8400-e29b-41d4-a716-446655440000_prod-key-1
+HTTP 429 Too Many Requests
+Retry-After: <seconds>
+
+{ "error": "Rate limit exceeded — try again in 38s", "status": 429 }
 ```
 
-Send it as:
+Configure via the `TYPESET_RATE_LIMIT_PER_MIN` env var. The limit only applies to the rendering endpoints — `/api/clients` and `/api/history` are unlimited (still behind the bearer token).
 
-```
-Authorization: Bearer ts_550e8400-e29b-41d4-a716-446655440000_prod-key-1
-```
-
-> Note: the current build trusts the UUID embedded in the key (MVP behaviour). Keep your key private and treat it as a secret. If you want stricter validation later, that's an additive change and won't break existing keys.
+The limiter respects `X-Forwarded-For` and `X-Real-IP`, so it works correctly behind nginx or any reverse proxy.
 
 ---
 
@@ -95,7 +101,7 @@ Field notes:
 
 ```bash
 curl -X POST https://typeset.chrisgarlick.com/api/render \
-  -H "Authorization: Bearer ts_550e8400-e29b-41d4-a716-446655440000_prod" \
+  -H "Authorization: Bearer $TYPESET_TOKEN" \
   -H "Content-Type: application/json" \
   -d @payload.json \
   -o output.pdf
@@ -117,7 +123,7 @@ Where `payload.json` is:
 const res = await fetch("https://typeset.chrisgarlick.com/api/render", {
   method: "POST",
   headers: {
-    "Authorization": `Bearer ${API_KEY}`,
+    "Authorization": `Bearer ${TYPESET_TOKEN}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -139,7 +145,7 @@ import requests
 
 resp = requests.post(
     "https://typeset.chrisgarlick.com/api/render",
-    headers={"Authorization": f"Bearer {API_KEY}"},
+    headers={"Authorization": f"Bearer {TYPESET_TOKEN}"},
     json={
         "document_type": "proposal",
         "format": "pdf",
@@ -233,7 +239,7 @@ A client profile is a saved bundle of branding (colours, fonts, margins, logo, h
 Returns an array of your profiles.
 
 ```bash
-curl -H "Authorization: Bearer $API_KEY" \
+curl -H "Authorization: Bearer $TYPESET_TOKEN" \
   https://typeset.chrisgarlick.com/api/clients
 ```
 
@@ -243,7 +249,7 @@ Create or upsert a profile. The only required fields are `slug` and `name` — e
 
 ```bash
 curl -X POST https://typeset.chrisgarlick.com/api/clients \
-  -H "Authorization: Bearer $API_KEY" \
+  -H "Authorization: Bearer $TYPESET_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "slug": "acme",
@@ -308,7 +314,7 @@ Returns one profile. `404` if not found for this user.
 
 ```bash
 curl -X DELETE \
-  -H "Authorization: Bearer $API_KEY" \
+  -H "Authorization: Bearer $TYPESET_TOKEN" \
   https://typeset.chrisgarlick.com/api/clients/acme
 ```
 
@@ -330,7 +336,7 @@ Query parameters (all optional):
 | `format` | — | `pdf` / `docx` / `both` |
 
 ```bash
-curl -H "Authorization: Bearer $API_KEY" \
+curl -H "Authorization: Bearer $TYPESET_TOKEN" \
   "https://typeset.chrisgarlick.com/api/history?limit=50&client=acme"
 ```
 
@@ -338,17 +344,19 @@ curl -H "Authorization: Bearer $API_KEY" \
 
 ## Complete end-to-end example
 
-### 1. Mint a key
+### 1. Get the shared token
 
-```
-ts_550e8400-e29b-41d4-a716-446655440000_prod
+The server admin sets `TYPESET_TOKEN` in the production env. Use the same value as `Authorization: Bearer <token>` on every request. Export it locally so the examples below work:
+
+```bash
+export TYPESET_TOKEN="<your-shared-secret>"
 ```
 
 ### 2. (Optional) Create a client profile
 
 ```bash
 curl -X POST https://typeset.chrisgarlick.com/api/clients \
-  -H "Authorization: Bearer ts_550e8400-e29b-41d4-a716-446655440000_prod" \
+  -H "Authorization: Bearer $TYPESET_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"slug":"acme","name":"Acme Corp","colour_primary":"#FF6600"}'
 ```
@@ -396,7 +404,7 @@ interviews, workshop facilitation, and a final findings report.
 
 ```bash
 curl -X POST https://typeset.chrisgarlick.com/api/render \
-  -H "Authorization: Bearer ts_550e8400-e29b-41d4-a716-446655440000_prod" \
+  -H "Authorization: Bearer $TYPESET_TOKEN" \
   -H "Content-Type: application/json" \
   -d "$(jq -Rs '{
     document_type: "proposal",

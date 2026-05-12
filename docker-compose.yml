@@ -19,7 +19,8 @@ services:
       HOST: 0.0.0.0
       RUST_LOG: info
       DATABASE_URL: postgresql://typeset:${DB_PASSWORD:-typeset}@db:5432/typeset
-      API_SECRET_SALT: ${API_SECRET_SALT:-local-dev-salt}
+      TYPESET_TOKEN: ${TYPESET_TOKEN:-dev-token}
+      TYPESET_RATE_LIMIT_PER_MIN: ${TYPESET_RATE_LIMIT_PER_MIN:-10}
       MAX_RENDER_CONCURRENCY: 4
       RENDER_TIMEOUT_SECS: 30
     depends_on:
@@ -32,6 +33,7 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://typeset:3200
+      NEXT_PUBLIC_API_TOKEN: ${TYPESET_TOKEN:-dev-token}
     depends_on:
       - typeset
 

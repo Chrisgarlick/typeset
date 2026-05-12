@@ -1,55 +1,44 @@
 use axum::{
-    extract::Request,
+    extract::{Request, State},
     http::StatusCode,
     middleware::Next,
     response::Response,
 };
-use sha2::{Digest, Sha256};
-use uuid::Uuid;
 
-/// Extract user ID from the API key.
-///
-/// API keys are formatted as: `ts_{user_id}_{random}`
-/// The key is validated by hashing `{key}:{salt}` and checking it's well-formed.
-/// For MVP, we trust the user_id embedded in the key and validate the format.
-pub fn extract_user_id(api_key: &str) -> Option<Uuid> {
-    let parts: Vec<&str> = api_key.split('_').collect();
-    if parts.len() < 3 || parts[0] != "ts" {
-        return None;
-    }
-    parts[1].parse::<Uuid>().ok()
-}
+use crate::state::AppState;
 
-/// Authentication middleware
+/// Authentication middleware — compares the Bearer token to the configured
+/// shared secret. Single-tenant model: any caller with the secret has full
+/// access; no users, no per-key scoping.
 pub async fn auth_middleware(
-    mut request: Request,
+    State(state): State<AppState>,
+    request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    let auth_header = request
+    let presented = request
         .headers()
         .get("authorization")
         .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string());
+        .and_then(|s| s.strip_prefix("Bearer "));
 
-    let api_key = match auth_header {
-        Some(ref header) if header.starts_with("Bearer ") => &header[7..],
-        _ => return Err(StatusCode::UNAUTHORIZED),
-    };
+    let expected = state.config.api_token.as_str();
 
-    let user_id = extract_user_id(api_key).ok_or(StatusCode::UNAUTHORIZED)?;
-
-    // Store user_id in request extensions for handlers to access
-    request.extensions_mut().insert(UserId(user_id));
-
-    Ok(next.run(request).await)
+    match presented {
+        Some(token) if constant_time_eq(token.as_bytes(), expected.as_bytes()) => {
+            Ok(next.run(request).await)
+        }
+        _ => Err(StatusCode::UNAUTHORIZED),
+    }
 }
 
-#[derive(Clone, Debug)]
-pub struct UserId(pub Uuid);
-
-/// Hash an API key with salt for storage/comparison
-pub fn hash_api_key(key: &str, salt: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(format!("{key}:{salt}"));
-    format!("{:x}", hasher.finalize())
+/// Constant-time byte comparison to avoid timing leaks on the secret.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
 }

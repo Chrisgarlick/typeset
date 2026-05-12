@@ -4,6 +4,11 @@ use uuid::Uuid;
 use crate::models::client_profile::ClientProfile;
 use crate::models::render_job::RenderHistoryRow;
 
+/// Single-tenant model: all rows are owned by a fixed nil UUID, no per-user
+/// scoping. The user_id column is retained in the schema so a future
+/// multi-user migration is straightforward (backfill real UUIDs).
+const TENANT_ID: Uuid = Uuid::nil();
+
 #[derive(Clone)]
 pub struct Database {
     pool: PgPool,
@@ -20,35 +25,25 @@ impl Database {
 
     // --- Client Profiles ---
 
-    pub async fn get_client_profile(
-        &self,
-        slug: &str,
-        user_id: Uuid,
-    ) -> Result<ClientProfile, sqlx::Error> {
+    pub async fn get_client_profile(&self, slug: &str) -> Result<ClientProfile, sqlx::Error> {
         sqlx::query_as::<_, ClientProfile>(
-            "SELECT * FROM client_profiles WHERE slug = $1 AND user_id = $2",
+            "SELECT * FROM client_profiles WHERE slug = $1",
         )
         .bind(slug)
-        .bind(user_id)
         .fetch_one(&self.pool)
         .await
     }
 
-    pub async fn list_client_profiles(
-        &self,
-        user_id: Uuid,
-    ) -> Result<Vec<ClientProfile>, sqlx::Error> {
+    pub async fn list_client_profiles(&self) -> Result<Vec<ClientProfile>, sqlx::Error> {
         sqlx::query_as::<_, ClientProfile>(
-            "SELECT * FROM client_profiles WHERE user_id = $1 ORDER BY name",
+            "SELECT * FROM client_profiles ORDER BY name",
         )
-        .bind(user_id)
         .fetch_all(&self.pool)
         .await
     }
 
     pub async fn upsert_client_profile(
         &self,
-        user_id: Uuid,
         profile: &crate::models::client_profile::CreateClientProfile,
     ) -> Result<ClientProfile, sqlx::Error> {
         sqlx::query_as::<_, ClientProfile>(
@@ -125,7 +120,7 @@ impl Database {
             RETURNING *
             "#,
         )
-        .bind(user_id)
+        .bind(TENANT_ID)
         .bind(&profile.slug)
         .bind(&profile.name)
         .bind(&profile.colour_primary)
@@ -171,18 +166,11 @@ impl Database {
         .await
     }
 
-    pub async fn delete_client_profile(
-        &self,
-        slug: &str,
-        user_id: Uuid,
-    ) -> Result<bool, sqlx::Error> {
-        let result = sqlx::query(
-            "DELETE FROM client_profiles WHERE slug = $1 AND user_id = $2",
-        )
-        .bind(slug)
-        .bind(user_id)
-        .execute(&self.pool)
-        .await?;
+    pub async fn delete_client_profile(&self, slug: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query("DELETE FROM client_profiles WHERE slug = $1")
+            .bind(slug)
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected() > 0)
     }
@@ -192,7 +180,6 @@ impl Database {
     pub async fn log_render(
         &self,
         render_id: &str,
-        user_id: Uuid,
         client_slug: Option<&str>,
         document_type: &str,
         format: &str,
@@ -221,7 +208,7 @@ impl Database {
             "#,
         )
         .bind(id)
-        .bind(user_id)
+        .bind(TENANT_ID)
         .bind(client_slug)
         .bind(document_type)
         .bind(format)
@@ -241,16 +228,13 @@ impl Database {
 
     pub async fn get_render_history(
         &self,
-        user_id: Uuid,
         limit: i64,
         offset: i64,
         client_filter: Option<&str>,
         format_filter: Option<&str>,
     ) -> Result<Vec<RenderHistoryRow>, sqlx::Error> {
-        let mut query = String::from(
-            "SELECT * FROM render_history WHERE user_id = $1",
-        );
-        let mut param_idx = 2;
+        let mut query = String::from("SELECT * FROM render_history WHERE 1=1");
+        let mut param_idx = 1;
 
         if client_filter.is_some() {
             query.push_str(&format!(" AND client_slug = ${param_idx}"));
@@ -267,7 +251,7 @@ impl Database {
             param_idx + 1
         ));
 
-        let mut q = sqlx::query_as::<_, RenderHistoryRow>(&query).bind(user_id);
+        let mut q = sqlx::query_as::<_, RenderHistoryRow>(&query);
 
         if let Some(client) = client_filter {
             q = q.bind(client);
