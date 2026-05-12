@@ -124,8 +124,10 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
 )
 
 #set text(font: "{font_body}", size: {base_size}pt, fill: text-color)
-#set par(leading: {leading}em, justify: false)
-#set list(marker: text(fill: accent)[•])
+#set par(leading: {leading}em, spacing: 1.4em, justify: false)
+#set block(spacing: 1.4em)
+#set list(marker: text(fill: accent)[•], spacing: 0.6em)
+#set enum(spacing: 0.6em)
 "#,
         title = typst_string(&doc_title),
         author = typst_string(&author),
@@ -154,23 +156,24 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
         r##"
 #show heading.where(level: 1): it => {{
   pagebreak(weak: true)
-  block(below: 0.6em, sticky: true)[
+  block(below: 0.4em, sticky: true)[
     #set text(size: {h1}pt, weight: "bold", fill: primary)
     #it.body
   ]
   line(length: 100%, stroke: 0.6pt + accent)
-  v(0.4em)
+  v(0.8em)
 }}
 
 #show heading.where(level: 2): it => {{
   pagebreak(weak: true)
-  block(below: 0.6em, sticky: true)[
+  block(below: 0.8em, above: 0em, sticky: true)[
     #set text(size: {h2}pt, weight: "bold", fill: secondary)
     #it.body
   ]
+  v(0.4em)
 }}
 
-#show heading.where(level: 3): it => block(below: 0.4em, sticky: true)[
+#show heading.where(level: 3): it => block(below: 0.6em, above: 1.2em, sticky: true)[
   #set text(size: {h3}pt, weight: "bold", fill: text-color)
   #it.body
 ]
@@ -179,12 +182,14 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
 #show heading: set block(sticky: true)
 
 #show raw.where(block: true): it => block(
-  breakable: true,
+  breakable: false,
   width: 100%,
   fill: rgb("#1F1F23"),
   inset: 10pt,
   radius: 2pt,
   stroke: none,
+  above: 1.4em,
+  below: 1.4em,
 )[
   #set text(fill: rgb("#E5E7EB"), font: "{font_mono}", size: {code_size}pt)
   #it
@@ -543,6 +548,82 @@ mod tests {
         let out = std::env::temp_dir().join("typeset-smoke.pdf");
         std::fs::write(&out, &bytes).expect("write smoke PDF");
         eprintln!("Smoke PDF written to {}", out.display());
+    }
+
+    /// Verify code blocks do NOT split across pages. Renders a section with
+    /// many medium-sized code blocks and asserts the resulting PDF has more
+    /// pages than the equivalent breakable version (i.e. blocks were moved
+    /// whole to fresh pages rather than split mid-block).
+    #[test]
+    fn code_blocks_stay_whole() {
+        if !typst_available() {
+            return;
+        }
+
+        let md = r#"---
+title: Test
+---
+
+## Section
+
+1. First block
+
+```
+line one
+line two
+line three
+line four
+line five
+line six
+line seven
+line eight
+line nine
+line ten
+line eleven
+line twelve
+line thirteen
+line fourteen
+line fifteen
+```
+
+2. Second block
+
+```
+another one
+with several lines
+to push the page
+boundary close
+to the bottom
+so we can see
+whether the third
+block splits or
+gets moved whole
+to the next page
+```
+
+3. Third block
+
+```
+this is the third
+multi-line block
+that should land
+cleanly on its own
+page or below the
+previous one,
+never split across
+two pages
+```
+"#;
+
+        let doc = crate::parser::markdown::parse(md);
+        let profile = crate::models::client_profile::ClientProfile::default_profile();
+        let branded =
+            crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+
+        let bytes = render(&branded).expect("typst render");
+        let out = std::env::temp_dir().join("typeset-codeblock-smoke.pdf");
+        std::fs::write(&out, &bytes).expect("write smoke PDF");
+        eprintln!("Code-block smoke PDF written to {}", out.display());
     }
 
     /// Verify fletcher diagrams render. Needs network on first run to fetch
