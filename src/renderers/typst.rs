@@ -93,9 +93,12 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
 #let secondary = rgb("{secondary}")
 #let accent = rgb("{accent}")
 #let text-color = rgb("{text}")
+#let bg-color = rgb("{background}")
 #let table-header-bg = rgb("{table_header}")
 #let table-border-color = rgb("{table_border}")
 #let callout-bg = rgb("{callout_bg}")
+#let cover-bg-color = rgb("{cover_bg}")
+#let cover-text-color = rgb("{cover_text}")
 
 #let header-text = {header_text}
 #let has-cover = {has_cover}
@@ -135,9 +138,12 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         secondary = hex_or_default(&p.colour_secondary, "#333333"),
         accent = hex_or_default(&p.colour_accent, "#0066CC"),
         text = hex_or_default(&p.colour_text, "#1A1A1A"),
+        background = hex_or_default(&p.colour_background, "#FFFFFF"),
         table_header = hex_or_default(&p.colour_table_header, "#F5F5F5"),
         table_border = hex_or_default(&p.colour_table_border, "#E0E0E0"),
         callout_bg = hex_or_default(&p.colour_callout_bg, "#F8F9FA"),
+        cover_bg = hex_or_default(&p.cover_bg_colour, "#000000"),
+        cover_text = hex_or_default(&p.cover_text_colour, "#FFFFFF"),
         header_text = typst_string(&doc_title),
         paper = paper_name(&p.page_size),
         mt = p.margin_top,
@@ -226,19 +232,25 @@ fn write_imports(s: &mut String) {
 }
 
 fn write_cover(s: &mut String, c: &CoverData, _b: &BrandedDocument) {
+    // The cover is its own page with full-bleed cover_bg_colour and text in
+    // cover_text_colour. Accent rule and metadata labels also tinted from
+    // cover-text-color so they remain readable against the dark background.
     s.push_str(
         r#"
-#page(margin: 0mm, header: none, footer: none)[
-  #place(top + left, rect(width: 100%, height: 22mm, fill: primary))
-  #place(bottom + left, rect(width: 100%, height: 8mm, fill: primary))
-
-  #pad(x: 25mm, top: 30mm, bottom: 14mm)[
+#page(
+  margin: 0mm,
+  header: none,
+  footer: none,
+  fill: cover-bg-color,
+)[
+  #set text(fill: cover-text-color)
+  #pad(x: 25mm, top: 30mm, bottom: 18mm)[
     #v(35%)
 "#,
     );
 
     s.push_str(&format!(
-        "    #text(size: 38pt, weight: \"bold\", fill: primary)[{}]\n",
+        "    #text(size: 38pt, weight: \"bold\", fill: cover-text-color)[{}]\n",
         typst_content(&c.title)
     ));
     s.push_str("    #v(2mm)\n");
@@ -246,7 +258,7 @@ fn write_cover(s: &mut String, c: &CoverData, _b: &BrandedDocument) {
 
     if let Some(sub) = &c.subtitle {
         s.push_str(&format!(
-            "    #v(4mm)\n    #text(size: 16pt, fill: secondary)[{}]\n",
+            "    #v(4mm)\n    #text(size: 16pt, fill: cover-text-color.transparentize(25%))[{}]\n",
             typst_content(sub)
         ));
     }
@@ -254,21 +266,24 @@ fn write_cover(s: &mut String, c: &CoverData, _b: &BrandedDocument) {
     s.push_str("    #v(1fr)\n");
     s.push_str("    #stack(spacing: 6mm,\n");
 
+    let label_fmt = "fill: cover-text-color.transparentize(40%)";
+    let value_fmt = "fill: cover-text-color";
+
     if let Some(r) = &c.recipient {
         s.push_str(&format!(
-            "      [#text(size: 8pt, fill: secondary)[PREPARED FOR] \\ #text(size: 12pt, weight: \"bold\")[{}]],\n",
+            "      [#text(size: 8pt, {label_fmt})[PREPARED FOR] \\ #text(size: 12pt, weight: \"bold\", {value_fmt})[{}]],\n",
             typst_content(r)
         ));
     }
     if let Some(a) = &c.author {
         s.push_str(&format!(
-            "      [#text(size: 8pt, fill: secondary)[BY] \\ #text(size: 12pt)[{}]],\n",
+            "      [#text(size: 8pt, {label_fmt})[BY] \\ #text(size: 12pt, {value_fmt})[{}]],\n",
             typst_content(a)
         ));
     }
     if let Some(d) = &c.date {
         s.push_str(&format!(
-            "      [#text(size: 8pt, fill: secondary)[DATE] \\ #text(size: 12pt, weight: \"bold\")[{}]],\n",
+            "      [#text(size: 8pt, {label_fmt})[DATE] \\ #text(size: 12pt, weight: \"bold\", {value_fmt})[{}]],\n",
             typst_content(d)
         ));
     }
