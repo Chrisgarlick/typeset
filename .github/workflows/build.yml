@@ -52,6 +52,8 @@ jobs:
         with:
           context: ./frontend
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_TOKEN=${{ secrets.TYPESET_TOKEN }}
           tags: ${{ env.REGISTRY }}/chrisgarlick/typeset/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
