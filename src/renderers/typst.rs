@@ -126,7 +126,7 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   }},
 )
 
-#set text(font: "{font_body}", size: {base_size}pt, fill: text-color)
+#set text(font: ("{font_body}", "Inter", "Helvetica Neue", "Helvetica", "Arial", "Liberation Sans"), size: {base_size}pt, fill: text-color)
 #set par(leading: {leading}em, spacing: 1.4em, justify: false)
 #set block(spacing: 1.4em)
 #set list(marker: text(fill: accent)[•], spacing: 0.6em)
@@ -187,17 +187,20 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
 #show heading.where(level: 4): set text(size: {h4}pt, weight: "bold")
 #show heading: set block(sticky: true)
 
+#let mono-stack = ("DejaVu Sans Mono", "Menlo", "Consolas", "Courier New", "Liberation Mono")
+
 #show raw.where(block: true): it => block(
   breakable: false,
   width: 100%,
   fill: rgb("#1F1F23"),
-  inset: 10pt,
-  radius: 2pt,
+  inset: (x: 12pt, y: 10pt),
+  radius: 3pt,
   stroke: none,
   above: 1.4em,
   below: 1.4em,
 )[
-  #set text(fill: rgb("#E5E7EB"), font: "{font_mono}", size: {code_size}pt)
+  #set text(fill: rgb("#E5E7EB"), font: mono-stack, size: {code_size}pt)
+  #set par(leading: 0.55em, justify: false)
   #it
 ]
 
@@ -206,7 +209,7 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
   inset: (x: 3pt, y: 1pt),
   outset: (y: 2pt),
   radius: 2pt,
-)[#text(font: "{font_mono}", size: {code_size}pt)[#it]]
+)[#text(font: mono-stack, size: {code_size}pt)[#it]]
 
 #show table: set block(breakable: true)
 #show list: set block(sticky: true)
@@ -218,9 +221,9 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
         h2 = p.font_size_h2,
         h3 = p.font_size_h3,
         h4 = p.font_size_base + 1.0,
-        font_mono = font_family(&p.font_mono),
         code_size = p.font_size_base - 1.0,
     ));
+    let _ = &p.font_mono;
 }
 
 fn write_imports(s: &mut String) {
