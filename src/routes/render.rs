@@ -51,7 +51,7 @@ pub async fn handle_render(
 
     let (bytes, content_type, ext) = match req.format {
         RenderFormat::Pdf | RenderFormat::Both => {
-            let b = crate::renderers::pdf::render(&branded)
+            let b = crate::renderers::typst::render(&branded)
                 .map_err(|e| AppError::RenderError(e.to_string()))?;
             (b, "application/pdf", "pdf")
         }

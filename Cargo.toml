@@ -13,8 +13,8 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 # Markdown parsing
 pulldown-cmark = "0.12"
 
-# PDF generation
-printpdf = "0.7"
+# PDF generation via Typst (subprocess)
+tempfile = "3"
 
 # DOCX generation
 docx-rs = "0.4"

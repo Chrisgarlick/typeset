@@ -64,7 +64,7 @@ pub async fn handle_preview(
     let (bytes, content_type, filename) = match req.format {
         crate::models::render_job::RenderFormat::Pdf
         | crate::models::render_job::RenderFormat::Both => {
-            let bytes = crate::renderers::pdf::render(&branded)
+            let bytes = crate::renderers::typst::render(&branded)
                 .map_err(|e| AppError::RenderError(e.to_string()))?;
             (bytes, "application/pdf", "preview.pdf")
         }

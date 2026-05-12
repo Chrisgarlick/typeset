@@ -13,7 +13,7 @@ cd /var/www/typeset
 git pull
 
 # Login to GitHub Container Registry
-echo $GHCR_TOKEN | docker login ghcr.io -u chrisgarlick --password-stdin 2>/dev/null || true
+# echo $GHCR_TOKEN | docker login ghcr.io -u chrisgarlick --password-stdin 2>/dev/null || true
 
 # Pull pre-built images and restart
 docker compose -f docker-compose.prod.yml pull
