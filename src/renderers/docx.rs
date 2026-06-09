@@ -183,6 +183,24 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
         }
 
         DocumentNode::Image { .. } => docx, // deferred to v1.1
+
+        DocumentNode::Columns { children, .. } => {
+            let mut d = docx;
+            for column in children {
+                for node in &column.nodes {
+                    d = render_node(d, node, branded);
+                }
+            }
+            d
+        }
+
+        DocumentNode::Section { children, .. } => {
+            let mut d = docx;
+            for node in children {
+                d = render_node(d, node, branded);
+            }
+            d
+        }
     }
 }
 

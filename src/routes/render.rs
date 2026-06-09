@@ -33,7 +33,8 @@ pub async fn handle_render(
         None => ClientProfile::default_profile(),
     };
 
-    let mut doc = crate::parser::markdown::parse(&req.content);
+    let mut doc = crate::parser::parse(&req.input_format, &req.content)
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
     if let Some(overrides) = &req.overrides {
         let fm = doc.frontmatter.get_or_insert_with(Default::default);

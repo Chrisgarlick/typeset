@@ -34,6 +34,46 @@ pub enum DocumentNode {
         alt: String,
     },
     PageBreak,
+    Columns {
+        ratios: Vec<f32>,
+        gutter: Option<String>,
+        children: Vec<StyledColumn>,
+    },
+    Section {
+        style: Option<BlockStyle>,
+        children: Vec<DocumentNode>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct StyledColumn {
+    pub style: Option<BlockStyle>,
+    pub nodes: Vec<DocumentNode>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct BlockStyle {
+    pub background: Option<String>,
+    pub text_color: Option<String>,
+    pub border: Option<Border>,
+    pub padding: Option<String>,
+    pub radius: Option<String>,
+}
+
+impl BlockStyle {
+    pub fn is_empty(&self) -> bool {
+        self.background.is_none()
+            && self.text_color.is_none()
+            && self.border.is_none()
+            && self.padding.is_none()
+            && self.radius.is_none()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct Border {
+    pub width: Option<String>,
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

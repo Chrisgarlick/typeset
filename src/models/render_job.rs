@@ -6,9 +6,19 @@ pub struct RenderRequest {
     pub client: Option<String>,
     pub document_type: DocumentType,
     pub format: RenderFormat,
-    /// Raw markdown content
+    /// Source content — interpreted according to `input_format` (default markdown).
     pub content: String,
     pub overrides: Option<RenderOverrides>,
+    #[serde(default)]
+    pub input_format: InputFormat,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum InputFormat {
+    #[default]
+    Markdown,
+    Json,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

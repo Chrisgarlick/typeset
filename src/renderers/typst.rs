@@ -2,7 +2,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use crate::brand::engine::BrandedDocument;
-use crate::models::document::DocumentNode;
+use crate::models::document::{BlockStyle, DocumentNode, StyledColumn};
 
 /// Render a branded document to PDF bytes via the Typst CLI.
 pub fn render(branded: &BrandedDocument) -> anyhow::Result<Vec<u8>> {
@@ -355,7 +355,143 @@ fn write_node(s: &mut String, node: &DocumentNode) {
                 typst_content(url),
             ));
         }
+        DocumentNode::Columns { ratios, gutter, children } => {
+            write_columns(s, ratios, gutter.as_deref(), children);
+        }
+        DocumentNode::Section { style, children } => {
+            write_section(s, style.as_ref(), children);
+        }
     }
+}
+
+fn write_columns(
+    s: &mut String,
+    ratios: &[f32],
+    gutter: Option<&str>,
+    children: &[StyledColumn],
+) {
+    if children.is_empty() {
+        return;
+    }
+
+    let col_count = children.len();
+    // Pad/truncate ratios to match children count; default to 1 per column.
+    let mut ratio_strs = Vec::with_capacity(col_count);
+    for i in 0..col_count {
+        let r = ratios.get(i).copied().unwrap_or(1.0).max(0.0);
+        let r = if r <= 0.0 { 1.0 } else { r };
+        ratio_strs.push(format!("{r}fr"));
+    }
+
+    s.push_str("#grid(\n");
+    s.push_str(&format!("  columns: ({}),\n", ratio_strs.join(", ")));
+    s.push_str(&format!(
+        "  column-gutter: {},\n",
+        typst_length(gutter, "6mm"),
+    ));
+
+    for child in children {
+        let mut inner = String::new();
+        for node in &child.nodes {
+            write_node(&mut inner, node);
+        }
+        match child.style.as_ref() {
+            Some(style) if !style.is_empty() => {
+                s.push_str("  ");
+                write_styled_block(s, style, &inner);
+                s.push_str(",\n");
+            }
+            _ => {
+                s.push_str("  [\n");
+                s.push_str(&inner);
+                s.push_str("  ],\n");
+            }
+        }
+    }
+    s.push_str(")\n\n");
+}
+
+fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[DocumentNode]) {
+    let mut inner = String::new();
+    for node in children {
+        write_node(&mut inner, node);
+    }
+    match style {
+        Some(style) if !style.is_empty() => {
+            // Section sits at markup level — `#` introduces the call.
+            s.push('#');
+            write_styled_block(s, style, &inner);
+            s.push_str("\n\n");
+        }
+        _ => {
+            // Unstyled section is just a content wrapper.
+            s.push_str(&inner);
+            s.push('\n');
+        }
+    }
+}
+
+/// Emit a `block(...)[ ...content... ]` call (without the leading `#`).
+/// The caller adds `#` in markup contexts (e.g. Section) and omits it in code
+/// contexts (e.g. as a `#grid(...)` argument). The caller is also responsible
+/// for any trailing comma or newline.
+fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
+    let mut args: Vec<String> = Vec::new();
+
+    if let Some(bg) = style.background.as_deref().filter(|b| is_hex(b)) {
+        args.push(format!("fill: rgb(\"{bg}\")"));
+    }
+
+    if let Some(border) = style.border.as_ref() {
+        let w = typst_length(border.width.as_deref(), "1pt");
+        let c = border
+            .color
+            .as_deref()
+            .filter(|c| is_hex(c))
+            .unwrap_or("#000000");
+        args.push(format!("stroke: {w} + rgb(\"{c}\")"));
+    }
+
+    args.push(format!(
+        "inset: {}",
+        typst_length(style.padding.as_deref(), "8pt")
+    ));
+    args.push(format!(
+        "radius: {}",
+        typst_length(style.radius.as_deref(), "3pt")
+    ));
+    args.push("width: 100%".to_string());
+
+    s.push_str(&format!("block({})[\n", args.join(", ")));
+
+    if let Some(tc) = style.text_color.as_deref().filter(|c| is_hex(c)) {
+        s.push_str(&format!("  #set text(fill: rgb(\"{tc}\"))\n"));
+        // Override the global heading show rules so headings inside the styled
+        // scope adopt the slot's text colour instead of brand primary/secondary.
+        s.push_str(&format!(
+            "  #show heading: set text(fill: rgb(\"{tc}\"))\n"
+        ));
+    }
+
+    s.push_str(inner);
+    s.push(']');
+}
+
+fn is_hex(s: &str) -> bool {
+    s.starts_with('#')
+        && s.len() == 7
+        && s[1..].chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Accepts a length string like "8mm", "12pt", "1em". Falls back to `default`
+/// if the input is missing or fails a permissive sanity check.
+fn typst_length(value: Option<&str>, default: &str) -> String {
+    let Some(v) = value else { return default.to_string() };
+    let trimmed = v.trim();
+    let ok = !trimmed.is_empty()
+        && trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
+        && trimmed.chars().next().map(|c| c.is_ascii_digit() || c == '-' || c == '.').unwrap_or(false);
+    if ok { trimmed.to_string() } else { default.to_string() }
 }
 
 fn write_table(s: &mut String, headers: &[String], rows: &[Vec<String>]) {
@@ -539,6 +675,75 @@ mod tests {
             .arg("--version")
             .output()
             .is_ok()
+    }
+
+    /// Smoke test for the full AI strategy example file.
+    /// Skipped if `typst` isn't installed.
+    #[test]
+    fn smoke_render_ai_strategy_example() {
+        if !typst_available() {
+            return;
+        }
+
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("examples/ai-strategy.json");
+        let Ok(json) = std::fs::read_to_string(&path) else {
+            eprintln!("ai-strategy.json not present — skipping");
+            return;
+        };
+
+        let doc = crate::parser::json::parse(&json).expect("parse ai-strategy.json");
+        let profile = crate::models::client_profile::ClientProfile::default_profile();
+        let branded =
+            crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+
+        let bytes = render(&branded).expect("typst render");
+        assert!(bytes.starts_with(b"%PDF-"), "output should be a PDF");
+
+        let out = std::env::temp_dir().join("typeset-ai-strategy.pdf");
+        std::fs::write(&out, &bytes).expect("write smoke PDF");
+        eprintln!("AI strategy smoke PDF written to {}", out.display());
+    }
+
+    /// Smoke test for the JSON → PDF path with a 50/50 column layout.
+    /// Skipped automatically if `typst` isn't installed.
+    #[test]
+    fn smoke_render_json_columns() {
+        if !typst_available() {
+            eprintln!("typst not on PATH — skipping JSON columns smoke test");
+            return;
+        }
+
+        let input = r#"{
+            "frontmatter": { "title": "Layout Demo" },
+            "pages": [{
+                "blocks": [
+                    { "type": "heading", "level": 2, "text": "Two columns" },
+                    {
+                        "type": "columns",
+                        "ratios": [1, 1],
+                        "gutter": "8mm",
+                        "children": [
+                            { "blocks": [ { "type": "markdown", "content": "**Wins**\n\n- Launch\n- Hires" } ] },
+                            { "blocks": [ { "type": "markdown", "content": "**Risks**\n\nMargin pressure in Q4." } ] }
+                        ]
+                    }
+                ]
+            }]
+        }"#;
+
+        let doc = crate::parser::json::parse(input).expect("parse json");
+        let profile = crate::models::client_profile::ClientProfile::default_profile();
+        let branded =
+            crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+
+        let bytes = render(&branded).expect("typst render");
+        assert!(bytes.starts_with(b"%PDF-"), "output should be a PDF");
+        assert!(bytes.len() > 1000, "PDF should be non-trivial");
+
+        let out = std::env::temp_dir().join("typeset-json-columns.pdf");
+        std::fs::write(&out, &bytes).expect("write smoke PDF");
+        eprintln!("JSON columns smoke PDF written to {}", out.display());
     }
 
     /// End-to-end smoke test. Requires the `typst` binary on PATH.

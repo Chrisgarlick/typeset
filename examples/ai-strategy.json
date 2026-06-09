@@ -1,0 +1,629 @@
+{
+  "frontmatter": {
+    "title": "The AI-Native Enterprise",
+    "subtitle": "A strategic field guide for 2026 and beyond",
+    "author": "Chris Garlick",
+    "recipient": "Leadership Team",
+    "date": "2026-06-09",
+    "client": "chris-garlick-light"
+  },
+  "pages": [
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Executive Summary" },
+        { "type": "markdown", "content": "Artificial intelligence is no longer a discrete product category — it is the substrate beneath modern software. Organisations that treat it as a feature will be outmanoeuvred by those that rebuild their core workflows around it. This document sets out where the value lies, which capabilities to build first, and how to avoid the well-trodden failure modes." },
+        {
+          "type": "section",
+          "background": "#0F172A",
+          "text_color": "#F8FAFC",
+          "padding": "20pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "The thesis" },
+            { "type": "markdown", "content": "The bottleneck has shifted from model capability to **deployment surface area**. The companies that win the next decade are not the ones with the largest model — they are the ones with the strongest evaluation discipline, the cleanest data pipelines, and the deepest product instincts." }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [1, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "What changed" },
+                { "type": "markdown", "content": "Frontier models crossed the threshold from *demo-grade* to *production-grade* in 2024–2025. Latency, context length, and tool-use reliability are now adequate for revenue-bearing workloads." }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "What it means" },
+                { "type": "markdown", "content": "Vendor selection now matters less than evaluation rigour. The winning teams will be the ones that treat prompts like code and ship measurable improvements every week." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "The Market Landscape" },
+        { "type": "markdown", "content": "The AI market is bifurcating. At the top, three or four labs absorb capital at hyperscale to push the model frontier. Beneath them, an application layer is emerging where defensibility comes from workflow integration, proprietary data, and evaluation rigour — not from raw model access." },
+        {
+          "type": "columns",
+          "ratios": [2, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#FAF7F2",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Where value accrues" },
+                { "type": "markdown", "content": "- **Vertical workflow apps** — replacing categories of human labour end-to-end, not assisting it\n- **Data-rich incumbents** — applying models to proprietary corpora competitors cannot replicate\n- **Inference infrastructure** — caching, routing, and observability for production AI traffic\n- **Evaluation platforms** — the *measurement* layer underneath every serious deployment" }
+              ]
+            },
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "RULE OF THUMB" },
+                { "type": "markdown", "content": "If the moat is the model, the moat is rented.\n\nIf the moat is the workflow, the moat is owned." }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [1, 1, 1],
+          "gutter": "6mm",
+          "children": [
+            {
+              "background": "#FFFFFF",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "12pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "FRONTIER LABS" },
+                { "type": "markdown", "content": "Capital-intensive. Capability-defined. Winner-takes-most dynamics." }
+              ]
+            },
+            {
+              "background": "#FFFFFF",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "12pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "APPLICATION LAYER" },
+                { "type": "markdown", "content": "Workflow-defined. Defended by data, distribution, and evals." }
+              ]
+            },
+            {
+              "background": "#FFFFFF",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "12pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "INFRASTRUCTURE" },
+                { "type": "markdown", "content": "Routing, caching, observability. Invisible — and indispensable." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Model Comparison" },
+        { "type": "markdown", "content": "The choice of frontier model now matters less than the *evaluation harness* used to test it. That said, model capabilities still differ meaningfully across reasoning depth, context length, and cost per million tokens." },
+        {
+          "type": "table",
+          "headers": ["Model", "Context", "Strength", "Best for"],
+          "rows": [
+            ["Claude Opus 4.7", "1M", "Reasoning + agentic tool use", "Complex workflows, long docs"],
+            ["Claude Sonnet 4.6", "200k", "Balanced cost / capability", "Default production tier"],
+            ["Claude Haiku 4.5", "200k", "Speed + cost", "High-volume, latency-sensitive"],
+            ["GPT-5 series", "256k", "Reasoning, image input", "Generalist agentic tasks"],
+            ["Gemini 2.5 Pro", "2M", "Long context, multi-modal", "Document analysis, video, audio"],
+            ["Open weights (Llama 4)", "varies", "Cost control, fine-tuning", "On-prem, regulated workloads"]
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [1, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Common mistake" },
+                { "type": "markdown", "content": "Treating model choice as a one-shot procurement decision. Models change quarterly; the right architecture lets you swap them under a router without touching product code." }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Better default" },
+                { "type": "markdown", "content": "A two- or three-tier portfolio. Frontier for adjudication and difficult queries, mid-tier for the bulk of traffic, small model for retrieval-only paths." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "The Generative AI Stack" },
+        { "type": "markdown", "content": "A production AI system is a stack, not a model. Treating it as a model — and bolting the rest on under deadline — is the single most common cause of failed rollouts." },
+        {
+          "type": "columns",
+          "ratios": [1, 1, 1],
+          "gutter": "6mm",
+          "children": [
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "INFERENCE" },
+                { "type": "markdown", "content": "Routing, caching, structured output, retries, fallbacks. The plumbing nobody demos but everybody needs." }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "RETRIEVAL" },
+                { "type": "markdown", "content": "Hybrid search, reranking, chunking strategy. Retrieval quality dictates answer quality more than model choice does." }
+              ]
+            },
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "EVALUATION" },
+                { "type": "markdown", "content": "Golden sets, LLM-as-judge, A/B harnesses, regression suites. Without evals you are debugging blind." }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [1, 1, 1],
+          "gutter": "6mm",
+          "children": [
+            {
+              "background": "#FAF7F2",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "MEMORY" },
+                { "type": "markdown", "content": "Conversation state, user preferences, long-running context. The component most teams underbuild first." }
+              ]
+            },
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "TOOLS" },
+                { "type": "markdown", "content": "Function calling, MCP servers, code execution. Where agentic systems earn their keep — or fall over." }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "OBSERVABILITY" },
+                { "type": "markdown", "content": "Tracing, cost attribution, prompt versioning. Treat prompts as code; they need the same release discipline." }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#0F172A",
+          "text_color": "#F8FAFC",
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "markdown", "content": "Most production failures trace back to *one* of these six layers being underbuilt. The model itself is rarely the problem." }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Where to Start" },
+        { "type": "markdown", "content": "Resist the urge to begin with a strategy document, a Centre of Excellence, or a vendor evaluation matrix. Begin instead with a workflow that bleeds — one where current cost, latency, or quality is unmistakably bad — and rebuild it around a model." },
+        {
+          "type": "section",
+          "background": "#FAF7F2",
+          "border": { "width": "1pt", "color": "#E2E8F0" },
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "Selection criteria for the first project" },
+            {
+              "type": "ordered_list",
+              "items": [
+                "The current process is well-instrumented (you can prove it improved).",
+                "Failure is recoverable (no irreversible commitments).",
+                "The cycle from change to feedback is under one week.",
+                "A single engineer can own the prototype end-to-end.",
+                "Success unlocks an obvious second use case in the same workflow."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#0F172A",
+          "text_color": "#F8FAFC",
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "Anti-pattern" },
+            { "type": "markdown", "content": "*\"Let's start with a chatbot for internal knowledge.\"* This appears safe — it is not. Knowledge-base chatbots have ill-defined success criteria, no clear baseline, and slow feedback loops. They are almost always the wrong first project." }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Risks and How to Survive Them" },
+        { "type": "markdown", "content": "Every category below has consumed at least one well-funded team in the last eighteen months. None of them are exotic; all of them are predictable." },
+        {
+          "type": "columns",
+          "ratios": [1, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Hallucination drift" },
+                { "type": "markdown", "content": "Models silently degrade on edge cases after prompt or model updates. Without regression evals you only learn about it from customers." },
+                { "type": "blockquote", "text": "Treat every prompt change as a code change." }
+              ]
+            },
+            {
+              "background": "#FFFFFF",
+              "border": { "width": "1pt", "color": "#FCA5A5" },
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Cost blowouts" },
+                { "type": "markdown", "content": "Per-token pricing makes runaway loops financially catastrophic. Caps, budgets, and per-user rate limits are not optional — they are table stakes." },
+                { "type": "blockquote", "text": "If a misbehaving user can cost you four figures in an hour, you haven't finished shipping." }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [1, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Prompt injection" },
+                { "type": "markdown", "content": "Treat all retrieved content as adversarial. The retrieval system is now part of your attack surface — assume external documents can attempt to override instructions." }
+              ]
+            },
+            {
+              "background": "#FFFFFF",
+              "border": { "width": "1pt", "color": "#FCA5A5" },
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Vendor lock-in" },
+                { "type": "markdown", "content": "Frontier model APIs differ in tool-use semantics, streaming, and caching primitives. An abstraction layer added on day one costs days; added on day 400, weeks." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Architecture in Practice" },
+        { "type": "markdown", "content": "A typical production AI request travels through more layers than most diagrams admit. The example below shows a streaming chat endpoint with retrieval, tool use, and observability — roughly what a serious B2B product looks like in 2026." },
+        {
+          "type": "code",
+          "language": "python",
+          "content": "from anthropic import Anthropic\nfrom retrieval import hybrid_search\nfrom evals import log_trace\n\nclient = Anthropic()\n\ndef answer(question: str, user_id: str) -> str:\n    docs = hybrid_search(question, top_k=8, rerank=True)\n\n    response = client.messages.create(\n        model=\"claude-sonnet-4-6\",\n        max_tokens=1024,\n        system=[{\n            \"type\": \"text\",\n            \"text\": SYSTEM_PROMPT,\n            \"cache_control\": {\"type\": \"ephemeral\"}\n        }],\n        messages=[{\n            \"role\": \"user\",\n            \"content\": f\"<docs>{docs}</docs>\\n\\n{question}\"\n        }],\n        tools=TOOLS,\n    )\n\n    log_trace(user_id, question, response)\n    return response.content[0].text"
+        },
+        {
+          "type": "section",
+          "background": "#0F172A",
+          "text_color": "#F8FAFC",
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "Four non-negotiables" },
+            { "type": "markdown", "content": "A reranked retrieval call. Prompt caching on the system prompt. Tools declared up front. Tracing on the way out. Strip any one of those and you ship something that works in demos and fails in production." }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Building the Team" },
+        { "type": "markdown", "content": "Hiring is where most AI strategies quietly fail. The temptation is to recruit researchers; the reality is that production AI is overwhelmingly an *applied engineering* discipline. Hire accordingly." },
+        {
+          "type": "columns",
+          "ratios": [1, 1, 1],
+          "gutter": "6mm",
+          "children": [
+            {
+              "background": "#FAF7F2",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "HIRE EARLY" },
+                {
+                  "type": "bullet_list",
+                  "items": [
+                    "Full-stack engineers comfortable with streaming",
+                    "ML / DS hybrid who can build evals",
+                    "PM with strong product taste"
+                  ]
+                }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "HIRE LATER" },
+                {
+                  "type": "bullet_list",
+                  "items": [
+                    "Inference / platform engineer",
+                    "Applied researcher for fine-tuning",
+                    "Designer for AI-native UX"
+                  ]
+                }
+              ]
+            },
+            {
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2",
+              "padding": "14pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "HIRE NEVER" },
+                {
+                  "type": "bullet_list",
+                  "items": [
+                    "Prompt engineer as a standalone role",
+                    "AI Ethics committee with no shipping authority",
+                    "Head of AI before you have shipped anything"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#0F172A",
+          "text_color": "#F8FAFC",
+          "padding": "20pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "blockquote", "text": "The best AI hire in 2026 is a senior product engineer with strong taste and three months of building on top of frontier models in their spare time. They are not scarce. They are mislabelled." }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Metrics That Matter" },
+        { "type": "markdown", "content": "You cannot improve what you do not measure, and you cannot measure AI workflows with the dashboards you already have. The following table sets out a minimum set of metrics every production AI system should track from day one." },
+        {
+          "type": "table",
+          "headers": ["Layer", "Metric", "Why it matters"],
+          "rows": [
+            ["Retrieval", "Recall@k on a golden set", "Bad retrieval guarantees bad answers"],
+            ["Model", "Eval pass rate vs. baseline", "Catches regressions from prompt or model updates"],
+            ["Tools", "Tool-call success rate", "Agentic failures hide in this metric"],
+            ["Latency", "p50 / p95 / p99 end-to-end", "p99 is where users churn"],
+            ["Cost", "Cost per successful request", "Per-token pricing makes this the real unit economic"],
+            ["Quality", "Human-rated win-rate", "The only metric that ultimately matters"]
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [1, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Counter-intuitive" },
+                { "type": "markdown", "content": "Latency is a more powerful product lever than answer quality, *once quality crosses the threshold of usefulness*. A perfect answer in twelve seconds loses to a good answer in two." }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "16pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 3, "text": "Common mistake" },
+                { "type": "markdown", "content": "Tracking model accuracy in isolation. Users care about end-to-end success — model + retrieval + tools + UI — and the joint metric is what predicts retention." }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Ninety-Day Roadmap" },
+        { "type": "markdown", "content": "A realistic plan for an organisation starting from zero. The first month is not about models." },
+        {
+          "type": "section",
+          "background": "#FAF7F2",
+          "border": { "width": "1pt", "color": "#E2E8F0" },
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "Days 1–30  ·  Plumbing" },
+            {
+              "type": "ordered_list",
+              "items": [
+                "Pick the workflow. One workflow. Write down its baseline metrics.",
+                "Stand up an evaluation harness *before* writing any prompts.",
+                "Ship inference observability — every call traced, logged, costed.",
+                "Build the smallest end-to-end prototype that touches a real user."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#FAF7F2",
+          "border": { "width": "1pt", "color": "#E2E8F0" },
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "Days 31–60  ·  Iterate" },
+            {
+              "type": "ordered_list",
+              "items": [
+                "Run the prototype against real traffic with a safety net (human review or fallback).",
+                "Grow the golden set every week. Resist the urge to ship faster than evals can catch regressions.",
+                "Introduce a cheaper model tier behind a router for cost relief.",
+                "Add prompt caching and structured outputs once the prompt has stabilised."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#0F172A",
+          "text_color": "#F8FAFC",
+          "padding": "18pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "heading", "level": 3, "text": "Days 61–90  ·  Scale" },
+            {
+              "type": "ordered_list",
+              "items": [
+                "Remove the safety net. Trust the evals.",
+                "Identify the second workflow. Reuse 80% of the plumbing.",
+                "Begin the conversation about a shared inference platform — not before now.",
+                "Write down what you have learned. Update the strategy document this one becomes."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Closing Thoughts" },
+        { "type": "markdown", "content": "Every wave of platform change rewards the companies that take it seriously *as engineering*, not as theatre. Mainframe, client-server, web, mobile, cloud — the pattern is consistent. AI will not be different." },
+        {
+          "type": "columns",
+          "ratios": [1, 1],
+          "gutter": "10mm",
+          "children": [
+            {
+              "background": "#0F172A",
+              "text_color": "#F8FAFC",
+              "padding": "22pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "IF YOU REMEMBER ONE THING" },
+                { "type": "blockquote", "text": "The model is a commodity. The evaluation system is the moat." }
+              ]
+            },
+            {
+              "background": "#FAF7F2",
+              "border": { "width": "1pt", "color": "#E2E8F0" },
+              "padding": "22pt",
+              "radius": "6pt",
+              "blocks": [
+                { "type": "heading", "level": 4, "text": "IF YOU REMEMBER TWO" },
+                { "type": "blockquote", "text": "Pick a bleeding workflow. Instrument it. Rebuild it around a model. Strategy is what you write afterwards, when you know something." }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#FFFFFF",
+          "border": { "width": "1pt", "color": "#E2E8F0" },
+          "padding": "16pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "markdown", "content": "The next step is not another document — it is a candidate workflow on a whiteboard, a baseline metric next to it, and a thirty-day commitment to ship." }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        { "type": "heading", "level": 2, "text": "Appendix · Glossary" },
+        {
+          "type": "table",
+          "headers": ["Term", "Definition"],
+          "rows": [
+            ["Eval", "A structured test of model behaviour against expected outcomes; the production equivalent of unit tests."],
+            ["Golden set", "A curated collection of inputs with known-good outputs used to detect regressions."],
+            ["Prompt caching", "API-level reuse of stable prompt prefixes to reduce latency and cost on repeat calls."],
+            ["Reranking", "A second-stage scoring pass on retrieval results, usually with a higher-capability model."],
+            ["RAG", "Retrieval-Augmented Generation — feeding the model relevant context fetched at query time."],
+            ["MCP", "Model Context Protocol — an open standard for exposing tools and data sources to AI agents."],
+            ["Structured output", "Forcing the model to emit JSON conforming to a schema; eliminates a class of parsing bugs."],
+            ["LLM-as-judge", "Using a model to grade another model's output; useful but never sufficient on its own."]
+          ]
+        },
+        {
+          "type": "section",
+          "background": "#FAF7F2",
+          "padding": "16pt",
+          "radius": "6pt",
+          "blocks": [
+            { "type": "markdown", "content": "*Rendered through Typeset's JSON layout pipeline. Every two-column split, callout block, and styled card on these pages is declared structurally in JSON and laid out by Typst — no HTML, no Chromium, no PDF stitching.*" }
+          ]
+        }
+      ]
+    }
+  ]
+}
