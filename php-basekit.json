@@ -1,0 +1,4672 @@
+{
+  "frontmatter": {
+    "title": "BaseKit Interview Prep Guide",
+    "subtitle": "PHP Backend Developer — Round 2",
+    "author": "Chris Garlick",
+    "recipient": "Interview Preparation",
+    "date": "2026-06-11",
+    "document_type": "brief",
+    "client": "chris-garlick-light"
+  },
+  "pages": [
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "About This Guide"
+        },
+        {
+          "type": "markdown",
+          "content": "A focused refresher for the **BaseKit PHP Backend Developer — Round 2** interview. Each section opens with *why it matters*, then gives the concept in plain English and a PHP example you can speak to. Read it once end-to-end, then drill the topics that came up in round one."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1,
+            1
+          ],
+          "gutter": "6mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CORE LANGUAGE"
+                },
+                {
+                  "type": "markdown",
+                  "content": "1. PHP 8 vs PHP 7\n2. Dependency Injection\n3. SOLID Principles\n9. OOP Concepts"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "DATA & APIs"
+                },
+                {
+                  "type": "markdown",
+                  "content": "4. MySQL Performance\n5. REST API Design\n10. Security Essentials"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "TOOLING & CRAFT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "6. Docker & Kubernetes\n7. Linux / Mac CLI\n8. Git Workflow\n11. Best Practices"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FFFFFF",
+              "border": {
+                "width": "1pt",
+                "color": "#E2E8F0"
+              }
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**How to use it:** skim the headings, read every *Why it matters* box, and rehearse saying each idea out loud. The phrases on the final page are the ones to drop into answers."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#FAF7F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "1 · PHP 8 Features vs PHP 7"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "PHP 8 (Nov 2020) was a major release — big performance gains and real language features, built on by 8.1 and 8.2. Coming from WordPress / PHP 7, these are the things you need to know cold."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Named Arguments  ·  8.0"
+        },
+        {
+          "type": "markdown",
+          "content": "Pass arguments *by name*, in any order, skipping optional ones."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// PHP 7 — positional only\narray_slice($array, 0, 5, true);\n\n// PHP 8 — named, readable, order doesn't matter\narray_slice(array: $array, offset: 0, length: 5, preserve_keys: true);"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Union Types  ·  8.0"
+        },
+        {
+          "type": "markdown",
+          "content": "Declare that a value can be one of several types."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "function processInput(int|string $input): int|string {\n    return $input;\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Nullsafe Operator  ·  8.0"
+        },
+        {
+          "type": "markdown",
+          "content": "Collapses nested null checks — if any link is null, the chain returns null."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "markdown",
+                  "content": "**PHP 7**"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$country = null;\nif ($user !== null) {\n    if ($user->getAddress() !== null) {\n        $country = $user\n            ->getAddress()\n            ->getCountry();\n    }\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "markdown",
+                  "content": "**PHP 8**"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$country = $user\n    ?->getAddress()\n    ?->getCountry();"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Match Expressions  ·  8.0"
+        },
+        {
+          "type": "markdown",
+          "content": "Like `switch`, but it **returns a value**, uses strict `===` comparison, and has no fall-through."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$label = match($status) {\n    1 => 'Active',\n    2 => 'Inactive',\n    default => 'Unknown',\n};"
+        },
+        {
+          "type": "markdown",
+          "content": "A `match` with no arm and no `default` throws `UnhandledMatchError` — safer than `switch` silently doing nothing."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Constructor Property Promotion  ·  8.0"
+        },
+        {
+          "type": "markdown",
+          "content": "Declare and assign properties in one line — great for DTOs and value objects."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "class User {\n    public function __construct(\n        private string $name,\n        private string $email,\n    ) {}\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Readonly Properties  ·  8.1"
+        },
+        {
+          "type": "markdown",
+          "content": "Set once at initialisation, immutable thereafter."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "class Order {\n    public function __construct(\n        public readonly int $id,\n        public readonly string $status,\n    ) {}\n}\n\n$order = new Order(1, 'pending');\n$order->id = 2;  // Error: Cannot modify readonly property"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Enums  ·  8.1"
+        },
+        {
+          "type": "markdown",
+          "content": "Native enumerations — no more class constants or magic strings."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "enum Status: string {\n    case Active = 'active';\n    case Inactive = 'inactive';\n}\n\nfunction setStatus(Status $status): void { /* ... */ }\nsetStatus(Status::Active);\n\n$status = Status::from('active'); // Status::Active"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "FIBERS · 8.1"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Lightweight concurrency — pause and resume execution without a full event loop. Know *what* they are and *why* they exist; you won't be asked to write one."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#312E81",
+              "text_color": "#EEF2FF"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "FIRST-CLASS CALLABLES · 8.1"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Cleaner way to pass a function as a callable:"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$fn = strlen(...);\narray_map(strlen(...), $strings);"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Intersection Types  ·  8.1   &   readonly Classes  ·  8.2"
+        },
+        {
+          "type": "markdown",
+          "content": "Union = *this OR that*; intersection = *this AND that* (must satisfy all). A `readonly` class makes **every** property readonly by default."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "function process(Iterator&Countable $collection): void { /* ... */ }\n\nreadonly class Point {\n    public function __construct(public float $x, public float $y) {}\n}"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "2 · Dependency Injection"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "BaseKit's job ads call out DI as a core practice, and they use it heavily on the React frontend too. Being able to articulate *why* DI is good — testability, loose coupling, single responsibility — matters as much as the how."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Plain English:** instead of a class creating its own dependencies, you *pass them in from outside*. The class declares what it needs; something else provides it.\n\nLike a restaurant kitchen — the chef doesn't go to the farm, ingredients are delivered. The chef just cooks."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#EEF2FF",
+          "border": {
+            "width": "1pt",
+            "color": "#C7D2FE"
+          }
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The problem it solves"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✗ WITHOUT DI"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Tightly coupled, hard to test."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "class OrderService {\n    public function __construct() {\n        $this->db = new MySQLDatabase();\n        $this->mailer = new SmtpMailer();\n    }\n}\n// Can't test without a real DB + SMTP"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✓ WITH DI"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Loosely coupled, testable."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "class OrderService {\n    public function __construct(\n        private DatabaseInterface $db,\n        private MailerInterface $mailer,\n    ) {}\n}\n// Tests pass in fakes/mocks"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Three types of injection"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1,
+            1
+          ],
+          "gutter": "6mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CONSTRUCTOR"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Most common — required upfront."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "public function __construct(\n    private LoggerInterface $logger,\n) {}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SETTER"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Optional — set after construction."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "public function setLogger(\n    LoggerInterface $logger,\n): void {\n    $this->logger = $logger;\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "INTERFACE"
+                },
+                {
+                  "type": "markdown",
+                  "content": "The dependency supplies an injector method. Rare in practice."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FFFFFF",
+              "border": {
+                "width": "1pt",
+                "color": "#E2E8F0"
+              }
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "DI Containers"
+        },
+        {
+          "type": "markdown",
+          "content": "Real apps wire everything together with a container — Laravel's service container, Symfony's DI component, or PHP-DI."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Bind an interface to a concrete implementation\n$container->bind(DatabaseInterface::class, MySQLDatabase::class);\n\n// Resolving OrderService now injects a MySQLDatabase automatically\n$service = $container->make(OrderService::class);"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"DI gives me loose coupling and testability — I program to interfaces, not implementations.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "3 · SOLID Principles"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "BaseKit mention SOLID explicitly. Know each letter and a one-line PHP example for it — the goal of all five is small, focused classes that are easy to change."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "S — Single Responsibility"
+        },
+        {
+          "type": "markdown",
+          "content": "A class should have one, and only one, reason to change."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// GOOD — each concern is separate\nclass UserRepository { public function save(User $u): void {} }\nclass UserMailer     { public function sendWelcome(User $u): void {} }\nclass UserReporter   { public function generate(User $u): void {} }"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "O — Open/Closed"
+        },
+        {
+          "type": "markdown",
+          "content": "Open for extension, closed for modification — add behaviour without editing existing code."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "interface PaymentGateway {\n    public function charge(float $amount): void;\n}\nclass StripeGateway implements PaymentGateway { /* ... */ }\nclass PaypalGateway implements PaymentGateway { /* ... */ }\n\nclass PaymentProcessor {\n    public function process(PaymentGateway $gateway, float $amount): void {\n        $gateway->charge($amount);   // new types need no changes here\n    }\n}"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "L — Liskov Substitution"
+        },
+        {
+          "type": "markdown",
+          "content": "Subtypes must be usable anywhere their base type is, without breaking things. The classic trap: `Square extends Rectangle` forces both dimensions equal and breaks the rectangle's contract. Prefer a shared interface when behaviour differs."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Square::setWidth() also sets height — a surprise side effect that breaks LSP.\n// Instead, share an interface:\ninterface Shape {\n    public function area(): float;\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "I — Interface Segregation"
+        },
+        {
+          "type": "markdown",
+          "content": "Don't force classes to implement methods they don't use. Many small interfaces beat one fat one."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "interface Workable  { public function work(): void; }\ninterface Breakable { public function takeBreak(): void; }\n\nclass HumanWorker implements Workable, Breakable { /* ... */ }\nclass RobotWorker implements Workable { /* robots don't need breaks */ }"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "D — Dependency Inversion"
+        },
+        {
+          "type": "markdown",
+          "content": "High-level modules shouldn't depend on low-level ones — both depend on abstractions."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "interface DatabaseInterface { public function query(string $sql): array; }\n\nclass OrderService {\n    public function __construct(private DatabaseInterface $db) {}\n}\nclass MySQLDatabase  implements DatabaseInterface { /* ... */ }\nclass SQLiteDatabase implements DatabaseInterface { /* ... */ }"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "4 · MySQL Query Performance"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "This came up in round one — expect more in round two. Lead with EXPLAIN, then talk indexes, then N+1."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "EXPLAIN — the first move"
+        },
+        {
+          "type": "markdown",
+          "content": "Run it before optimising any query."
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "EXPLAIN SELECT * FROM orders WHERE user_id = 42;\n\n-- MySQL 8+: actual timings, not estimates\nEXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 42;"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "READING IT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **type** — `const` → `ref` → `range` → `index` → `ALL` (worst). `ALL` = full table scan.\n- **key** — index used (NULL = none).\n- **rows** — estimated rows examined.\n- **Extra** — beware `Using filesort` / `Using temporary`."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SAY THIS"
+                },
+                {
+                  "type": "blockquote",
+                  "text": "First thing I'd do is run EXPLAIN and check whether we're doing a full table scan."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#312E81",
+              "text_color": "#EEF2FF"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Indexes"
+        },
+        {
+          "type": "markdown",
+          "content": "A separate structure that finds rows without scanning the whole table — like a book's index. **Leftmost-prefix rule** governs composite indexes."
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "CREATE INDEX idx_user_status ON orders(user_id, status);\n-- helps:  WHERE user_id = 1 AND status = 'active'\n-- helps:  WHERE user_id = 1\n-- NO help: WHERE status = 'active'   (no leftmost prefix)"
+        },
+        {
+          "type": "markdown",
+          "content": "**When indexes hurt:** every index slows writes (INSERT/UPDATE/DELETE). Don't index blindly."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The N+1 Problem"
+        },
+        {
+          "type": "markdown",
+          "content": "One of the most common performance killers, especially in ORMs."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✗ N+1 — 501 QUERIES"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$orders = Order::all();   // 1 query\nforeach ($orders as $order) {\n    echo $order->user->name; // +1 each\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✓ EAGER LOAD — 2 QUERIES"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$orders = Order::with('user')->get();\nforeach ($orders as $order) {\n    echo $order->user->name;\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "In raw SQL, JOIN instead of looping:"
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "SELECT orders.*, users.name\nFROM orders\nJOIN users ON orders.user_id = users.id;"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Slow Query Log"
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "SET GLOBAL slow_query_log = 'ON';\nSET GLOBAL long_query_time = 1;   -- log queries over 1 second"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "content": "# Summarise: sort by time, top 10\nmysqldumpslow -s t -t 10 /var/log/mysql/mysql-slow.log"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Other Common Bottlenecks"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SELECT *"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Fetches columns you don't need. Select only what you use."
+                },
+                {
+                  "type": "code",
+                  "language": "sql",
+                  "content": "-- GOOD\nSELECT id, name, email\nFROM users WHERE id = 1;"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "LEADING WILDCARD"
+                },
+                {
+                  "type": "markdown",
+                  "content": "`LIKE '%x%'` can't use an index. Use a FULLTEXT index for search."
+                },
+                {
+                  "type": "code",
+                  "language": "sql",
+                  "content": "ALTER TABLE products\n  ADD FULLTEXT(name);\nSELECT * FROM products\nWHERE MATCH(name)\n  AGAINST('widget');"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**Missing WHERE on large tables** — always filter early. **Transactions** — wrap related writes so they commit together and stay consistent:"
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "START TRANSACTION;\nINSERT INTO orders (user_id, total) VALUES (1, 99.99);\nINSERT INTO order_items (order_id, product_id) VALUES (LAST_INSERT_ID(), 5);\nCOMMIT;"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "5 · REST API Design"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "CORE PRINCIPLES"
+            },
+            {
+              "type": "markdown",
+              "content": "- Resources are **nouns**, not verbs\n- Use HTTP **methods** to express intent\n- **Stateless** — each request carries everything it needs"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#EEF2FF",
+          "border": {
+            "width": "1pt",
+            "color": "#C7D2FE"
+          }
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "METHODS & ROUTES"
+                },
+                {
+                  "type": "code",
+                  "language": "text",
+                  "content": "GET    /users      list\nGET    /users/42   fetch one\nPOST   /users      create\nPUT    /users/42   replace\nPATCH  /users/42   partial update\nDELETE /users/42   delete"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "STATUS CODES"
+                },
+                {
+                  "type": "code",
+                  "language": "text",
+                  "content": "200 OK          success\n201 Created     POST created\n204 No Content  DELETE ok\n400 Bad Request invalid data\n401 Unauthorized not auth'd\n403 Forbidden   not allowed\n404 Not Found\n422 Unprocessable validation\n429 Too Many    rate limited\n500 Server Error"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Versioning"
+        },
+        {
+          "type": "markdown",
+          "content": "Always version so you can ship breaking changes without breaking clients: `/api/v1/users`, `/api/v2/users`."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Clean endpoint (Laravel)"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "public function show(int $id): JsonResponse\n{\n    $user = $this->userRepository->findById($id);\n\n    if (!$user) {\n        return response()->json(['error' => 'User not found'], 404);\n    }\n\n    return response()->json($user, 200);\n}"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "6 · Docker & Containerisation"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "BaseKit use Docker and Kubernetes. You don't need to be a DevOps expert — know the basics and the vocabulary."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "KEY CONCEPTS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Image** — a blueprint (like a class)\n- **Container** — a running instance (like an object)\n- **Dockerfile** — build instructions\n- **docker-compose** — run many containers together"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#312E81",
+              "text_color": "#EEF2FF"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ESSENTIAL COMMANDS"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "docker ps              # running\ndocker ps -a           # all\ndocker logs -f myapp   # tail logs\ndocker exec -it myapp bash\ndocker build -t app:latest .\ndocker run -d -p 8080:80 nginx"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Typical PHP Dockerfile"
+        },
+        {
+          "type": "code",
+          "language": "dockerfile",
+          "content": "FROM php:8.2-fpm\nRUN docker-php-ext-install pdo pdo_mysql\nWORKDIR /var/www\nCOPY . .\nCOPY --from=composer:latest /usr/bin/composer /usr/bin/composer\nRUN composer install --no-dev --optimize-autoloader\nEXPOSE 9000\nCMD [\"php-fpm\"]"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "docker-compose"
+        },
+        {
+          "type": "code",
+          "language": "yaml",
+          "content": "services:\n  app:\n    build: .\n    ports: [\"8000:8000\"]\n    depends_on: [db]\n    environment:\n      DB_HOST: db\n  db:\n    image: mysql:8.0\n    environment:\n      MYSQL_ROOT_PASSWORD: secret\n      MYSQL_DATABASE: myapp\n    volumes:\n      - db_data:/var/lib/mysql\nvolumes:\n  db_data:"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "content": "docker-compose up -d      # start all\ndocker-compose down       # stop all\ndocker-compose logs -f    # tail all"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "KUBERNETES — HIGH LEVEL"
+            },
+            {
+              "type": "markdown",
+              "content": "Orchestrates containers at scale. Know the four nouns:\n\n- **Pod** — smallest unit, one or more containers\n- **Deployment** — rolling updates and replicas\n- **Service** — exposes pods to network traffic\n- **Ingress** — routes external traffic to services"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#EEF2FF",
+          "border": {
+            "width": "1pt",
+            "color": "#C7D2FE"
+          }
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "7 · Linux & Mac Command Line"
+        },
+        {
+          "type": "markdown",
+          "content": "The commands that come up day-to-day as a backend dev. Mac and Linux both use bash/zsh."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "NAVIGATE & FILES"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "pwd\nls -la\ncd /var/www/html\ntail -f logfile.log\ngrep -r \"findme\" ./\nfind . -name \"*.php\" "
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "PROCESSES"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "ps aux | grep php\nkill 1234\nkill -9 1234     # force\ntop\nhtop"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "PERMISSIONS"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "chmod 755 script.sh\nchmod +x script.sh\nchown www-data:www-data /var/www\nsudo command"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "NETWORKING"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "curl -I https://example.com\nwget https://host/file.zip\nnetstat -tulpn\nlsof -i :8080"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SSH & COPY"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "ssh user@host\nssh -i ~/.ssh/key user@host\nscp file.txt user@host:/path"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SHORTCUTS"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "Ctrl+C   kill process\nCtrl+R   search history\n!!       repeat last command\n!$       last arg of prev cmd"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "PHP & COMPOSER"
+            },
+            {
+              "type": "code",
+              "language": "bash",
+              "content": "php -v                  # version\nphp -m                  # modules\nphp -r \"echo phpversion();\"\nphp artisan migrate     # Laravel\ncomposer install\ncomposer dump-autoload"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "8 · Git Workflow"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "EVERYDAY"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "git status\ngit diff\ngit add .\ngit commit -m \"message\"\ngit push origin feature/x\ngit pull origin main\ngit log --oneline --graph"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "BRANCHING"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "git checkout -b feature/new\ngit checkout main\ngit merge feature/new\ngit rebase main\ngit branch -d feature/new"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "FIXING MISTAKES"
+                },
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "content": "git stash / git stash pop\ngit reset HEAD~1        # keep changes\ngit reset --hard HEAD~1 # DISCARD\ngit revert abc1234      # safe on shared"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "COMMIT MESSAGE FORMAT"
+                },
+                {
+                  "type": "code",
+                  "language": "text",
+                  "content": "feat: add auth endpoint\nfix: null pointer in processor\nrefactor: extract payment service\nchore: bump composer deps"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "9 · OOP Concepts"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The four pillars"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ENCAPSULATION"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Hide internal state; expose only what's needed."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "class BankAccount {\n    private float $balance = 0;\n    public function deposit(float $a): void {\n        if ($a <= 0) throw new InvalidArgumentException();\n        $this->balance += $a;\n    }\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ABSTRACTION"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Expose *what* something does, not *how*."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "interface Cache {\n    public function get(string $k): mixed;\n    public function set(string $k, mixed $v, int $ttl): void;\n}\n// Redis, Memcached, file — same interface"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "INHERITANCE"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Child classes extend parent behaviour."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "abstract class Notification {\n    abstract public function send(string $m): void;\n    public function log(string $m): void { /* ... */ }\n}\nclass EmailNotification extends Notification {\n    public function send(string $m): void { /* ... */ }\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "POLYMORPHISM"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Same call, different behaviour per class."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "foreach ($notifications as $n) {\n    $n->send(\"Hello!\");\n    // each type sends differently\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Composition over Inheritance"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "BaseKit explicitly prefer this. Instead of inheriting behaviour, inject it — flatter hierarchies, easier testing."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✗ INHERITANCE — RIGID"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "class LoggingOrderService\n    extends OrderService {\n    public function create(): void {\n        $this->log(\"Creating order\");\n        parent::create();\n    }\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✓ COMPOSITION — FLEXIBLE"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "class OrderService {\n    public function __construct(\n        private OrderRepository $repo,\n        private LoggerInterface $logger,\n    ) {}\n    public function create(): void {\n        $this->logger->info(\"Creating order\");\n        $this->repo->save();\n    }\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"I prefer composing behaviour through injected dependencies over deep inheritance hierarchies.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "10 · Security Essentials"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "SQL Injection"
+        },
+        {
+          "type": "markdown",
+          "content": "Never interpolate user input into SQL. Use prepared statements."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✗ VULNERABLE"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$id = $_GET['id']; // 1 OR 1=1\n$db->query(\n  \"SELECT * FROM users WHERE id = $id\"\n);"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✓ SAFE"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$stmt = $db->prepare(\n  \"SELECT * FROM users WHERE id = ?\"\n);\n$stmt->execute([$id]);"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "XSS — escape output"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// SAFE\necho \"<p>Hello \" . htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8') . \"</p>\";"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CSRF"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Use tokens to prove a form came from your own site. Laravel does this automatically with `@csrf`."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "PASSWORD HASHING"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Never plain text, MD5 or SHA1."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$hash = password_hash($pw, PASSWORD_BCRYPT);\nif (password_verify($pw, $hash)) { /* ok */ }"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "SECRETS"
+            },
+            {
+              "type": "markdown",
+              "content": "Never commit secrets. Keep them in `.env`, and put `.env` in `.gitignore`."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "11 · General Best Practices"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CODE REVIEW MINDSET"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- Readable in 6 months?\n- Is it tested?\n- Edge cases handled?\n- Is there a simpler way?"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THREE ACRONYMS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **DRY** — extract repeated logic\n- **YAGNI** — don't build for needs that don't exist\n- **KISS** — simplest thing that works; complexity must be earned"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Testing basics (PHPUnit)"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "class OrderServiceTest extends TestCase {\n    public function test_creates_order_successfully(): void {\n        $mockRepo = $this->createMock(OrderRepository::class);\n        $mockRepo->expects($this->once())->method('save');\n\n        $service = new OrderService($mockRepo);\n        $service->create(['user_id' => 1, 'total' => 50.00]);\n    }\n}"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "*If something is hard to test, it's usually a sign the design needs revisiting.*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Part Two · Deeper Technical Topics"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "The first half is the breadth refresher. This half goes deeper into the things a *technical* round tends to probe — language internals, data integrity, caching, async, and how a PHP app actually runs and scales."
+            }
+          ],
+          "padding": "22pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1,
+            1
+          ],
+          "gutter": "6mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "LANGUAGE DEPTH"
+                },
+                {
+                  "type": "markdown",
+                  "content": "12. Type System & Gotchas\n13. Arrays & Higher-Order Fns\n14. Traits / Abstract / Interface\n15. Generators & Closures\n16. Errors & Exceptions"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ARCHITECTURE & DATA"
+                },
+                {
+                  "type": "markdown",
+                  "content": "17. Design Patterns\n18. PSR & Composer\n19. ACID & Isolation\n20. Caching Strategies\n21. Queues & Background Jobs"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "RUNTIME & SCALE"
+                },
+                {
+                  "type": "markdown",
+                  "content": "22. Auth & HTTP\n23. Request Lifecycle / FPM\n24. Testing Deeper\n25. Big-O & Coding\n26. Scaling & Multi-Tenancy"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FFFFFF",
+              "border": {
+                "width": "1pt",
+                "color": "#E2E8F0"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "12 · Type System & Gotchas"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "\"What does this print?\" is a classic technical-round opener. Type juggling and loose comparison catch out anyone who hasn't looked closely at PHP's rules — and PHP 8 quietly changed several of them."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "== vs ===  (loose vs strict)"
+        },
+        {
+          "type": "markdown",
+          "content": "`==` coerces types before comparing; `===` checks value **and** type. Default to `===` unless you *want* coercion."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "var_dump(0 == \"a\");     // PHP 7: true (!)   PHP 8: false\nvar_dump(\"1\" == 1);      // true  — numeric string\nvar_dump(\"abc\" == 0);    // PHP 7: true        PHP 8: false\nvar_dump(null == false); // true\nvar_dump([] == false);   // true\nvar_dump(0 === \"0\");     // false — different types"
+        },
+        {
+          "type": "markdown",
+          "content": "**The PHP 8 fix:** comparing a number to a non-numeric string now casts the *number* to string, so `0 == \"abc\"` is finally `false`. Knowing this one signals you've actually used PHP 8."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Handy operators"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$name = $data['name'] ?? 'guest';   // null coalescing — no warning if unset\n$config['x'] ??= 'default';          // assign only if null/unset\n$cmp = $a <=> $b;                    // spaceship: -1, 0, or 1\ndeclare(strict_types=1);             // top of file — enforce type declarations"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"I put `declare(strict_types=1)` at the top of every file and use `===` by default — type juggling should be a deliberate choice, not an accident.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#FAF7F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "13 · Arrays & Higher-Order Functions"
+        },
+        {
+          "type": "markdown",
+          "content": "PHP arrays are ordered maps — they double as lists, dictionaries, stacks and queues. Knowing the functional trio cold reads as fluency."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$nums = [1, 2, 3, 4];\n\n$doubled = array_map(fn($n) => $n * 2, $nums);            // [2, 4, 6, 8]\n$evens   = array_filter($nums, fn($n) => $n % 2 === 0);   // [1 => 2, 3 => 4]\n$sum     = array_reduce($nums, fn($c, $n) => $c + $n, 0); // 10"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "GOTCHA — KEYS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "`array_filter` **preserves keys**, leaving gaps. Reindex with `array_values()` before sending as a JSON array."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$evens = array_values(\n  array_filter($nums, $isEven)\n);"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "WORTH KNOWING"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- `array_column()` — pluck a field\n- `array_combine()` — keys + values\n- `usort()` — custom sort with `<=>`\n- `[...$a, ...$b]` — spread/merge"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**`array_map` vs `foreach`:** `array_map` is declarative and returns a new array (no mutation). Reach for a `foreach` when you need the index, early exit, or side effects."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "13 · Arrays on Real Data"
+        },
+        {
+          "type": "markdown",
+          "content": "The trio shines on rows from the database. Say you've fetched a list of orders:"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$orders = [\n    ['id' => 1, 'user' => 'Ann', 'total' => 30, 'paid' => true],\n    ['id' => 2, 'user' => 'Bob', 'total' => 80, 'paid' => false],\n    ['id' => 3, 'user' => 'Ann', 'total' => 50, 'paid' => true],\n];"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "PLUCK A COLUMN"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$ids = array_column($orders, 'id');\n// [1, 2, 3]\n\n// key it by id:\n$byId = array_column(\n    $orders, null, 'id'\n);"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SUM THE PAID ONES"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$revenue = array_sum(\n    array_column(\n        array_filter(\n            $orders,\n            fn($o) => $o['paid']\n        ),\n        'total'\n    )\n); // 80"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Grouping (the one people forget)"
+        },
+        {
+          "type": "markdown",
+          "content": "There's no `array_group` — you build it with a `foreach`. Worth knowing by heart:"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$byUser = [];\nforeach ($orders as $o) {\n    $byUser[$o['user']][] = $o;   // append into a bucket keyed by user\n}\n// 'Ann' => [order 1, order 3], 'Bob' => [order 2]"
+        },
+        {
+          "type": "markdown",
+          "content": "**Sorting by a field** uses the spaceship operator inside `usort`:"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "usort($orders, fn($a, $b) => $b['total'] <=> $a['total']);  // highest total first"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "14 · Traits, Abstract & Interface"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "\"When would you use a trait over an abstract class?\" tests whether you understand composition, contracts and PHP's single-inheritance model."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1,
+            1
+          ],
+          "gutter": "6mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "INTERFACE"
+                },
+                {
+                  "type": "markdown",
+                  "content": "A **contract** — no implementation. A class can implement many. *\"Can do X.\"*"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ABSTRACT CLASS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Partial implementation + shared state. **Single** inheritance, can't be instantiated. *\"Is a kind of X.\"*"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "TRAIT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Horizontal **code reuse** — copy-pasted in at compile time. Use for shared behaviour across unrelated classes."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FFFFFF",
+              "border": {
+                "width": "1pt",
+                "color": "#E2E8F0"
+              }
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "interface Notifier { public function send(string $msg): void; }\n\nabstract class BaseRepository {\n    abstract protected function table(): string;   // subclass must define\n    public function all(): array { /* uses $this->table() */ }\n}\n\ntrait Timestamps {\n    public function touch(): void { $this->updatedAt = new DateTime(); }\n}\nclass User { use Timestamps; }"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "self vs static (late static binding)"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "class Model {\n    public static function create(): static {\n        return new static();   // resolves to the CALLED class, not Model\n    }\n}\n// User::create() returns a User, not a Model"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "15 · Generators & Closures"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Generators — lazy iteration"
+        },
+        {
+          "type": "markdown",
+          "content": "`yield` produces values one at a time without building the whole array in memory. The interview angle: *processing a huge file or result set without running out of memory*."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "function readLines(string $file): Generator {\n    $h = fopen($file, 'r');\n    while (($line = fgets($h)) !== false) {\n        yield trim($line);     // one line in memory at a time\n    }\n    fclose($h);\n}\n\nforeach (readLines('huge.log') as $line) {\n    // constant memory, even for a 10GB file\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Closures & captured scope"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$tax = 0.2;\n\n// Arrow fn — auto-captures by value\n$withTax = fn(float $net) => $net * (1 + $tax);\n\n// Classic closure — explicit capture; & captures by reference\n$total = 0;\n$add = function (int $n) use (&$total) { $total += $n; };"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Key distinction:** arrow functions (`fn`) capture outer variables automatically *by value*; classic `function () use (...)` closures capture explicitly, and `&` makes the capture by reference."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#FAF7F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "16 · Errors & Exceptions"
+        },
+        {
+          "type": "markdown",
+          "content": "Everything throwable implements `Throwable`, which splits into **`Error`** (engine-level: `TypeError`, `DivisionByZeroError`) and **`Exception`** (application-level, the ones you throw and catch)."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "try {\n    $receipt = $payments->charge($order);\n} catch (InsufficientFundsException $e) {\n    // catch the SPECIFIC case first\n    return $this->declineGracefully($e);\n} catch (PaymentException | NetworkException $e) {   // PHP 8 union catch\n    $logger->error('Charge failed', ['order' => $order->id, 'e' => $e]);\n    throw new OrderFailedException('Could not place order', previous: $e);\n} finally {\n    $lock->release();   // always runs — cleanup\n}"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CUSTOM EXCEPTIONS"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "class InsufficientFundsException\n    extends DomainException {}"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Extend `DomainException`, `RuntimeException`, etc. so callers can catch by type."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "DON'T DO THIS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- Swallow exceptions with an empty `catch`\n- Catch `\\Exception` everywhere\n- Use exceptions for normal control flow\n- Lose the original via `previous`"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "17 · Design Patterns"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "BaseKit value clean architecture. You don't need to recite the Gang of Four — but naming the right pattern for a problem, and knowing one anti-pattern, lands well."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Pattern",
+            "Use it to…"
+          ],
+          "rows": [
+            [
+              "Repository",
+              "Hide persistence behind an interface — swap MySQL for a fake in tests."
+            ],
+            [
+              "Factory",
+              "Centralise complex object creation; return an interface, not a concrete."
+            ],
+            [
+              "Strategy",
+              "Swap interchangeable behaviours (e.g. payment gateways) without if-ladders."
+            ],
+            [
+              "Observer",
+              "Let many listeners react to an event (e.g. 'order placed') without coupling."
+            ],
+            [
+              "Adapter",
+              "Wrap a third-party API in your own interface so vendor changes stay contained."
+            ],
+            [
+              "Decorator",
+              "Add behaviour (logging, caching) by wrapping, not subclassing."
+            ]
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "STRATEGY — THE GO-TO"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "interface ShippingRate {\n    public function cost(Order $o): float;\n}\nclass Standard implements ShippingRate { /* ... */ }\nclass Express  implements ShippingRate { /* ... */ }\n\n// Inject the chosen strategy — no switch statement\n$checkout = new Checkout($express);"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SINGLETON — ⚠ ANTI-PATTERN"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Hidden global state, hard to test, hides dependencies. In modern PHP the **DI container** manages a single shared instance for you — without the downsides. Mention this trade-off if asked."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "17 · Patterns in Code"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Repository — hide the database"
+        },
+        {
+          "type": "markdown",
+          "content": "Callers depend on an *interface*, not on MySQL. Swap a fake in tests instantly."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "interface UserRepository {\n    public function find(int $id): ?User;\n    public function save(User $user): void;\n}\n\nclass MySqlUserRepository implements UserRepository { /* real SQL */ }\nclass InMemoryUserRepository implements UserRepository { /* array, for tests */ }\n\n// The service neither knows nor cares which one it got\nclass Onboarding {\n    public function __construct(private UserRepository $users) {}\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Factory — centralise tricky creation"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "class GatewayFactory {\n    public function make(string $type): PaymentGateway {\n        return match ($type) {\n            'stripe' => new StripeGateway(config('stripe.key')),\n            'paypal' => new PaypalGateway(config('paypal.token')),\n            default  => throw new InvalidArgumentException(\"Unknown: $type\"),\n        };\n    }\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Observer — react without coupling"
+        },
+        {
+          "type": "markdown",
+          "content": "The order doesn't know who's listening; listeners subscribe to the event."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$dispatcher->listen(OrderPlaced::class, fn($e) => $mailer->sendReceipt($e->order));\n$dispatcher->listen(OrderPlaced::class, fn($e) => $warehouse->reserve($e->order));\n\n// Later, the order just announces what happened:\n$dispatcher->dispatch(new OrderPlaced($order));"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "18 · PSR Standards & Composer"
+        },
+        {
+          "type": "markdown",
+          "content": "PSRs are the shared conventions that let PHP packages interoperate. Know what the common ones cover."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE ONES TO NAME"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **PSR-4** — autoloading (namespace → path)\n- **PSR-12** — coding style\n- **PSR-3** — logger interface\n- **PSR-7 / 15** — HTTP messages & middleware\n- **PSR-11** — container interface"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SEMVER"
+                },
+                {
+                  "type": "markdown",
+                  "content": "`^7.2` → any `7.x` (≥ 7.2)\n`~7.2` → `7.2.x` only\n\n`MAJOR.MINOR.PATCH` — major = breaking, minor = features, patch = fixes."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "composer.json"
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "content": "{\n  \"require\": {\n    \"php\": \"^8.2\",\n    \"guzzlehttp/guzzle\": \"^7.0\"\n  },\n  \"autoload\": {\n    \"psr-4\": { \"App\\\\\": \"src/\" }\n  }\n}"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "content": "composer require monolog/monolog            # add a dependency\ncomposer install --no-dev --optimize-autoloader   # production install\ncomposer dump-autoload                       # rebuild the autoloader"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "19 · ACID & Isolation Levels"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "Money, bookings, anything that must not half-happen — this is where backend rigour shows. Expect questions on transactions, locking and race conditions."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ACID"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Atomic** — all or nothing\n- **Consistent** — valid state → valid state\n- **Isolated** — concurrent txns don't interfere\n- **Durable** — committed data survives a crash"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SAFE WRITE"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$db->beginTransaction();\ntry {\n    $db->debit($from, 100);\n    $db->credit($to, 100);\n    $db->commit();\n} catch (Throwable $e) {\n    $db->rollBack();\n    throw $e;\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Isolation levels (weakest → strongest)"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Level",
+            "Allows",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "READ UNCOMMITTED",
+              "Dirty reads",
+              "Rarely used"
+            ],
+            [
+              "READ COMMITTED",
+              "Non-repeatable reads",
+              "Postgres default"
+            ],
+            [
+              "REPEATABLE READ",
+              "Phantom reads*",
+              "MySQL/InnoDB default"
+            ],
+            [
+              "SERIALIZABLE",
+              "Nothing — fully isolated",
+              "Safest, slowest"
+            ]
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "Use `SELECT ... FOR UPDATE` to lock rows you're about to change and avoid lost updates. *InnoDB's gap locking largely prevents phantoms even at REPEATABLE READ.*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "19 · A Race Condition in Action"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "This is the classic *\"two requests at the same time\"* question. If you can describe the bug **and** the fix, you sound like someone who's run production."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "markdown",
+          "content": "Imagine the last ticket to a gig. Two requests check stock at the same instant:"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✗ THE BUG — LOST UPDATE"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "// Both requests read stock = 1\n$stock = $db->query(\n  \"SELECT stock FROM events WHERE id=7\"\n);\nif ($stock > 0) {\n    // both pass the check...\n    $db->query(\n      \"UPDATE events\n       SET stock = stock - 1\n       WHERE id = 7\"\n    );\n}\n// Sold 2 tickets. Stock is now -1."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✓ THE FIX — LOCK THE ROW"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$db->beginTransaction();\n// FOR UPDATE makes the 2nd request\n// WAIT until the 1st commits\n$stock = $db->query(\n  \"SELECT stock FROM events\n   WHERE id = 7 FOR UPDATE\"\n);\nif ($stock > 0) {\n    $db->query(\n      \"UPDATE events\n       SET stock = stock - 1\n       WHERE id = 7\"\n    );\n}\n$db->commit();"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Even simpler:** push the check into the write itself — `UPDATE events SET stock = stock - 1 WHERE id = 7 AND stock > 0` — then check the affected-row count. The database does the locking for you, and stock can never go negative."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#FAF7F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "20 · Caching Strategies"
+        },
+        {
+          "type": "markdown",
+          "content": "*\"There are only two hard things in computer science: cache invalidation and naming things.\"* Know the layers and the cache-aside pattern."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE LAYERS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **OPcache** — compiled PHP bytecode (turn on in prod)\n- **App cache** — Redis / Memcached for data\n- **HTTP cache** — `Cache-Control`, ETags, CDN\n- **Query cache** — materialised/computed results"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#312E81",
+              "text_color": "#EEF2FF"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CACHE-ASIDE"
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "function getUser(int $id): array {\n    $key = \"user:$id\";\n    if ($hit = $redis->get($key)) {\n        return json_decode($hit, true);\n    }\n    $user = $db->find($id);\n    $redis->setex($key, 3600, json_encode($user));\n    return $user;\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**Invalidation:** set a sensible **TTL**, and bust the key on write (`$redis->del(\"user:$id\")` after an update). **Write-through** updates cache and DB together; **cache-aside** (above) is the common default. Always have a plan for a cold cache — a thundering herd of misses can take the DB down."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "21 · Queues & Background Jobs"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "Anything slow — sending email, resizing images, calling a third-party API — shouldn't block the HTTP response. Knowing why and how to defer work is a core backend signal."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "markdown",
+          "content": "A **producer** pushes a job onto a **broker** (Redis, RabbitMQ, SQS); a separate **worker** process pulls and runs it asynchronously."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Producer — returns immediately, user isn't kept waiting\nSendWelcomeEmail::dispatch($user)->onQueue('emails');\n\n// Worker (run as a long-lived process / container)\n//   php artisan queue:work --queue=emails --tries=3"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "GET RIGHT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Idempotent** jobs — safe to run twice\n- **Retries** with backoff\n- **Dead-letter queue** for poison jobs\n- Pass IDs, not whole objects"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "WHY IT MATTERS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Faster responses, resilience to spikes (the queue absorbs load), and failures that retry instead of losing data. Workers scale independently of web servers."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#312E81",
+              "text_color": "#EEF2FF"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "22 · API Auth & HTTP"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SESSION (STATEFUL)"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Server stores the session; client holds a cookie. Easy to revoke; needs shared session storage (Redis) when scaled."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "JWT (STATELESS)"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Signed token holds the claims: `header.payload.signature`. Nothing stored server-side — but hard to revoke before expiry. Keep them short-lived + use refresh tokens."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "content": "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiJ9.<signature>"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Things they may poke at"
+        },
+        {
+          "type": "markdown",
+          "content": "- **OAuth2** — delegated access; *authentication* (who you are) vs *authorization* (what you can do).\n- **CORS** — the browser's pre-flight `OPTIONS` check; a server header, not a security boundary.\n- **Idempotency** — `GET`, `PUT`, `DELETE` are idempotent; `POST` is not. Matters for safe retries.\n- **Always HTTPS**, never log tokens, hash anything secret at rest."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "23 · Request Lifecycle & PHP-FPM"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "A favourite senior question: *\"What actually happens when a request hits a PHP app?\"* The shared-nothing model explains a lot of PHP's behaviour."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "THE PATH OF A REQUEST"
+            },
+            {
+              "type": "markdown",
+              "content": "**nginx** receives the request → forwards to a **PHP-FPM** pool over FastCGI → an FPM **worker** bootstraps the app, handles the request, sends the response → the worker is **reset** and reused for the next request."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SHARED-NOTHING"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Every request starts with a **clean slate** — no variables persist between requests (unlike Node). So global in-memory state is useless across requests."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "CONSEQUENCES"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- Sessions/cache live in **Redis or the DB**, not memory\n- **OPcache** keeps compiled bytecode hot\n- Statelessness makes **horizontal scaling** trivial"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**Say this:** *\"PHP is shared-nothing — each request is isolated, which is why state goes in Redis or the database and why we can scale just by adding more FPM workers behind the load balancer.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "24 · Testing, Deeper"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE PYRAMID"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Many **unit** tests (fast, isolated), fewer **integration** tests (real DB), fewest **end-to-end** (slow, brittle). Optimise the bulk for speed."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "AAA + TDD"
+                },
+                {
+                  "type": "markdown",
+                  "content": "**Arrange, Act, Assert** per test. **TDD** = red → green → refactor: write a failing test, make it pass, then clean up."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Test doubles & data providers"
+        },
+        {
+          "type": "markdown",
+          "content": "**Stub** returns canned data; **mock** also asserts it was called; **fake** is a working lightweight implementation (e.g. in-memory repo); **spy** records calls. Data providers run one test over many cases:"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "#[DataProvider('vatCases')]\npublic function test_vat_is_added(float $net, float $expected): void {\n    $this->assertSame($expected, addVat($net));\n}\n\npublic static function vatCases(): array {\n    return [\n        'standard' => [100.0, 120.0],\n        'zero'     => [0.0, 0.0],\n    ];\n}"
+        },
+        {
+          "type": "markdown",
+          "content": "Coverage is a *guide*, not a goal — 100% coverage of trivial getters proves little; one good test of the money path proves a lot."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "25 · Big-O Notation"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "Big-O is just a way of answering one question: *as the input gets bigger, how fast does the work grow?* It's not about seconds — it's about shape. Interviewers use it to check you can reason about cost before you write code."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**The mental model.** `n` is the size of the input (number of items). Big-O describes the *number of steps* relative to `n`. We ignore constants and only keep the dominant term — `O(2n + 5)` is just **O(n)**, because when `n` is huge the rest stops mattering."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#EEF2FF",
+          "border": {
+            "width": "1pt",
+            "color": "#C7D2FE"
+          }
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Why it matters — the numbers"
+        },
+        {
+          "type": "markdown",
+          "content": "This table is the whole point. It shows roughly how many steps each class takes as the input grows. Watch what O(n²) does."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Input size n",
+            "O(1)",
+            "O(log n)",
+            "O(n)",
+            "O(n log n)",
+            "O(n²)"
+          ],
+          "rows": [
+            [
+              "10",
+              "1",
+              "3",
+              "10",
+              "33",
+              "100"
+            ],
+            [
+              "100",
+              "1",
+              "7",
+              "100",
+              "664",
+              "10,000"
+            ],
+            [
+              "1,000",
+              "1",
+              "10",
+              "1,000",
+              "9,966",
+              "1,000,000"
+            ],
+            [
+              "1,000,000",
+              "1",
+              "20",
+              "1 million",
+              "~20 million",
+              "1 trillion ☠"
+            ]
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**O(1)** doesn't care how big the input is. **O(log n)** barely grows — a million items takes ~20 steps. **O(n²)** explodes — a million items is a *trillion* steps, i.e. it will never finish. That's the difference."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "25 · A Code Example for Each"
+        },
+        {
+          "type": "markdown",
+          "content": "Same idea, one function per class. The thing to notice is the **loop shape**."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "O(1) · CONSTANT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "No loop — jump straight to the answer. Same cost for 10 or 10 million."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$first  = $users[0];        // index\n$exists = isset($map[$key]); // hash"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "O(n) · LINEAR"
+                },
+                {
+                  "type": "markdown",
+                  "content": "One loop over the input — touch each item once."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$total = 0;\nforeach ($orders as $o) {\n    $total += $o->amount;\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "O(log n) · logarithmic — halve the problem each step"
+        },
+        {
+          "type": "markdown",
+          "content": "Binary search on a **sorted** array. Each step throws away half of what's left, so a million items takes only ~20 steps."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "function binarySearch(array $sorted, int $target): int {\n    $lo = 0; $hi = count($sorted) - 1;\n    while ($lo <= $hi) {\n        $mid = intdiv($lo + $hi, 2);\n        if ($sorted[$mid] === $target) return $mid;   // found\n        if ($sorted[$mid] < $target) $lo = $mid + 1;   // discard left half\n        else                          $hi = $mid - 1;   // discard right half\n    }\n    return -1;\n}"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "O(n log n) · the cost of a good sort"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "sort($nums);                                   // ~O(n log n)\nusort($users, fn($a, $b) => $a->age <=> $b->age);"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "25 · The O(n²) Trap & The Fix"
+        },
+        {
+          "type": "markdown",
+          "content": "**O(n²) · quadratic** — a loop *inside* a loop over the same data. This is the one to watch for: it looks innocent and dies on real data."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✗ O(n²) — NESTED LOOPS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Compares every item against every other — 1,000 items = 1,000,000 comparisons."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "// Has this array got duplicates?\nforeach ($items as $i => $a) {\n    foreach ($items as $j => $b) {\n        if ($i !== $j && $a === $b) {\n            return true;\n        }\n    }\n}"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "✓ O(n) — ONE PASS + HASH"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Remember what you've seen in a hash map — 1,000 items = 1,000 steps."
+                },
+                {
+                  "type": "code",
+                  "language": "php",
+                  "content": "$seen = [];\nforeach ($items as $a) {\n    if (isset($seen[$a])) {\n        return true;\n    }\n    $seen[$a] = true;\n}\nreturn false;"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "HOW TO SPOT IT AT A GLANCE"
+            },
+            {
+              "type": "markdown",
+              "content": "- **No loop**, direct access → **O(1)**\n- **Halving** the search space each step → **O(log n)**\n- **One loop** over the input → **O(n)**\n- A **sort**, or divide-and-conquer → **O(n log n)**\n- A **loop inside a loop** over the same data → **O(n²)** ⚠"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The interview move"
+        },
+        {
+          "type": "markdown",
+          "content": "Trading nested loops for a hash map — **O(n²) → O(n)** — is the single most common optimisation they look for. The classic *two-sum* shows it: instead of checking every pair, remember each number and look up its complement."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "function twoSum(array $nums, int $target): ?array {\n    $seen = [];\n    foreach ($nums as $i => $n) {\n        if (isset($seen[$target - $n])) {       // O(1) lookup, not a second loop\n            return [$seen[$target - $n], $i];\n        }\n        $seen[$n] = $i;\n    }\n    return null;\n}"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"The brute force is O(n²) with nested loops. I can trade memory for speed — a hash map of what I've seen gets it to O(n) in a single pass.\"* That sentence is what they're listening for."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#FAF7F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "26 · Scaling & Multi-Tenancy"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "BaseKit is a white-label website builder sold through partners — a multi-tenant SaaS serving many customers from shared infrastructure. Showing you understand *their* shape of problem is a real edge."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "SCALING BASICS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Vertical** — bigger box (limited)\n- **Horizontal** — more boxes behind a **load balancer** (the PHP way)\n- **Stateless app servers** make this trivial\n- **Read replicas** for read-heavy load\n- **CDN** for static assets"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "MULTI-TENANCY MODELS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Shared DB + `tenant_id`** — simplest, must scope *every* query\n- **Schema per tenant** — stronger isolation\n- **DB per tenant** — strongest, heaviest to run"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**The trap to mention:** in a shared-database model, a single query that forgets its `tenant_id` scope leaks one customer's data to another. A global query scope (or row-level security) makes that the *default*, not something every developer must remember."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#7F1D1D",
+          "text_color": "#FEF2F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Part Three · Running PHP in Production"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "Parts One and Two cover the language and the patterns. This part is the *operational* half — the questions a senior backend round leans on hardest: how do you make a database fast, find out **why** a page is slow, and run the same code reliably on a server that you only ever ran on your laptop."
+            }
+          ],
+          "padding": "22pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1,
+            1
+          ],
+          "gutter": "6mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "DATA AT SPEED"
+                },
+                {
+                  "type": "markdown",
+                  "content": "27. Database Optimisation, Deeper\n28. Diagnosing Slow Page Loads\n29. Connections & Big Result Sets"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE RUNTIME"
+                },
+                {
+                  "type": "markdown",
+                  "content": "30. PHP Versions & Performance\n31. PHP-FPM & OPcache Tuning"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "ENVIRONMENTS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "32. Local vs Staging vs Production\n33. Observability & Debugging Prod"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FFFFFF",
+              "border": {
+                "width": "1pt",
+                "color": "#E2E8F0"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "27 · Database Optimisation, Deeper"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "Section 4 was the refresher — EXPLAIN, indexes, N+1. This goes a level down: how indexes actually work, when an index *won't* be used, and the schema-level moves that fix slow reads. This is where a senior answer separates from a junior one."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "How an index actually works"
+        },
+        {
+          "type": "markdown",
+          "content": "InnoDB stores the table itself as a **B-tree** keyed on the primary key — the *clustered index*. A **secondary index** is a second B-tree whose leaves hold the PK, so a lookup by a secondary index is two hops: find the PK in the index, then fetch the row from the clustered index."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "WHY THIS MATTERS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- The PK sits inside **every** secondary index — keep it small (a `BIGINT`, not a random UUID string).\n- A query needing columns not in the index does a **second lookup** per row. A *covering index* avoids that.\n- Random PKs (UUIDv4) cause **page splits** and fragmentation on insert."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "COVERING INDEX"
+                },
+                {
+                  "type": "markdown",
+                  "content": "If the index holds *every* column the query needs, MySQL answers from the index alone — no row fetch. EXPLAIN shows `Using index`."
+                },
+                {
+                  "type": "code",
+                  "language": "sql",
+                  "content": "CREATE INDEX idx_cover\n  ON orders (user_id, status, total);\n-- SELECT total FROM orders\n-- WHERE user_id=1 AND status='paid'\n-- answered from the index alone"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "When an index won't be used"
+        },
+        {
+          "type": "markdown",
+          "content": "Knowing these saves hours of head-scratching:"
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "-- ✗ function on the column → index ignored\nWHERE YEAR(created_at) = 2024;\n-- ✓ rewrite as a range so the index works\nWHERE created_at >= '2024-01-01' AND created_at < '2025-01-01';\n\n-- ✗ leading wildcard → no index\nWHERE name LIKE '%smith';\n-- ✗ type mismatch → silent cast, index skipped\nWHERE phone = 07911123456;   -- phone is VARCHAR; quote it\n-- ✗ low selectivity → optimiser prefers a scan\nWHERE is_active = 1;          -- if 95% of rows are active"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "27 · Schema & Query Moves"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Composite index column order"
+        },
+        {
+          "type": "markdown",
+          "content": "Order columns **equality first, then range, then sort**. The optimiser stops using the index at the first range condition, so put ranges last."
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "-- Query: WHERE tenant_id = ? AND status = ? AND created_at > ? ORDER BY created_at\nCREATE INDEX idx ON orders (tenant_id, status, created_at);\n--                            equality    equality  range + sort\n-- Satisfies the filter AND the sort — no 'Using filesort'."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Reading EXPLAIN like a senior"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Column",
+            "Want to see",
+            "Red flag"
+          ],
+          "rows": [
+            [
+              "type",
+              "const, eq_ref, ref, range",
+              "ALL (full scan)"
+            ],
+            [
+              "key",
+              "the index you expect",
+              "NULL"
+            ],
+            [
+              "rows",
+              "small vs table size",
+              "millions"
+            ],
+            [
+              "filtered",
+              "high %",
+              "low % = scan then discard"
+            ],
+            [
+              "Extra",
+              "Using index",
+              "Using filesort / temporary"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Schema-level fixes for slow reads"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "DENORMALISE A COUNTER"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Don't `COUNT(*)` a million rows on every page load. Keep a `comment_count` column, updated in the **same transaction** as the write."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "RIGHT-SIZE TYPES"
+                },
+                {
+                  "type": "markdown",
+                  "content": "`INT` not `BIGINT` where it fits; `VARCHAR(50)` not `(255)`; `TIMESTAMP` (4 bytes) over `DATETIME` (8). Smaller rows → more per page → fewer disk reads."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**Partitioning & archiving:** past tens of millions of rows, partition by date or move cold rows to an archive table so the hot working set stays small. **Read replicas** take read load off the primary; route reads to a replica, writes to the primary."
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"Before adding an index I run EXPLAIN, check selectivity, and order composite columns equality-first. I'll reach for a covering index or a denormalised count before I reach for more hardware.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "28 · Diagnosing Slow Page Loads"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "\"A page is slow — how do you find out why?\" is one of the most revealing questions they ask. The weak answer guesses and starts optimising. The strong answer **measures first**, isolates the layer, then fixes the biggest cost."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "THE METHOD — MEASURE, DON'T GUESS"
+            },
+            {
+              "type": "markdown",
+              "content": "1. **Reproduce** and time it end-to-end (browser dev tools → Network).\n2. **Split the time:** server (TTFB) or front end (assets, JS)?\n3. On the server, **profile** to find the hot spot — DB? external API? CPU?\n4. Fix the **biggest** cost first. Re-measure. Repeat."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "WHERE TIME ACTUALLY GOES"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Database** — too many queries (N+1), or one slow query\n- **External APIs** — a synchronous call to a third party\n- **No caching** — recomputing the same thing every request\n- **PHP CPU** — a tight loop, O(n²), huge (de)serialization\n- **Front end** — unoptimised images, render-blocking JS"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "FIRST QUESTIONS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- *How many queries does this page run?* (often the answer)\n- *Slow for everyone, or one tenant with more data?*\n- *Slow always, or only under load?*\n- *Did it just start, or always been slow?*"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "28 · The Tools"
+        },
+        {
+          "type": "markdown",
+          "content": "Name these and you sound like someone who's debugged real performance problems."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "PROFILERS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Xdebug profiler** — function-level timings (view in KCachegrind)\n- **Blackfire / Tideways** — production-grade call graphs; wall time vs CPU vs I/O\n- **`microtime(true)`** — quick manual timing of a suspect block"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "APM & QUERY VISIBILITY"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **New Relic / Datadog APM** — transaction traces in prod\n- **Laravel Debugbar / Clockwork** — query count + timings per request\n- **MySQL slow query log** + `EXPLAIN` on the offenders"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Quick-and-dirty timing"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "$start = microtime(true);\n$result = $expensiveThing();\n$ms = (microtime(true) - $start) * 1000;\n$logger->info('expensiveThing', ['ms' => round($ms, 1)]);\n\n// Count queries in dev (Laravel)\nDB::enableQueryLog();\n// ... run the page ...\nlogger()->info('queries', ['n' => count(DB::getQueryLog())]);"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"I profile before I change anything — Blackfire or the slow query log to find the actual hot spot, rather than optimising the thing I *assume* is slow. Nine times out of ten it's query count, not raw CPU.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "29 · Connections & Big Result Sets"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "Two things quietly kill PHP apps at scale: opening too many database connections, and loading too many rows into memory at once. Both have clean fixes."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Connection handling — the PHP reality"
+        },
+        {
+          "type": "markdown",
+          "content": "PHP is **shared-nothing**: each FPM worker opens its own DB connection, and there's no built-in connection pool like a long-running Node or Java app. So *connections scale with FPM workers* — and that bites."
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE MATH THAT BITES"
+                },
+                {
+                  "type": "markdown",
+                  "content": "50 FPM workers × 3 app servers = **150 connections**, even idle. MySQL's `max_connections` default is 151. Add a traffic spike and you hit *\"Too many connections\"* — an outage."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#7F1D1D",
+              "text_color": "#FEF2F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE FIX"
+                },
+                {
+                  "type": "markdown",
+                  "content": "Put a pooler in front — **ProxySQL** (MySQL) or **PgBouncer** (Postgres). It multiplexes many app connections onto a few DB ones. Size the FPM pool deliberately; don't just crank it up."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#064E3B",
+              "text_color": "#ECFDF5"
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**Persistent connections** (`PDO::ATTR_PERSISTENT`) reuse a connection across requests in the same worker — fewer handshakes, but they hold a slot and can leak transaction/session state. Prefer an external pooler."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Don't load a million rows"
+        },
+        {
+          "type": "markdown",
+          "content": "`Model::all()` on a big table pulls every row into memory, then PHP hits `memory_limit` and dies. Stream instead:"
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// ✗ loads everything into memory\nforeach (Order::all() as $o) { export($o); }\n\n// ✓ chunk — N rows at a time, constant memory\nOrder::chunkById(1000, function ($orders) {\n    foreach ($orders as $o) { export($o); }\n});\n\n// ✓ or a lazy cursor (a generator under the hood)\nforeach (Order::lazy() as $o) { export($o); }"
+        },
+        {
+          "type": "markdown",
+          "content": "Same idea in raw PHP: a **generator** (`yield`) or an **unbuffered query** streams rows instead of buffering the whole set. And always **paginate** list endpoints — `LIMIT`/`OFFSET`, or keyset pagination for deep pages."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "30 · PHP Versions & Performance"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "\"Why upgrade PHP?\" has a great one-line answer: *it's free performance*. Each modern release got materially faster while your code stayed the same. Knowing the timeline and what changed signals you keep stacks current."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Version",
+            "Released",
+            "Why it matters"
+          ],
+          "rows": [
+            [
+              "7.0",
+              "2015",
+              "The big one — ~2x faster than 5.6, half the memory (new engine)."
+            ],
+            [
+              "7.4",
+              "2019",
+              "Preloading, typed properties, arrow fns. End of the 7.x line (EOL)."
+            ],
+            [
+              "8.0",
+              "2020",
+              "JIT, named args, match, union types, attributes."
+            ],
+            [
+              "8.1",
+              "2021",
+              "Enums, readonly props, fibers, first-class callables."
+            ],
+            [
+              "8.2",
+              "2022",
+              "readonly classes, DNF types, no more dynamic properties."
+            ],
+            [
+              "8.3 / 8.4",
+              "2023 / 24",
+              "Typed constants, #[Override], property hooks (8.4)."
+            ]
+          ]
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE JIT — BE HONEST"
+                },
+                {
+                  "type": "markdown",
+                  "content": "PHP 8's **JIT** compiles hot paths to machine code. It helps **CPU-bound** work (image processing, maths) a lot — but most web apps are **I/O-bound** (waiting on DB and network), so JIT's real-world web gain is modest. Saying *that* shows you understand it, not just that it exists."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "STAYING CURRENT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- Each version: ~2 yrs active support + 1 yr security\n- Running EOL PHP = unpatched security holes\n- Upgrades are mostly cheap; **Rector** automates much of the migration\n- Test against the new version in CI before bumping prod"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"Upgrading PHP is some of the cheapest performance you can buy — 7.0 roughly doubled throughput. I'd keep us on a supported version, use Rector to automate the migration, and gate it behind CI.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "31 · PHP-FPM & OPcache Tuning"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "Section 23 covered the request lifecycle. This is the operational follow-up: the handful of settings that decide how much traffic one box can take. You won't be asked to memorise them — knowing what they do is the signal."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "OPcache — turn it on, always"
+        },
+        {
+          "type": "markdown",
+          "content": "Without OPcache, PHP recompiles every `.php` file on every request. OPcache keeps the compiled **bytecode** in shared memory, so compilation happens once. It's the single biggest free win in production."
+        },
+        {
+          "type": "code",
+          "language": "ini",
+          "content": "opcache.enable=1\nopcache.memory_consumption=256        ; MB for cached bytecode\nopcache.max_accelerated_files=20000   ; raise for large codebases\nopcache.validate_timestamps=0         ; prod: don't stat files — clear on deploy"
+        },
+        {
+          "type": "markdown",
+          "content": "**Gotcha:** with `validate_timestamps=0`, PHP won't notice changed files — you **must** clear OPcache (or restart FPM) on every deploy, or you serve stale code."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "FPM pool sizing"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE KEY DIALS"
+                },
+                {
+                  "type": "code",
+                  "language": "ini",
+                  "content": "pm = dynamic\npm.max_children = 20\npm.start_servers = 4\npm.min_spare_servers = 2\npm.max_spare_servers = 6\npm.max_requests = 500"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "HOW TO SIZE IT"
+                },
+                {
+                  "type": "markdown",
+                  "content": "`max_children ≈ available RAM ÷ avg process memory`. Too high → swapping (worse than queueing). `max_requests` recycles workers to curb memory leaks. More workers ≠ more speed if the **DB** is the bottleneck."
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "markdown",
+          "content": "**`memory_limit`** is *per request*, not per server — one request trying to load a million rows hits it and dies (by design). Raising it hides the real problem; stream the data instead (see §29)."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "32 · Local vs Staging vs Production"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "\"It works on my machine\" is the oldest bug in the world. The senior answer is **environment parity** — making local, staging and prod as identical as possible — and keeping the *differences* in config, never in code."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "WHY THEY DIFFER"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- Different PHP version or extensions\n- Different DB version / collation\n- Far more data, real concurrency in prod\n- Debug on locally, off in prod\n- File paths, timezones, locale"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "HOW TO KEEP PARITY"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Docker** — same image everywhere (§6)\n- **`.env` per environment** — config, not code\n- Same migrations run in every env\n- Staging mirrors prod (anonymised data)\n- Pin versions in `composer.json` + lock file"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#EEF2FF",
+              "border": {
+                "width": "1pt",
+                "color": "#C7D2FE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Config belongs in the environment"
+        },
+        {
+          "type": "markdown",
+          "content": "The **Twelve-Factor** rule: anything that differs between environments — credentials, hostnames, feature flags, debug level — lives in environment variables, never committed. The *same* build artifact ships to every environment; only the config changes."
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Read from the environment, with a safe default\n$debug  = (bool) ($_ENV['APP_DEBUG'] ?? false);\n$dbHost = $_ENV['DB_HOST'] ?? '127.0.0.1';\n\n// In Laravel/Symfony this is wrapped:\n$debug = config('app.debug');   // env('APP_DEBUG') under the hood"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**The prod-only settings that matter:** `display_errors=Off` (log, don't show), `APP_DEBUG=false`, OPcache timestamps off, real mail driver, HTTPS-only cookies. A debug page leaking a stack trace is a *security* bug."
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#7F1D1D",
+          "text_color": "#FEF2F2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "33 · Observability & Debugging Prod"
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 4,
+              "text": "WHY IT MATTERS"
+            },
+            {
+              "type": "markdown",
+              "content": "You can't attach a step-debugger to production. The senior skill is making the system *tell you* what's wrong — through logs, metrics and traces — and having a calm method when it does break."
+            }
+          ],
+          "padding": "16pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        },
+        {
+          "type": "columns",
+          "ratios": [
+            1,
+            1
+          ],
+          "gutter": "8mm",
+          "children": [
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "THE THREE PILLARS"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- **Logs** — discrete events (structured JSON, with context)\n- **Metrics** — numbers over time (req/s, error rate, p95 latency)\n- **Traces** — one request's path across services (APM)"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#312E81",
+              "text_color": "#EEF2FF"
+            },
+            {
+              "blocks": [
+                {
+                  "type": "heading",
+                  "level": 4,
+                  "text": "LOG WELL"
+                },
+                {
+                  "type": "markdown",
+                  "content": "- Use **PSR-3 levels** (debug → emergency) meaningfully\n- **Structured** logs (JSON) you can actually query\n- Add a **correlation / request ID** to follow one request\n- **Never** log secrets, tokens or full card numbers"
+                }
+              ],
+              "padding": "16pt",
+              "radius": "6pt",
+              "background": "#FAF7F2"
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Structured, contextual logging (Monolog / PSR-3)\n$logger->error('Payment failed', [\n    'order_id'   => $order->id,\n    'gateway'    => 'stripe',\n    'request_id' => $requestId,\n    // no card data, no secrets\n]);"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "A calm method when prod breaks"
+        },
+        {
+          "type": "markdown",
+          "content": "1. **Stop the bleeding** — roll back or feature-flag off first; diagnose after.\n2. **Check what changed** — recent deploy? traffic spike? dependency down?\n3. **Read the signals** — error rate, latency graph, logs around the spike.\n4. **Reproduce** in staging, fix, add a test so it can't recur.\n5. **Blameless postmortem** — fix the system, not the person."
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "markdown",
+              "content": "**Say this:** *\"In production I lean on structured logs, metrics and tracing rather than guesswork. My first instinct in an incident is to roll back and stop the bleeding, then diagnose calmly from the signals.\"*"
+            }
+          ],
+          "padding": "18pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Quick Reference · Phrases to Use"
+        },
+        {
+          "type": "markdown",
+          "content": "Drop these into your answers — they signal you think about *why*, not just *how*."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Topic",
+            "Key phrase"
+          ],
+          "rows": [
+            [
+              "DI",
+              "Loose coupling and testability — program to interfaces, not implementations."
+            ],
+            [
+              "SOLID",
+              "Each principle keeps classes small, focused and easy to change."
+            ],
+            [
+              "N+1",
+              "Eager load relationships rather than lazy loading in a loop."
+            ],
+            [
+              "Slow queries",
+              "First thing I'd do is run EXPLAIN and check for a full table scan."
+            ],
+            [
+              "Composition",
+              "I prefer composing behaviour through injected dependencies over deep inheritance."
+            ],
+            [
+              "== vs ===",
+              "I default to === and strict_types — coercion should be deliberate."
+            ],
+            [
+              "Transactions",
+              "Wrap related writes so they all commit or all roll back — ACID."
+            ],
+            [
+              "Caching",
+              "Cache-aside with a TTL; the hard part is invalidation on write."
+            ],
+            [
+              "Shared-nothing",
+              "Each request starts fresh, so state lives in Redis or the DB — and we scale out."
+            ],
+            [
+              "Queues",
+              "Push slow work to a background worker; keep jobs idempotent."
+            ],
+            [
+              "Multi-tenancy",
+              "Scope every query by tenant by default, not by memory."
+            ],
+            [
+              "Testing",
+              "If something is hard to test, the design usually needs revisiting."
+            ],
+            [
+              "Indexes",
+              "Covering and composite, equality-first — verify with EXPLAIN before adding."
+            ],
+            [
+              "Slow page",
+              "Measure and profile first; usually it's query count, not raw CPU."
+            ],
+            [
+              "Connections",
+              "Connections scale with FPM workers — pool with ProxySQL / PgBouncer."
+            ],
+            [
+              "Big result sets",
+              "Chunk or stream with a cursor; never load a million rows into memory."
+            ],
+            [
+              "PHP upgrades",
+              "Free performance — stay on a supported version, automate with Rector."
+            ],
+            [
+              "OPcache",
+              "On in prod, timestamps off, clear it on every deploy."
+            ],
+            [
+              "Env parity",
+              "Differences live in config, never code — same artifact, different .env."
+            ],
+            [
+              "Observability",
+              "Logs, metrics and traces — make production tell you what's wrong."
+            ]
+          ]
+        },
+        {
+          "type": "section",
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 3,
+              "text": "You've got this, Chris"
+            },
+            {
+              "type": "markdown",
+              "content": "The fact you can build production systems, ship real products, and explain your thinking clearly puts you ahead of most candidates. Read the *Why it matters* boxes once more, then go in and have a conversation — not an exam."
+            }
+          ],
+          "padding": "22pt",
+          "radius": "6pt",
+          "background": "#312E81",
+          "text_color": "#EEF2FF"
+        }
+      ]
+    }
+  ]
+}

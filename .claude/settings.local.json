@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(cargo build *)",
-      "Bash(cargo test *)"
+      "Bash(cargo test *)",
+      "Bash(python3 build_basekit_json.py)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('php-basekit.json'\\)\\); print\\('valid JSON,', len\\(d['pages']\\), 'pages'\\); print\\('size:', __import__\\('os'\\).path.getsize\\('php-basekit.json'\\), 'bytes'\\)\")",
+      "Bash(./render-json.sh *)",
+      "Bash(python3 build_myjobquote_json.py)"
     ]
   }
 }
