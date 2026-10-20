@@ -568,6 +568,35 @@
 }))
 
 // ---------------------------------------------------------------------------
+// Parts
+// ---------------------------------------------------------------------------
+
+/// A full-page divider on the cover colour that starts a part of a combined
+/// document: a large part number, the eyebrow, the title (a real heading, so
+/// it's bookmarked and listed in the contents) and an intro.
+#let part-divider(number: none, level: 2, title: none, eyebrow: none, intro: none) = page(
+  margin: 0mm,
+  header: none,
+  footer: none,
+  fill: t.cover-bg,
+)[
+  #set text(fill: t.cover-text, hyphenate: false)
+  #pad(left: t.margin-left, right: t.margin-right, top: t.margin-top, bottom: t.margin-bottom)[
+    #brand-mark(height: 12pt, dark: true, color: t.cover-text)
+    #v(1fr)
+    #text(font: t.font-heading, size: t.display * 2, weight: 600, fill: blend(t.cover-text, t.cover-bg, 80%), number)
+    #v(t.s4)
+    #if eyebrow != none { block(below: t.s4, eyebrow-text(eyebrow, fill: blend(t.cover-text, t.cover-bg, 35%))) }
+    #{
+      show heading: it => text(font: t.font-heading, size: t.display * 0.85, weight: 600, tracking: -0.02em, fill: t.cover-text, it.body)
+      heading(level: level, supplement: [#number], title)
+    }
+    #if intro != none { block(above: t.s5, width: 80%, text(size: t.h3, fill: blend(t.cover-text, t.cover-bg, 20%), intro)) }
+    #v(1.3fr)
+  ]
+]
+
+// ---------------------------------------------------------------------------
 // Contents and back page
 // ---------------------------------------------------------------------------
 
@@ -582,8 +611,21 @@
   show underline: it => it.body
   context {
     let offset = if meta.has-cover { 1 } else { 0 }
-    for entry in query(heading.where(level: meta.section-level, outlined: true)) {
+    let sel = heading.where(level: meta.section-level, outlined: true)
+    let sel = if meta.part-level != none { sel.or(heading.where(level: meta.part-level, outlined: true)) } else { sel }
+    for entry in query(sel) {
       let page-number = counter(page).at(entry.location()).first() - offset
+      // A part: a heading line over its sections, linked like them.
+      if entry.level == meta.part-level {
+        block(above: t.s6, below: t.s2, wide(link(entry.location(), grid(
+          columns: (t.side, 1fr, auto),
+          align: bottom,
+          eyebrow-text([Part #section-number(entry)], fill: t.accent),
+          text(font: t.font-heading, size: t.h2, weight: 600, fill: t.heading, entry.body),
+          text(size: t.body, fill: t.ink-muted, number-width: "tabular", str(page-number)),
+        ))))
+        continue
+      }
       block(above: 0pt, below: 0pt, wide(link(entry.location(), block(width: 100%, inset: (y: t.s3), stroke: (bottom: t.hairline + t.rule), grid(
         columns: (t.side, 1fr, auto),
         align: horizon,

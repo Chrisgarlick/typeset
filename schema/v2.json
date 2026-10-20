@@ -176,6 +176,9 @@
         },
         {
           "$ref": "#/$defs/highlights"
+        },
+        {
+          "$ref": "#/$defs/part"
         }
       ]
     },
@@ -877,6 +880,32 @@
               "severity"
             ]
           }
+        }
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Starts a part of a combined document (a review, then a proposal) with a full-page divider. Sections after it belong to the part; section numbers run on.",
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "part"
+        },
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "eyebrow": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "intro": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
         }
       }
     }

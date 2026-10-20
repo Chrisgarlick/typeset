@@ -24,11 +24,12 @@ pub enum Component {
     Contents(Contents),
     BackPage(BackPage),
     Highlights(Highlights),
+    Part(Part),
 }
 
 impl Component {
     /// The JSON `type` names of every component.
-    pub const TYPES: [&'static str; 15] = [
+    pub const TYPES: [&'static str; 16] = [
         "opener",
         "callout",
         "findings",
@@ -44,6 +45,7 @@ impl Component {
         "contents",
         "back_page",
         "highlights",
+        "part",
     ];
 
     /// Parse a component from its JSON block, with `type` already removed.
@@ -63,6 +65,7 @@ impl Component {
             "priority_matrix" => Component::PriorityMatrix(serde_json::from_value(value)?),
             "contents" => Component::Contents(serde_json::from_value(value)?),
             "back_page" => Component::BackPage(serde_json::from_value(value)?),
+            "part" => Component::Part(serde_json::from_value(value)?),
             "highlights" => {
                 let h: Highlights = serde_json::from_value(value)?;
                 if h.items.is_empty() || h.items.len() > 4 {
@@ -141,6 +144,7 @@ impl Component {
                 .collect(),
             Component::Contents(_) => Vec::new(),
             Component::BackPage(b) => b.about.iter().cloned().chain(b.contact.lines()).collect(),
+            Component::Part(p) => std::iter::once(p.title.clone()).chain(p.intro.clone()).collect(),
             Component::Highlights(h) => h
                 .items
                 .iter()
@@ -513,4 +517,15 @@ impl Contact {
 #[serde(deny_unknown_fields)]
 pub struct Highlights {
     pub items: Vec<FindingCard>,
+}
+
+/// A divider that starts a part of a combined document (a review, then a
+/// proposal): a full page with the part's number, title and intro. Parts
+/// group the sections that follow; section numbers run on across parts.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Part {
+    pub title: String,
+    pub eyebrow: Option<String>,
+    pub intro: Option<String>,
 }

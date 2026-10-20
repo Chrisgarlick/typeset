@@ -500,6 +500,11 @@ after the figure fix.
   on benefits read as problems, so its summary uses a brand callout. A step group can still
   leave its last item alone at the top of a page; acceptable for now.
 
+- **Added after Phase 5: `part`**, for combined documents (the Myers review, proposal and strategy
+  as one PDF to send). A full-page divider on the cover colour; parts take the heading level
+  between the cover and the sections, so PDF/UA still holds, and the contents page groups
+  sections under them. `~/dev/myers/combine.py` builds the pack from the three documents.
+
 *Result:* all four phases' acceptance checks pass; the gallery snapshots, 75 tests and three real
 documents are the regression net.
 

@@ -290,6 +290,7 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 | `priority_matrix` | `items: [{ label, impact, effort }]`, each `high` \| `low` | Quick wins, big bets, fill-ins and maybe later, with numbered dots and a key |
 | `contents` | `title`? | The sections with numbers and page numbers, linked, on a page of its own |
 | `back_page` | `about`?, `contact`? `{ name?, email?, website?, phone? }` | A closing page on the cover colour |
+| `part` | `title`, `eyebrow`?, `intro`? | A full-page divider starting a part of a combined document (a review, then a proposal). Sections after it belong to the part, section numbers run on, and the contents page groups sections under their parts |
 
 `status` is `good`, `fair`, `poor` or `neutral`. The full JSON Schema is [`schema/v2.json`](./schema/v2.json), and [`examples/gallery.json`](./examples/gallery.json) uses every component.
 

@@ -54,10 +54,13 @@ fn build_source(branded: &BrandedDocument) -> String {
 
     let (cover, consumed_body_h1) = extract_cover(branded);
     let level = section_level(&branded.doc.nodes, consumed_body_h1);
+    // Parts sit between the cover's H1 and the sections, pushing sections
+    // down a level.
+    let has_parts = branded.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::Part(_))));
     let ctx = Ctx {
         images: &branded.images,
         section_level: level,
-        section_out: if cover.is_some() { 2 } else { 1 },
+        section_out: if cover.is_some() { 2 } else { 1 } + u8::from(has_parts),
         in_box: false,
     };
     write_preamble(&mut s, branded, &cover, ctx.section_out);
@@ -268,6 +271,7 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   print: {print},
   has-cover: {has_cover},
   section-level: {section_level},
+  part-level: {part_level},
   header: {header},
   footer: {footer},
   wordmark: {wordmark},
@@ -318,6 +322,11 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         print = b.print,
         has_cover = cover.is_some(),
         section_level = section_level,
+        part_level = if b.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::Part(_)))) {
+            (section_level - 1).to_string()
+        } else {
+            "none".to_string()
+        },
         header = p.header_enabled,
         footer = p.footer_enabled,
         wordmark = wordmark.as_deref().map(typst_string).unwrap_or_else(|| "none".to_string()),
@@ -390,6 +399,7 @@ fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, ct
     let section_level = ctx.section_level;
     let mut skip_next_h1 = consumed_body_h1;
     let mut section = 0;
+    let mut part = 0;
     for (i, node) in nodes.iter().enumerate() {
         if skip_next_h1 {
             if let DocumentNode::Heading { level: 1, .. } = node {
@@ -402,8 +412,22 @@ fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, ct
             && matches!(
                 nodes.get(i + 1),
                 Some(DocumentNode::Heading { level, .. }) if *level <= section_level
-            ) | matches!(nodes.get(i + 1), Some(DocumentNode::Component(Component::Opener(_))))
+            ) | matches!(
+                nodes.get(i + 1),
+                Some(DocumentNode::Component(Component::Opener(_) | Component::Part(_)))
+            )
         {
+            continue;
+        }
+        if let DocumentNode::Component(Component::Part(p)) = node {
+            part += 1;
+            s.push_str(&format!(
+                "#part-divider(number: \"{part}\", level: {}, title: {}, eyebrow: {}, intro: {})\n\n",
+                ctx.section_out - 1,
+                content_arg(&p.title),
+                opt_content(&p.eyebrow),
+                opt_content(&p.intro),
+            ));
             continue;
         }
         if let DocumentNode::Component(Component::Opener(o)) = node {
@@ -688,6 +712,8 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
             ));
         }
         Component::Finding(f) => s.push_str(&format!("#finding-card({})\n\n", finding_args(f))),
+        // A part only means something at the top level; nested, it's a title.
+        Component::Part(p) => s.push_str(&format!("#card-title[{}]\n\n", typst_inline(&p.title))),
         Component::Highlights(h) => {
             let items: Vec<String> = h.items.iter().map(|f| format!("({})", finding_args(f))).collect();
             s.push_str(&format!("#highlights(({},))\n\n", items.join(",\n  ")));
@@ -1631,6 +1657,28 @@ mod tests {
         // set (checked by hand: the content streams use only k/K operators).
         if typst_available() {
             render(&b).expect("print renders");
+        }
+    }
+
+    #[test]
+    fn parts_divide_a_combined_document_and_stay_pdf_ua() {
+        let b = branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Pack" }, "pages": [
+            { "blocks": [{ "type": "contents" }] },
+            { "blocks": [{ "type": "part", "title": "Review", "intro": "The review." }] },
+            { "blocks": [{ "type": "opener", "title": "Summary" }, { "type": "heading", "level": 3, "text": "Sub" }] },
+            { "blocks": [{ "type": "part", "title": "Proposal" }] },
+            { "blocks": [{ "type": "opener", "title": "Scope" }] }
+        ]}"#);
+        let source = build_source(&b);
+        // Cover H1, parts H2, sections H3, so heading levels never skip.
+        assert!(source.contains(r#"#part-divider(number: "1", level: 2, title: [Review]"#), "{source}");
+        assert!(source.contains(r#"#opener(number: "01", level: 3, title: [Summary]"#));
+        assert!(source.contains(r#"#opener(number: "02", level: 3, title: [Scope]"#), "section numbers run on");
+        assert!(source.contains("==== Sub"));
+        assert!(source.contains("part-level: 2,"));
+        if typst_available() {
+            let pdf = render(&b).unwrap();
+            assert!(String::from_utf8_lossy(&pdf).contains("pdfuaid"), "should still be PDF/UA");
         }
     }
 
