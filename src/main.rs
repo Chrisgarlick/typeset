@@ -62,6 +62,7 @@ async fn main() -> anyhow::Result<()> {
     let rendering = Router::new()
         .route("/api/render", post(routes::render::handle_render))
         .route("/api/preview", post(routes::preview::handle_preview))
+        .route("/api/proof", post(routes::proof::handle_proof))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

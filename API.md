@@ -163,6 +163,16 @@ with open("output.pdf", "wb") as f:
 
 ---
 
+## POST /api/proof
+
+Thumbnails of every page, for checking a layout before rendering the real file. Same body as `/api/render`. Returns JSON:
+
+```json
+{ "pages": 9, "ppi": 40, "images": ["<base64 PNG>", "…"] }
+```
+
+Rate-limited with the render endpoints.
+
 ## POST /api/preview
 
 Identical request body to `/api/render`. The only difference is `Content-Disposition: inline` — the browser displays the file rather than downloading it. Useful for `<iframe src>` previews. **Preview renders are not logged in history.**

@@ -1080,12 +1080,33 @@ fn font_dir() -> std::path::PathBuf {
 // Subprocess
 // ---------------------------------------------------------------------------
 
-/// Compile Typst source to PDF. `assets` (logos) are written into the
-/// compile root under their own names, which the source refers to.
+/// Compile Typst source to PDF. `assets` (logos, images) are written into
+/// the compile root under their own names, which the source refers to.
 fn compile(source: &str, assets: &[&Asset]) -> anyhow::Result<Vec<u8>> {
+    let mut files = compile_to(source, assets, &[], "doc.pdf")?;
+    Ok(files.remove(0))
+}
+
+/// Render each page as a PNG at `ppi`, for proofs.
+pub fn render_proof(branded: &BrandedDocument, ppi: u32) -> anyhow::Result<Vec<Vec<u8>>> {
+    let source = build_source(branded);
+    let assets: Vec<&Asset> = [&branded.logos.light, &branded.logos.dark]
+        .into_iter()
+        .flatten()
+        .chain(branded.images.values())
+        .collect();
+    let ppi = ppi.clamp(20, 150).to_string();
+    compile_to(&source, &assets, &["--format", "png", "--ppi", &ppi], "page-{0p}.png")
+}
+
+/// Run `typst compile` in a temporary root and return the output files in
+/// order: one for a PDF, one per page for an output pattern like
+/// `page-{0p}.png`.
+fn compile_to(source: &str, assets: &[&Asset], extra: &[&str], output_name: &str) -> anyhow::Result<Vec<Vec<u8>>> {
     let tmp = tempfile::tempdir()?;
     let input = tmp.path().join("doc.typ");
-    let output = tmp.path().join("doc.pdf");
+    let out_dir = tmp.path().join("out");
+    std::fs::create_dir(&out_dir)?;
 
     {
         let mut f = std::fs::File::create(&input)?;
@@ -1100,8 +1121,9 @@ fn compile(source: &str, assets: &[&Asset]) -> anyhow::Result<Vec<u8>> {
         .arg("--font-path")
         .arg(font_dir())
         .arg("--ignore-system-fonts")
+        .args(extra)
         .arg(&input)
-        .arg(&output)
+        .arg(out_dir.join(output_name))
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -1112,8 +1134,9 @@ fn compile(source: &str, assets: &[&Asset]) -> anyhow::Result<Vec<u8>> {
         anyhow::bail!("typst compile failed:\n{}", stderr);
     }
 
-    let bytes = std::fs::read(&output)?;
-    Ok(bytes)
+    let mut paths: Vec<_> = std::fs::read_dir(&out_dir)?.filter_map(|e| e.ok().map(|e| e.path())).collect();
+    paths.sort();
+    paths.iter().map(|p| Ok(std::fs::read(p)?)).collect()
 }
 
 #[cfg(test)]
@@ -1471,6 +1494,17 @@ mod tests {
              check them, then run with UPDATE_SNAPSHOTS=1 to approve.",
             pages.len()
         );
+    }
+
+    #[test]
+    fn proofs_are_one_png_per_page() {
+        if !typst_available() {
+            return;
+        }
+        let b = branded_json(r#"{ "frontmatter": { "title": "Proof" }, "pages": [{ "blocks": [{ "type": "paragraph", "text": "Body." }] }] }"#);
+        let pages = render_proof(&b, 30).unwrap();
+        assert_eq!(pages.len(), 2, "a cover and one body page");
+        assert!(pages.iter().all(|p| p.starts_with(b"\x89PNG")));
     }
 
     #[test]
