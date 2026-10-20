@@ -302,7 +302,9 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         small = (base * 0.86 * 10.0).round() / 10.0,
         eyebrow = (base * 0.78 * 10.0).round() / 10.0,
         leading = (leading * 100.0).round() / 100.0,
-        par_spacing = p.paragraph_spacing.max(base * 0.9),
+        // At least 1.3 times the body size, so paragraphs read as separate
+        // from line spacing (the leading is about 0.8em).
+        par_spacing = p.paragraph_spacing.max((base * 1.3 * 10.0).round() / 10.0),
         mt = p.margin_top + bleed,
         mb = p.margin_bottom + bleed,
         ml = p.margin_left + bleed,
