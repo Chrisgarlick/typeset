@@ -32,6 +32,7 @@ pub async fn handle_proof(
         .map_err(|e| AppError::RenderError(e.to_string()))?;
     branded.logos = crate::brand::assets::fetch_logos(&branded.profile).await;
     branded.images = crate::brand::assets::fetch_images(&branded.doc.nodes).await;
+    branded.print = req.print;
 
     const PPI: u32 = 40;
     let pages = crate::renderers::typst::render_proof(&branded, PPI)

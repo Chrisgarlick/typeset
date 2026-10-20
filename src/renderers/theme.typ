@@ -5,6 +5,20 @@
 // (facts about this document: title, cover, which heading level opens a
 // section). Nothing below hard-codes a colour or a size.
 
+// Print: every colour token in CMYK, so a printer gets what the profile
+// specifies. Mixes then stay in CMYK too (see `blend`).
+#let t = if meta.print {
+  let converted = (:)
+  for (key, value) in t {
+    converted.insert(key, if type(value) == color { cmyk(value) } else { value })
+  }
+  converted
+} else { t }
+
+/// `c` as if laid over `over` with `amount` of the background showing
+/// through: an opaque colour, unlike transparency, so it stays CMYK in print.
+#let blend(c, over, amount) = color.mix((c, 100% - amount), (over, amount), space: if meta.print { cmyk } else { oklab })
+
 // Names from before the token dictionary. Hand-written Typst in fletcher
 // code blocks may still use them.
 #let primary = t.heading
@@ -59,7 +73,8 @@
 }
 
 #set page(
-  paper: meta.paper,
+  width: meta.page-width,
+  height: meta.page-height,
   fill: t.paper,
   margin: (
     top: t.margin-top,
@@ -118,7 +133,7 @@
 #set strong(delta: 200)
 #show strong: set text(weight: 600)
 #show link: set text(fill: t.accent)
-#show link: underline.with(stroke: 0.5pt + t.accent.transparentize(50%), offset: 2pt)
+#show link: underline.with(stroke: 0.5pt + blend(t.accent, t.paper, 50%), offset: 2pt)
 
 // ---------------------------------------------------------------------------
 // Sections and headings
@@ -192,14 +207,15 @@
   }
 }
 
-/// Headings inside a styled box (a card or callout): small, never bookmarked,
-/// and in whatever text colour the box set.
-#let boxed-heading(it) = block(sticky: true, above: t.s4, below: t.s3, text(
+/// A title inside a card or callout: styled like a small heading, in the
+/// box's text colour, but not a heading, so it stays out of the document's
+/// structure, bookmarks and running head.
+#let card-title(body) = block(sticky: true, above: t.s4, below: t.s3, text(
   font: t.font-heading,
   size: t.h3,
   weight: 600,
   hyphenate: false,
-  it.body,
+  body,
 ))
 
 // ---------------------------------------------------------------------------

@@ -95,7 +95,7 @@ needed.
 | `rule` | lines, borders | `#DAD5CA` |
 | `accent` | brand accent: rules, numbers, highlights | `#1F5C45` |
 | `accent-soft` | tints behind accent content | `#DDE7DF` |
-| `good` / `fair` / `poor` | status scale (scores) | `#1F7A4D` / `#B7791F` / `#B42318` |
+| `good` / `fair` / `poor` | status scale (scores) | `#1F7A4D` / `#966010` / `#B42318` (fair darkened from `#B7791F` in Phase 5 to pass AA as text) |
 | `critical` / `serious` / `moderate` / `minor` | severity | from the status scale, plus a neutral for minor |
 
 All status colours must pass WCAG AA on `paper`, and their tints must pass with `ink`. Add a
@@ -462,16 +462,46 @@ with score stats, findings tables, metrics, the score matrix, next steps and an 
 after the figure fix.
 
 ### Phase 5: Polish and proof (94 → 100)
-- [ ] Optical details: hung punctuation in quotes, optical alignment of numerals, refined
+- [x] Optical details: hung punctuation in quotes, optical alignment of numerals, refined
       kerning in display sizes, consistent icon set (a small SVG set in the theme).
-- [ ] Tagged PDF/UA, alt text enforcement, contrast tests for every profile.
-- [ ] Print checks: a CMYK-safe palette option and a bleed variant of the cover for professional
+- [x] Tagged PDF/UA, alt text enforcement, contrast tests for every profile.
+- [x] Print checks: a CMYK-safe palette option and a bleed variant of the cover for professional
       printing.
-- [ ] Final design review against section 2 with three real reports (website review, proposal,
+- [x] Final design review against section 2 with three real reports (website review, proposal,
       strategy doc); fix everything that doesn't hold up beside a consultancy deck.
 
-*Acceptance:* side by side with a premium consultancy report, it holds its own. No one can tell
-it was generated.
+*Done 20 Oct 2026.* How it was built, and where it differs from the plan:
+- **PDF/UA-1.** Every PDF is compiled with `--pdf-standard ua-1`; if a document can't conform (a
+  v1 image without alt text) it's rebuilt as a plain PDF and the reason logged, so accessibility
+  never costs a render. Conformance needed structural fixes: the cover title is now the one H1
+  (drawn as display text, not bookmarked), section headings are renumbered to follow it (H2
+  under a cover, H1 without), and titles inside cards are no longer headings (`card-title`), so
+  levels never skip. Schema 2 images require alt text.
+- **Contrast.** A test checks every pair the theme sets text in (status colours on paper, badge
+  and pill text on their tints, the filled critical badge) on white and on the warm paper. It
+  failed for amber, so `fair` is now `#966010` (4.8:1 in the badge, was 3.5:1). Profile
+  contrast was already checked on save (Phase 3).
+- **Optical details.** Display figures (stats, gauges, metrics, severity counts, highlights)
+  use proportional digits; tabular digits stay where numbers stack (tables, steps, contents,
+  page numbers). The callout icons are one drawn family (tick, i, !, cross, arrow) at one stroke
+  weight, not a mix of glyphs: drawn in Typst rather than SVG, so they take the tone colour
+  without string substitution. Typst's `overhang` already hangs punctuation; display kerning
+  uses Inter Tight's own kerning with the negative tracking from Phase 1. Bar labels move past a
+  target line they would otherwise sit across.
+- **Print.** `"print": true` on a render request converts every colour token to CMYK and adds a
+  3mm bleed to every page (A4 becomes 216 × 303mm; margins grow with it, full-page fills run off
+  the trim). Transparency has no CMYK form, so faded text and fills are now opaque blends over
+  their known background (`blend`), mixed in CMYK when printing; the content streams use only
+  CMYK operators. Not done: crop marks and a TrimBox (Typst can't write one), so the printer
+  trims 3mm from each edge.
+- **Design review.** The three reference documents live in `~/dev/myers` (review, strategy,
+  proposal for Myers Jewellers; private, with `[TBC]` where only Chris can decide). The review
+  and strategy held up. The proposal surfaced a misuse rather than a theme flaw: severity badges
+  on benefits read as problems, so its summary uses a brand callout. A step group can still
+  leave its last item alone at the top of a page; acceptable for now.
+
+*Result:* all four phases' acceptance checks pass; the gallery snapshots, 75 tests and three real
+documents are the regression net.
 
 ---
 

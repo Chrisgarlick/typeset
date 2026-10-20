@@ -14,7 +14,7 @@
 #let score-status(percent) = if percent >= 90 { "good" } else if percent >= 50 { "fair" } else { "poor" }
 
 /// A colour mixed into the paper: the tinted surface behind toned content.
-#let tint(c, amount: 88%) = color.mix((c, 100% - amount), (t.paper, amount))
+#let tint(c, amount: 88%) = blend(c, t.paper, amount)
 
 #let eyebrow-text(body, fill: t.ink-muted) = text(
   size: t.eyebrow,
@@ -27,7 +27,8 @@
 /// A display figure that shrinks to fit its column on one line, down to
 /// `min` (a long range such as "5,948 to 6,800 ms" must not wrap).
 #let fit-figure(body, size: t.h2, min: t.body * 1.1, fill: t.ink, weight: 600) = layout(region => {
-  let set-in(s) = text(font: t.font-heading, size: s, weight: weight, tracking: -0.01em, fill: fill, number-width: "tabular", hyphenate: false, body)
+  // Proportional figures: a lone display number shouldn't have tabular gaps.
+  let set-in(s) = text(font: t.font-heading, size: s, weight: weight, tracking: -0.01em, fill: fill, hyphenate: false, body)
   let natural = measure(set-in(size)).width
   let fitted = if natural > region.width and natural > 0pt { calc.max(min / 1pt, size / 1pt * region.width / natural) * 1pt } else { size }
   set-in(fitted)
@@ -86,6 +87,22 @@
   ))
 }
 
+/// The cover title as the document's one level 1 heading (tagged PDF needs
+/// one), drawn as plain display text and left out of the bookmarks.
+#let title-heading(title, size: 40pt, fill: auto) = {
+  // Styled inside the show rule: Typst's built-in heading style would
+  // otherwise enlarge it.
+  show heading: it => text(
+    font: t.font-heading,
+    size: size,
+    weight: 600,
+    tracking: -0.02em,
+    ..if fill != auto { (fill: fill) },
+    it.body,
+  )
+  heading(level: 1, outlined: false, bookmarked: false, title)
+}
+
 /// The cover. `style` is `editorial` (paper, brand mark, strong type),
 /// `band` (the same under an accent band) or `dark` (a dark full page).
 #let cover(
@@ -108,13 +125,13 @@
       #pad(..pad-box)[
         #brand-mark(height: 12pt, dark: true, color: t.cover-text)
         #v(1fr)
-        #if eyebrow != none { eyebrow-text(eyebrow, fill: t.cover-text.transparentize(35%)); v(t.s4) }
-        #block(width: 100%, text(font: t.font-heading, size: title-size, weight: 600, tracking: -0.02em, title))
+        #if eyebrow != none { eyebrow-text(eyebrow, fill: blend(t.cover-text, t.cover-bg, 35%)); v(t.s4) }
+        #block(width: 100%, title-heading(title, size: title-size))
         #v(t.s5)
         #line(length: 24mm, stroke: 3pt + t.accent.lighten(35%))
-        #if subtitle != none { v(t.s5); block(width: 75%, text(size: t.h3, fill: t.cover-text.transparentize(25%), subtitle)) }
+        #if subtitle != none { v(t.s5); block(width: 75%, text(size: t.h3, fill: blend(t.cover-text, t.cover-bg, 25%), subtitle)) }
         #v(1.3fr)
-        #cover-meta(fields, color: t.cover-text, muted: t.cover-text.transparentize(45%), rule: t.cover-text.transparentize(75%))
+        #cover-meta(fields, color: t.cover-text, muted: blend(t.cover-text, t.cover-bg, 45%), rule: blend(t.cover-text, t.cover-bg, 75%))
       ]
     ]
   } else if style == "band" {
@@ -124,8 +141,8 @@
         #set text(fill: t.paper)
         #brand-mark(height: 12pt, dark: true, color: t.paper)
         #v(1fr)
-        #if eyebrow != none { eyebrow-text(eyebrow, fill: t.paper.transparentize(25%)); v(t.s4) }
-        #block(width: 100%, text(font: t.font-heading, size: title-size, weight: 600, tracking: -0.02em, title))
+        #if eyebrow != none { eyebrow-text(eyebrow, fill: blend(t.paper, t.accent, 25%)); v(t.s4) }
+        #block(width: 100%, title-heading(title, size: title-size))
       ])
       #pad(left: t.margin-left, right: t.margin-right, top: t.s7, bottom: t.margin-bottom)[
         #if subtitle != none { block(width: 80%, text(size: t.h3, fill: t.ink-muted, subtitle)) }
@@ -142,7 +159,7 @@
         #line(length: 100%, stroke: t.heavy + t.ink)
         #v(1fr)
         #if eyebrow != none { eyebrow-text(eyebrow, fill: t.accent); v(t.s4) }
-        #block(width: 100%, text(font: t.font-heading, size: title-size, weight: 600, tracking: -0.02em, fill: t.heading, title))
+        #block(width: 100%, title-heading(title, size: title-size, fill: t.heading))
         #v(t.s5)
         #line(length: 24mm, stroke: 3pt + t.accent)
         #if subtitle != none { v(t.s5); block(width: 80%, text(size: t.h3, fill: t.ink-muted, subtitle)) }
@@ -160,7 +177,7 @@
 #let stat-block(stat) = {
   let c = status-color(stat.status)
   align(right, {
-    block(below: t.s2, text(font: t.font-heading, size: t.h1, weight: 600, tracking: -0.02em, fill: if stat.status == none { t.heading } else { c }, number-width: "tabular", stat.value))
+    block(below: t.s2, text(font: t.font-heading, size: t.h1, weight: 600, tracking: -0.02em, fill: if stat.status == none { t.heading } else { c }, stat.value))
     if stat.label != none { block(eyebrow-text(stat.label)) }
   })
 }
@@ -204,13 +221,33 @@
   brand: t.accent,
 ).at(tone, default: t.ink-muted)
 
-#let tone-icon(tone, c) = box(baseline: 20%, circle(radius: 6.5pt, fill: c, stroke: none, align(center + horizon, {
-  if tone == "good" {
-    curve(stroke: (paint: t.paper, thickness: 1.4pt, cap: "round", join: "round"), curve.move((0pt, 3.2pt)), curve.line((2.3pt, 5.4pt)), curve.line((6.4pt, 0.6pt)))
+/// The icon set: small marks drawn in paper colour on a filled circle,
+/// one per tone, all with the same stroke, so they read as a family.
+#let tone-icon(tone, c) = {
+  let k = (paint: t.paper, thickness: 1.4pt, cap: "round", join: "round")
+  let mark = if tone == "good" {
+    // A tick.
+    curve(stroke: k, curve.move((-3.1pt, 0.2pt)), curve.line((-0.9pt, 2.4pt)), curve.line((3.2pt, -2.2pt)))
+  } else if tone == "info" {
+    // A lower-case i: a dot over a stem.
+    place(center + horizon, dy: -2.6pt, circle(radius: 0.85pt, fill: t.paper))
+    curve(stroke: k, curve.move((0pt, -0.6pt)), curve.line((0pt, 3.2pt)))
+  } else if tone == "brand" {
+    // An arrow pointing on.
+    curve(stroke: k, curve.move((-3pt, 0pt)), curve.line((3pt, 0pt)), curve.move((0.6pt, -2.4pt)), curve.line((3pt, 0pt)), curve.line((0.6pt, 2.4pt)))
+  } else if tone == "critical" {
+    // A cross.
+    curve(stroke: k, curve.move((-2.4pt, -2.4pt)), curve.line((2.4pt, 2.4pt)), curve.move((2.4pt, -2.4pt)), curve.line((-2.4pt, 2.4pt)))
   } else {
-    text(size: 8pt, weight: 700, fill: t.paper, if tone == "info" { "i" } else if tone == "brand" { "→" } else { "!" })
+    // An exclamation mark: a stem over a dot.
+    place(center + horizon, dy: 2.8pt, circle(radius: 0.85pt, fill: t.paper))
+    curve(stroke: k, curve.move((0pt, -3.2pt)), curve.line((0pt, 0.8pt)))
   }
-})))
+  box(baseline: 20%, width: 13pt, height: 13pt, {
+    place(circle(radius: 6.5pt, fill: c))
+    place(center + horizon, box(width: 0pt, height: 0pt, place(dx: 0pt, dy: 0pt, mark)))
+  })
+}
 
 /// A tinted note with a rule in its tone's colour. Never a dark fill.
 #let callout(tone: "info", title: none, body) = {
@@ -243,7 +280,7 @@
 #let findings(items) = wide(table(
   columns: (auto, 1.5fr, 0.9fr, 1.6fr),
   inset: (x: t.s3, y: 7pt),
-  fill: (x, y) => if y == 0 { t.surface } else if calc.even(y) { t.surface.transparentize(55%) },
+  fill: (x, y) => if y == 0 { t.surface } else if calc.even(y) { blend(t.surface, t.paper, 55%) },
   align: top,
   table.header([Severity], [Issue], [Where], [What to do]),
   ..items.map(f => (
@@ -310,7 +347,7 @@
       let a = 225deg - 270deg * calc.clamp(benchmark / max, 0, 1)
       place(curve(stroke: 1.2pt + t.ink, curve.move(point(a, radius: r - 5pt)), curve.line(point(a, radius: r + 5pt))))
     }
-    place(center + horizon, dy: -2pt, text(font: t.font-heading, size: size * 0.3, weight: 600, fill: t.ink, number-width: "tabular", str(calc.round(value))))
+    place(center + horizon, dy: -2pt, text(font: t.font-heading, size: size * 0.3, weight: 600, fill: t.ink, str(calc.round(value))))
     place(bottom + center, dy: -2pt, text(size: t.eyebrow, fill: t.ink-muted, number-width: "tabular")[of #str(calc.round(max))])
   })
 }
@@ -397,17 +434,21 @@
   grid(
     columns: (t.side, 1fr),
     stack(..items.map(i => block(height: row-height, width: 100%, align(horizon, text(size: t.small, fill: t.ink, i.label))))),
-    block(width: 100%, {
+    layout(region => block(width: 100%, {
+      let target-x = if target != none { region.width * scale * (target / peak) }
+      if target != none {
+        place(top + left, dx: target-x, dy: -3pt, line(angle: 90deg, length: row-height * items.len() + 6pt, stroke: (paint: t.ink, thickness: 0.8pt, dash: "dashed")))
+        place(top + left, dx: target-x + 3pt, dy: -12pt, text(size: t.eyebrow, fill: t.ink-muted)[Target #fmt(target)])
+      }
       stack(..items.map(i => block(height: row-height, width: 100%, align(horizon, {
-        box(width: scale * (i.value / peak), height: 9pt, fill: color(i.value), radius: (right: 2pt))
-        h(t.s2)
+        let bar-end = region.width * scale * (i.value / peak)
+        box(width: bar-end, height: 9pt, fill: color(i.value), radius: (right: 2pt))
+        // A label that would sit across the target line starts past it.
+        let gap = if target != none and target-x > bar-end and target-x - bar-end < 36pt { target-x - bar-end + 4pt } else { t.s2 }
+        h(gap)
         text(size: t.small, weight: 600, fill: t.ink, number-width: "tabular", fmt(i.value))
       }))))
-      if target != none {
-        place(top + left, dx: scale * (target / peak), dy: -3pt, line(angle: 90deg, length: row-height * items.len() + 6pt, stroke: (paint: t.ink, thickness: 0.8pt, dash: "dashed")))
-        place(top + left, dx: scale * (target / peak) + 3pt, dy: -12pt, text(size: t.eyebrow, fill: t.ink-muted)[Target #fmt(target)])
-      }
-    }),
+    })),
   )
   if caption != none { block(above: t.s4, text(size: t.small, fill: t.ink-muted, caption)) }
 }))
@@ -428,7 +469,7 @@
     columns: (1fr,) * 4,
     column-gutter: t.s4,
     ..levels.map(l => {
-      block(below: t.s2, text(font: t.font-heading, size: t.h2, weight: 600, fill: if counts.at(l) > 0 { severity-colors.at(l) } else { t.ink-muted }, number-width: "tabular", str(counts.at(l))))
+      block(below: t.s2, text(font: t.font-heading, size: t.h2, weight: 600, fill: if counts.at(l) > 0 { severity-colors.at(l) } else { t.ink-muted }, str(counts.at(l))))
       severity-badge(l)
     }),
   )
@@ -562,13 +603,13 @@
   #pad(left: t.margin-left, right: t.margin-right, top: t.margin-top, bottom: t.margin-bottom)[
     #brand-mark(height: 14pt, dark: true, color: t.cover-text)
     #v(1fr)
-    #if about != none { block(width: 80%, below: t.s7, text(size: t.h3, fill: t.cover-text.transparentize(15%), about)) }
+    #if about != none { block(width: 80%, below: t.s7, text(size: t.h3, fill: blend(t.cover-text, t.cover-bg, 15%), about)) }
     #if contact.len() > 0 {
-      block(width: 100%, inset: (top: t.s4), stroke: (top: t.hairline + t.cover-text.transparentize(75%)), grid(
+      block(width: 100%, inset: (top: t.s4), stroke: (top: t.hairline + blend(t.cover-text, t.cover-bg, 75%)), grid(
         columns: (1fr,) * calc.max(contact.len(), 2),
         column-gutter: t.s5,
         ..contact.map(c => {
-          block(below: t.s2, eyebrow-text(c.at(0), fill: t.cover-text.transparentize(45%)))
+          block(below: t.s2, eyebrow-text(c.at(0), fill: blend(t.cover-text, t.cover-bg, 45%)))
           text(size: t.body, c.at(1))
         }),
       ))

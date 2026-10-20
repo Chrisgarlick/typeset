@@ -6,6 +6,31 @@ use crate::brand::assets::Asset;
 
 /// Fetched images by URL.
 type Images = std::collections::HashMap<String, Asset>;
+
+/// What the node writers need besides the node.
+#[derive(Clone, Copy)]
+struct Ctx<'a> {
+    images: &'a Images,
+    /// The source heading level that opens a section.
+    section_level: u8,
+    /// The level section headings are emitted at: 2 under a cover (whose
+    /// title is the H1), else 1. Tagged PDF needs headings to start at 1 and
+    /// never skip a level.
+    section_out: u8,
+    /// Inside a styled box, where headings are card titles, not structure.
+    in_box: bool,
+}
+
+impl Ctx<'_> {
+    /// The emitted level for a source heading level.
+    fn out_level(&self, level: u8) -> u8 {
+        (level as i16 - self.section_level as i16 + self.section_out as i16).clamp(1, 6) as u8
+    }
+
+    fn boxed(&self) -> Self {
+        Ctx { in_box: true, ..*self }
+    }
+}
 use crate::models::components::{Better, Component, FindingCard, Opener};
 use crate::models::document::{BlockStyle, DocumentNode, StyledColumn};
 
@@ -29,12 +54,18 @@ fn build_source(branded: &BrandedDocument) -> String {
 
     let (cover, consumed_body_h1) = extract_cover(branded);
     let level = section_level(&branded.doc.nodes, consumed_body_h1);
-    write_preamble(&mut s, branded, &cover, level);
+    let ctx = Ctx {
+        images: &branded.images,
+        section_level: level,
+        section_out: if cover.is_some() { 2 } else { 1 },
+        in_box: false,
+    };
+    write_preamble(&mut s, branded, &cover, ctx.section_out);
     write_imports(&mut s);
     if let Some(c) = &cover {
         write_cover(&mut s, c, branded);
     }
-    write_body(&mut s, &branded.doc.nodes, consumed_body_h1, level, &branded.images);
+    write_body(&mut s, &branded.doc.nodes, consumed_body_h1, ctx);
 
     s
 }
@@ -135,6 +166,9 @@ fn asset_path(asset: &Option<Asset>) -> String {
     asset.as_ref().map(|a| typst_string(&a.name)).unwrap_or_else(|| "none".to_string())
 }
 
+/// Bleed added to each edge for print, in millimetres.
+const PRINT_BLEED_MM: f32 = 3.0;
+
 /// Paper height in millimetres, for the space a new section needs.
 fn paper_height_mm(page_size: &str) -> f32 {
     match paper_name(page_size) {
@@ -174,6 +208,9 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
     };
 
     let base = p.font_size_base.clamp(7.0, 16.0);
+    // Print adds a bleed round every page: the page grows, the margins grow
+    // with it, and full-page fills run off the trim edge.
+    let bleed = if b.print { PRINT_BLEED_MM } else { 0.0 };
     // Line height is baseline to baseline, as in CSS; Typst's leading is the
     // gap below the cap height, so take Inter's cap height (about 0.73em) off.
     let leading = (p.line_height - 0.73).clamp(0.35, 1.2);
@@ -193,7 +230,7 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   cover-bg: rgb("{cover_bg}"),
   cover-text: rgb("{cover_text}"),
   good: rgb("#1F7A4D"),
-  fair: rgb("#B7791F"),
+  fair: rgb("#966010"),
   poor: rgb("#B42318"),
   font-body: "{font_body}",
   font-heading: "{font_heading}",
@@ -226,7 +263,9 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   description: {description},
   running-title: [{running_title}],
   footer-left: [{footer_left}],
-  paper: "{paper_size}",
+  page-width: {page_w}mm,
+  page-height: {page_h}mm,
+  print: {print},
   has-cover: {has_cover},
   section-level: {section_level},
   header: {header},
@@ -260,10 +299,10 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         eyebrow = (base * 0.78 * 10.0).round() / 10.0,
         leading = (leading * 100.0).round() / 100.0,
         par_spacing = p.paragraph_spacing.max(base * 0.9),
-        mt = p.margin_top,
-        mb = p.margin_bottom,
-        ml = p.margin_left,
-        mr = p.margin_right,
+        mt = p.margin_top + bleed,
+        mb = p.margin_bottom + bleed,
+        ml = p.margin_left + bleed,
+        mr = p.margin_right + bleed,
         side = (side_mm * 10.0).round() / 10.0,
         section_need = ((paper_height_mm(&p.page_size) - p.margin_top - p.margin_bottom) * 0.3).round(),
         title = typst_string(&doc_title),
@@ -274,7 +313,9 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         description = description.map(|d| typst_string(&d)).unwrap_or_else(|| "none".to_string()),
         running_title = typst_content(&doc_title),
         footer_left = footer_left,
-        paper_size = paper_name(&p.page_size),
+        page_w = paper_width_mm(&p.page_size) + 2.0 * bleed,
+        page_h = paper_height_mm(&p.page_size) + 2.0 * bleed,
+        print = b.print,
         has_cover = cover.is_some(),
         section_level = section_level,
         header = p.header_enabled,
@@ -345,7 +386,8 @@ fn breakable_words(s: &str) -> String {
         .join(" ")
 }
 
-fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, section_level: u8, images: &Images) {
+fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, ctx: Ctx) {
+    let section_level = ctx.section_level;
     let mut skip_next_h1 = consumed_body_h1;
     let mut section = 0;
     for (i, node) in nodes.iter().enumerate() {
@@ -366,27 +408,32 @@ fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, se
         }
         if let DocumentNode::Component(Component::Opener(o)) = node {
             section += 1;
-            write_opener(s, o, Some(section), section_level);
+            write_opener(s, o, Some(section), ctx.section_out);
             continue;
         }
         if let DocumentNode::Heading { level, text, .. } = node {
             if *level == section_level {
                 section += 1;
                 s.push_str(&format!(
-                    "#heading(level: {level}, supplement: [{section:02}])[{}]\n\n",
+                    "#heading(level: {}, supplement: [{section:02}])[{}]\n\n",
+                    ctx.section_out,
                     typst_inline(text)
                 ));
                 continue;
             }
         }
-        write_node(s, node, images);
+        write_node(s, node, ctx);
     }
 }
 
-fn write_node(s: &mut String, node: &DocumentNode, images: &Images) {
+fn write_node(s: &mut String, node: &DocumentNode, ctx: Ctx) {
+    let images = ctx.images;
     match node {
+        DocumentNode::Heading { text, .. } if ctx.in_box => {
+            s.push_str(&format!("#card-title[{}]\n\n", typst_inline(text)));
+        }
         DocumentNode::Heading { level, text, .. } => {
-            let hashes = "=".repeat(*level as usize);
+            let hashes = "=".repeat(ctx.out_level(*level) as usize);
             s.push_str(&format!("{} {}\n\n", hashes, typst_inline(text)));
         }
         DocumentNode::Paragraph { text } => {
@@ -434,12 +481,12 @@ fn write_node(s: &mut String, node: &DocumentNode, images: &Images) {
             ));
         }
         DocumentNode::Columns { ratios, gutter, children } => {
-            write_columns(s, ratios, gutter.as_deref(), children, images);
+            write_columns(s, ratios, gutter.as_deref(), children, ctx);
         }
         DocumentNode::Section { style, children } => {
-            write_section(s, style.as_ref(), children, images);
+            write_section(s, style.as_ref(), children, ctx);
         }
-        DocumentNode::Component(component) => write_component(s, component),
+        DocumentNode::Component(component) => write_component(s, component, ctx),
     }
 }
 
@@ -500,10 +547,10 @@ fn finding_args(f: &FindingCard) -> String {
     )
 }
 
-fn write_component(s: &mut String, component: &Component) {
+fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
     match component {
         // An opener inside a layout block isn't a numbered section.
-        Component::Opener(o) => write_opener(s, o, None, 2),
+        Component::Opener(o) => write_opener(s, o, None, ctx.section_out),
         Component::Callout(c) => {
             s.push_str(&format!(
                 "#callout(tone: {}, title: {})[{}]\n\n",
@@ -687,7 +734,7 @@ fn write_columns(
     ratios: &[f32],
     gutter: Option<&str>,
     children: &[StyledColumn],
-    images: &Images,
+    ctx: Ctx,
 ) {
     if children.is_empty() {
         return;
@@ -710,9 +757,11 @@ fn write_columns(
     ));
 
     for child in children {
+        let styled = child.style.as_ref().is_some_and(|st| !st.is_empty());
+        let inner_ctx = if styled { ctx.boxed() } else { ctx };
         let mut inner = String::new();
         for node in &child.nodes {
-            write_node(&mut inner, node, images);
+            write_node(&mut inner, node, inner_ctx);
         }
         match child.style.as_ref() {
             Some(style) if !style.is_empty() => {
@@ -730,10 +779,12 @@ fn write_columns(
     s.push_str("))\n\n");
 }
 
-fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[DocumentNode], images: &Images) {
+fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[DocumentNode], ctx: Ctx) {
+    let styled = style.is_some_and(|st| !st.is_empty());
+    let inner_ctx = if styled { ctx.boxed() } else { ctx };
     let mut inner = String::new();
     for node in children {
-        write_node(&mut inner, node, images);
+        write_node(&mut inner, node, inner_ctx);
     }
     match style {
         Some(style) if !style.is_empty() => {
@@ -788,10 +839,6 @@ fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
     if let Some(tc) = style.text_color.as_deref().and_then(colour_value) {
         s.push_str(&format!("  #set text(fill: {tc})\n"));
     }
-    // Headings in a box are card titles: small, in the box's text colour,
-    // and left out of the bookmarks and the running head.
-    s.push_str("  #set heading(outlined: false, bookmarked: false)\n");
-    s.push_str("  #show heading: boxed-heading\n");
 
     s.push_str(inner);
     s.push(']');
@@ -1082,9 +1129,21 @@ fn font_dir() -> std::path::PathBuf {
 
 /// Compile Typst source to PDF. `assets` (logos, images) are written into
 /// the compile root under their own names, which the source refers to.
+///
+/// PDFs are built as tagged PDF/UA-1 (accessible to screen readers). If a
+/// document can't meet the standard (an image without alt text in a version
+/// 1 document, say), it's built as a plain PDF instead and the reason logged:
+/// accessibility never costs a render.
 fn compile(source: &str, assets: &[&Asset]) -> anyhow::Result<Vec<u8>> {
-    let mut files = compile_to(source, assets, &[], "doc.pdf")?;
-    Ok(files.remove(0))
+    match compile_to(source, assets, &["--pdf-standard", "ua-1"], "doc.pdf") {
+        Ok(mut files) => Ok(files.remove(0)),
+        Err(e) if e.to_string().contains("PDF/UA") => {
+            tracing::warn!(error = %e, "built without PDF/UA");
+            let mut files = compile_to(source, assets, &[], "doc.pdf")?;
+            Ok(files.remove(0))
+        }
+        Err(e) => Err(e),
+    }
 }
 
 /// Render each page as a PNG at `ppi`, for proofs.
@@ -1236,7 +1295,7 @@ mod tests {
     }
 
     #[test]
-    fn headings_in_styled_boxes_stay_out_of_the_bookmarks() {
+    fn headings_in_styled_boxes_become_card_titles() {
         let source = build_source(&branded_json(r##"{
             "pages": [{ "blocks": [{
                 "type": "section",
@@ -1245,8 +1304,9 @@ mod tests {
                 "blocks": [{ "type": "heading", "level": 3, "text": "Card" }]
             }]}]
         }"##));
-        assert!(source.contains("#set heading(outlined: false, bookmarked: false)"));
-        assert!(source.contains("#show heading: boxed-heading"));
+        // A card title isn't a heading: it stays out of the structure and bookmarks.
+        assert!(source.contains("#card-title[Card]"), "{source}");
+        assert!(!source.contains("=== Card"));
         assert!(source.contains("breakable: false"));
     }
 
@@ -1266,6 +1326,55 @@ mod tests {
         assert_eq!(length_value(Some("s5"), "8pt"), "t.s5");
         assert_eq!(length_value(Some("12pt"), "8pt"), "12pt");
         assert_eq!(length_value(None, "t.s4"), "t.s4");
+    }
+
+    /// The theme's status colours, as emitted in `t`.
+    const STATUS: [(&str, &str); 5] = [
+        ("good", "#1F7A4D"),
+        ("fair", "#966010"),
+        ("poor", "#B42318"),
+        ("serious", "#C2410C"),
+        ("muted", "#5B5852"),
+    ];
+
+    fn rgb(hex: &str) -> [f64; 3] {
+        let h = hex.trim_start_matches('#');
+        [0, 2, 4].map(|i| u8::from_str_radix(&h[i..i + 2], 16).unwrap() as f64)
+    }
+
+    fn hex(c: [f64; 3]) -> String {
+        format!("#{:02X}{:02X}{:02X}", c[0].round() as u8, c[1].round() as u8, c[2].round() as u8)
+    }
+
+    /// `tint(c, amount)` from components.typ: the colour mixed into paper.
+    fn tint(c: &str, paper: &str, amount: f64) -> String {
+        let (c, p) = (rgb(c), rgb(paper));
+        hex([0, 1, 2].map(|i| c[i] * (1.0 - amount) + p[i] * amount))
+    }
+
+    fn darken(c: &str, f: f64) -> String {
+        hex(rgb(c).map(|x| x * (1.0 - f)))
+    }
+
+    /// Every pair the theme sets text in: status text on paper, badge and
+    /// pill text on their tints, and the filled critical badge. Checked for
+    /// the default profile and the gallery's brand profile (warm paper).
+    #[test]
+    fn theme_colour_pairs_meet_wcag_aa() {
+        use crate::models::client_profile::contrast_ratio;
+        for paper in ["#FFFFFF", &gallery_profile().colour_background] {
+            for (name, c) in STATUS {
+                let checks = [
+                    ("on paper", contrast_ratio(c, paper).unwrap(), 4.5),
+                    ("badge", contrast_ratio(&darken(c, 0.10), &tint(c, paper, 0.85)).unwrap(), 4.5),
+                    ("pill", contrast_ratio(&darken(c, 0.20), &tint(c, paper, 0.82)).unwrap(), 4.5),
+                ];
+                for (pair, ratio, min) in checks {
+                    assert!(ratio >= min, "{name} {pair} on {paper}: {ratio:.2}:1 is below {min}:1");
+                }
+            }
+            assert!(contrast_ratio(paper, "#B42318").unwrap() >= 4.5, "critical badge text on {paper}");
+        }
     }
 
     #[test]
@@ -1335,7 +1444,7 @@ mod tests {
 
     /// Render a local file for design review. Not a test: run with
     /// `TYPESET_PREVIEW_IN=doc.json TYPESET_PREVIEW_OUT=out.pdf
-    /// [TYPESET_PREVIEW_PROFILE=overrides.json] cargo test preview -- --ignored`.
+    /// [TYPESET_PREVIEW_PROFILE=overrides.json] [TYPESET_PREVIEW_PRINT=1] cargo test preview -- --ignored`.
     /// The profile file overrides fields on the default profile. The Typst
     /// source is written next to the PDF.
     #[test]
@@ -1357,7 +1466,8 @@ mod tests {
             }
         }
         let profile = serde_json::from_value(profile).expect("profile");
-        let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+        let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+        branded.print = std::env::var("TYPESET_PREVIEW_PRINT").is_ok();
         std::fs::write(format!("{out}.typ"), build_source(&branded)).unwrap();
         std::fs::write(&out, render(&branded).expect("render")).unwrap();
     }
@@ -1494,6 +1604,34 @@ mod tests {
              check them, then run with UPDATE_SNAPSHOTS=1 to approve.",
             pages.len()
         );
+    }
+
+    #[test]
+    fn pdfs_are_tagged_pdf_ua() {
+        if !typst_available() {
+            return;
+        }
+        let b = branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Tagged" }, "pages": [
+            { "blocks": [{ "type": "opener", "title": "One" }, { "type": "heading", "level": 3, "text": "Sub" },
+                         { "type": "section", "background": "surface", "blocks": [{ "type": "heading", "level": 4, "text": "Card" }] }] }
+        ]}"#);
+        let pdf = render(&b).unwrap();
+        let text = String::from_utf8_lossy(&pdf);
+        assert!(text.contains("pdfuaid"), "the PDF should declare PDF/UA conformance");
+    }
+
+    #[test]
+    fn print_adds_bleed_and_cmyk() {
+        let mut b = branded_json(r#"{ "frontmatter": { "title": "Print" }, "pages": [{ "blocks": [{ "type": "paragraph", "text": "x" }] }] }"#);
+        b.print = true;
+        let source = build_source(&b);
+        assert!(source.contains("page-width: 216mm,") && source.contains("page-height: 303mm,"), "A4 plus 3mm a side");
+        assert!(source.contains("print: true,"));
+        // The theme converts every colour token to CMYK when meta.print is
+        // set (checked by hand: the content streams use only k/K operators).
+        if typst_available() {
+            render(&b).expect("print renders");
+        }
     }
 
     #[test]

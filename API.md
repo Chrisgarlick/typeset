@@ -71,6 +71,7 @@ The main endpoint. Returns the rendered file as a download (`Content-Disposition
   "format": "pdf | docx | both",
   "client": "optional client profile slug",
   "input_format": "markdown | json (default markdown)",
+  "print": "optional boolean (default false)",
   "overrides": {
     "title": "optional",
     "subtitle": "optional",
@@ -87,6 +88,9 @@ Field notes:
 - `format` — `"pdf"`, `"docx"`, or `"both"`. (`"both"` currently returns the PDF only.)
 - `client` — optional. If omitted, the built-in default profile is used. If supplied, the slug must exist under your API key's user ID.
 - `input_format` — `"markdown"` (the default) or `"json"`, a structured document; see [JSON documents](#json-documents).
+- `print` — `true` for professional printing: every colour in CMYK and a 3mm bleed on each edge of every page (an A4 document comes out 216 × 303mm, to be trimmed to A4). Full-page fills, such as the cover, run into the bleed. Leave it off for screen and office printing.
+
+PDFs are tagged PDF/UA-1, so screen readers can follow the structure: the cover title is the one level 1 heading, sections and subsections follow without skipping levels, and figures carry alt text. A document that can't meet the standard (a version 1 image without alt text, say) is still rendered, as a plain PDF.
 - `overrides` — any field here overrides the equivalent frontmatter value at render time.
 
 ### Response
@@ -264,7 +268,7 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 
 **Version 1 blocks** (no `schema`, or `"schema": 1`): `heading`, `paragraph`, `markdown`, `bullet_list`, `ordered_list`, `table`, `code`, `blockquote`, `image`, `rule`, `page_break`, `columns` and `section`. These keep working.
 
-- `image` takes `url`, `alt`, and optionally `caption` and `width` (`column`, the default, or `full`). Images are fetched before rendering over HTTPS (PNG, JPEG, WebP or SVG, up to 5 MB, at most 24 per document). One that can't be fetched shows a placeholder with its alt text.
+- `image` takes `url`, `alt` (required in schema 2 documents), and optionally `caption` and `width` (`column`, the default, or `full`). Images are fetched before rendering over HTTPS (PNG, JPEG, WebP or SVG, up to 5 MB, at most 24 per document). One that can't be fetched shows a placeholder with its alt text.
 - `section` and `columns` styles accept brand token names instead of raw values: colours `ink`, `ink-muted`, `heading`, `paper`, `surface`, `rule`, `accent`, `accent-soft`, `cover-bg`, `cover-text`, `good`, `fair`, `poor`; lengths `s1` to `s9`, `r-sm`, `r-md`, `hairline`, `heavy`. Hex colours and raw lengths still work.
 
 **Version 2 components** need `"schema": 2`. They say what something is; the theme decides how it looks. They reject unknown fields, and text fields accept inline markdown.

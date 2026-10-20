@@ -11,6 +11,9 @@ pub struct RenderRequest {
     pub overrides: Option<RenderOverrides>,
     #[serde(default)]
     pub input_format: InputFormat,
+    /// For professional printing: CMYK colours and a 3mm bleed on every page.
+    #[serde(default)]
+    pub print: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]

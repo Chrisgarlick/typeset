@@ -92,6 +92,9 @@ fn push_block(out: &mut Vec<DocumentNode>, block: &Block, schema: u32, path: &st
             out.push(DocumentNode::Blockquote { text: text.clone() });
         }
         Block::Image { url, alt, caption, width } => {
+            if schema >= 2 && alt.as_deref().is_none_or(|a| a.trim().is_empty()) {
+                anyhow::bail!("{path} (image): needs `alt` text describing the image, for screen readers");
+            }
             out.push(DocumentNode::Image {
                 url: url.clone(),
                 alt: alt.clone().unwrap_or_default(),
@@ -389,6 +392,13 @@ mod tests {
         let DocumentNode::Image { caption, full_width, .. } = &doc.nodes[0] else { panic!("expected an image") };
         assert_eq!(caption.as_deref(), Some("Cap"));
         assert!(*full_width);
+    }
+
+    #[test]
+    fn schema_2_images_need_alt_text() {
+        let doc = |schema: u32| format!(r#"{{ "schema": {schema}, "pages": [{{ "blocks": [{{ "type": "image", "url": "https://a.test/x.png" }}] }}] }}"#);
+        assert!(parse(&doc(1)).is_ok(), "version 1 documents render as before");
+        assert!(parse(&doc(2)).unwrap_err().to_string().contains("needs `alt` text"));
     }
 
     #[test]

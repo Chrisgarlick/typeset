@@ -10,6 +10,8 @@ pub struct BrandedDocument {
     pub logos: super::assets::Logos,
     /// The document's images, fetched by the route, keyed by URL.
     pub images: std::collections::HashMap<String, super::assets::Asset>,
+    /// Print output: CMYK colours and a bleed round every page.
+    pub print: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -48,6 +50,7 @@ impl BrandedDocument {
             colours,
             logos: Default::default(),
             images: Default::default(),
+            print: false,
         })
     }
 }

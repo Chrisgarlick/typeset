@@ -49,6 +49,7 @@ pub async fn handle_render(
         .map_err(|e| AppError::RenderError(e.to_string()))?;
     branded.logos = crate::brand::assets::fetch_logos(&branded.profile).await;
     branded.images = crate::brand::assets::fetch_images(&branded.doc.nodes).await;
+    branded.print = req.print;
 
     let (bytes, content_type, ext) = match req.format {
         RenderFormat::Pdf | RenderFormat::Both => {
