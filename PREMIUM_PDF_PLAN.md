@@ -344,7 +344,8 @@ left, or before blocks that stay whole.
 - [x] Schema v2 for these blocks, the JSON Schema and validation.
 - [x] `examples/gallery.json` and visual regression snapshots.
 
-*Done 20 Oct 2026 (local; not yet deployed).* How it was built, and where it differs from the plan:
+*Done and deployed 20 Oct 2026 (e40f64f). `chris-garlick-light` has the wordmark "Chris Garlick" and
+the editorial cover.* How it was built, and where it differs from the plan:
 - **Files.** Components live in `src/renderers/components.typ` beside `theme.typ` (two files rather
   than a `theme/` folder). The renderer passes each block's fields as Typst arguments, with text
   already converted to content, so inline markdown works in every text field.
@@ -384,14 +385,43 @@ restructured into openers with score stats, gauges, findings tables, steps and f
 12 pages with an editorial cover. It reads as designed.
 
 ### Phase 3: Data visuals and structure (75 → 88)
-- [ ] The score matrix (heat table), bar comparison, severity summary, priority matrix.
-- [ ] The contents page and back page; finding cards for headline issues.
-- [ ] Images and figures with safe fetching (B4). Reuse the logo fetcher.
-- [ ] Token names for `section`/`columns` styling (4.5) and the remaining profile fields and
+- [x] The score matrix (heat table), bar comparison, severity summary, priority matrix.
+- [x] The contents page and back page; finding cards for headline issues.
+- [x] Images and figures with safe fetching (B4). Reuse the logo fetcher.
+- [x] Token names for `section`/`columns` styling (4.5) and ~~the remaining profile fields and~~
       validation from section 5 (moved from Phase 2).
 
-*Acceptance:* the Myers summary fits on one "at a glance" page: score gauges, a severity summary,
-the top three findings as cards, and a priority matrix.
+*Done 20 Oct 2026 (local; not yet deployed).* How it was built, and where it differs from the plan:
+- **Components:** `score_matrix` (tinted pills by status; `null` shows a dash), `bars` (dashed target
+  line; `better: lower | higher` decides green or red; accent with no target), `severity_summary`
+  (segmented bar, four counts with badges), `finding` (card: severity rule, badge, page chips,
+  title, evidence on the right, why and fix side by side or one column), `priority_matrix` (2×2
+  with numbered dots and a key), `contents` (linked, numbered, dotted leaders, page numbers net of
+  the cover, own page) and `back_page` (cover colour, brand mark, about line, contact grid; left
+  out of the page total).
+- **Added: `highlights`**, one to four findings side by side as compact equal-height cards. The
+  stacked finding cards were too tall for a one-page summary; this is the "top three" component.
+- **Images.** `image` gains `caption` and `width` (`column` | `full`); markdown image titles
+  become captions. The logo fetcher became `brand/assets.rs` and fetches document images too
+  (HTTPS, 5 MB, 24 per document, cached). Failed images show a placeholder with the alt text.
+  Data URIs aren't supported.
+- **Tokens (4.5).** Style colours and lengths accept token names; hex and raw lengths still work.
+  The default card padding and radius are now `s4` and `r-md`. No `strict_tokens` flag yet.
+- **Profile validation** on save (400 listing every problem): hex colours, WCAG contrast for the
+  pairs the theme uses (4.5:1 text, headings, muted text, table header text, cover; 3:1 accent),
+  known fonts, HTTPS logos, known cover template. On the live profiles it flags `kritano` (amber
+  accent 2.1:1 on white) and `chris-garlick-dark` (Instrument Serif, DM Mono). Those profiles still
+  render; the check only runs on save.
+- **Not done:** the extra profile fields (`font_display`, `paper_tint`, status colours,
+  `logo_mark_url`). The heading font, `colour_background` and the wordmark/logo cover them for
+  now; status colours stay fixed tokens.
+- **Spacing.** Data components use `s5` between them and smaller gauges (68pt), so a summary page
+  holds more.
+
+*Acceptance check:* the Myers "at a glance" page (scripted from the report: scores, a severity
+summary counted from its findings tables, the top three findings as highlights, and a priority
+matrix whose quadrants follow the report's own "biggest difference" list and quick wins / bigger
+jobs split) fits on one page.
 
 ### Phase 4: Wire it into scout (88 → 94)
 - [ ] `typeset-format.md` rewritten around v2 components; the scout validator follows the JSON

@@ -7,7 +7,9 @@ pub struct BrandedDocument {
     pub page: PageDimensions,
     pub colours: ResolvedColours,
     /// Logo images, fetched by the route before rendering.
-    pub logos: super::logo::Logos,
+    pub logos: super::assets::Logos,
+    /// The document's images, fetched by the route, keyed by URL.
+    pub images: std::collections::HashMap<String, super::assets::Asset>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,6 +47,7 @@ impl BrandedDocument {
             page,
             colours,
             logos: Default::default(),
+            images: Default::default(),
         })
     }
 }

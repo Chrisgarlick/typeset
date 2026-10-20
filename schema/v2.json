@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://typeset.chrisgarlick.com/schema/v2.json",
   "title": "Typeset JSON document, schema 2",
-  "description": "Schema 2 adds components. v1 blocks (heading, paragraph, markdown, bullet_list, ordered_list, table, code, blockquote, image, rule, page_break, columns, section) keep working and are described in API.md; they are accepted here without field checks. Component blocks reject unknown fields.",
+  "description": "Schema 2 adds components. v1 blocks (heading, paragraph, markdown, bullet_list, ordered_list, table, code, blockquote, image (url, alt, caption, width: column | full), rule, page_break, columns, section) keep working and are described in API.md; they are accepted here without field checks. Component blocks reject unknown fields.",
   "type": "object",
   "required": [
     "schema",
@@ -152,6 +152,30 @@
         },
         {
           "$ref": "#/$defs/facts"
+        },
+        {
+          "$ref": "#/$defs/score_matrix"
+        },
+        {
+          "$ref": "#/$defs/bars"
+        },
+        {
+          "$ref": "#/$defs/severity_summary"
+        },
+        {
+          "$ref": "#/$defs/finding"
+        },
+        {
+          "$ref": "#/$defs/priority_matrix"
+        },
+        {
+          "$ref": "#/$defs/contents"
+        },
+        {
+          "$ref": "#/$defs/back_page"
+        },
+        {
+          "$ref": "#/$defs/highlights"
         }
       ]
     },
@@ -468,6 +492,393 @@
         "items"
       ],
       "description": "Label and value pairs."
+    },
+    "score_matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "score_matrix"
+        },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "description": "Text; inline markdown (bold, italic, links, code) allowed."
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "description": "One per column; null where there is no score."
+              }
+            },
+            "required": [
+              "label",
+              "values"
+            ]
+          }
+        },
+        "max": {
+          "type": "number",
+          "default": 100
+        },
+        "caption": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "type",
+        "columns",
+        "rows"
+      ],
+      "description": "Scores by page and category as a heat table."
+    },
+    "bars": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "bars"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        },
+        "unit": {
+          "type": "string",
+          "description": "Appended to each value, e.g. \" s\"."
+        },
+        "target": {
+          "type": "number"
+        },
+        "better": {
+          "enum": [
+            "lower",
+            "higher"
+          ],
+          "default": "lower"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "Horizontal bars with a dashed target line, coloured by which side of the target they fall."
+    },
+    "severity_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "severity_summary"
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "critical": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "serious": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "moderate": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minor": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": []
+        },
+        "caption": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "type",
+        "counts"
+      ],
+      "description": "Issue counts by severity: a segmented bar over four counts."
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "finding"
+        },
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "serious",
+            "moderate",
+            "minor"
+          ]
+        },
+        "why": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "fix": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Text; inline markdown (bold, italic, links, code) allowed."
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            },
+            "label": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "severity"
+      ],
+      "description": "One headline issue as a card."
+    },
+    "priority_matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "priority_matrix"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "impact": {
+                "enum": [
+                  "high",
+                  "low"
+                ]
+              },
+              "effort": {
+                "enum": [
+                  "high",
+                  "low"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "impact",
+              "effort"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "Impact against effort: quick wins, big bets, fill-ins, maybe later."
+    },
+    "contents": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "contents"
+        },
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "description": "A contents list of the document's sections, on a page of its own."
+    },
+    "back_page": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "back_page"
+        },
+        "about": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "contact": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            },
+            "email": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            },
+            "website": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "description": "A closing page with the brand mark, an about line and contact details."
+    },
+    "highlights": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Up to four headline findings side by side, as compact cards.",
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "highlights"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "severity": {
+                "enum": [
+                  "critical",
+                  "serious",
+                  "moderate",
+                  "minor"
+                ]
+              },
+              "why": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "fix": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "pages": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Text; inline markdown (bold, italic, links, code) allowed."
+                }
+              },
+              "evidence": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "description": "Text; inline markdown (bold, italic, links, code) allowed."
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "Text; inline markdown (bold, italic, links, code) allowed."
+                  }
+                },
+                "required": [
+                  "value"
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "severity"
+            ]
+          }
+        }
+      }
     }
   }
 }

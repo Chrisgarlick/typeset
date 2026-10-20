@@ -91,10 +91,12 @@ fn push_block(out: &mut Vec<DocumentNode>, block: &Block, schema: u32, path: &st
         Block::Blockquote { text } => {
             out.push(DocumentNode::Blockquote { text: text.clone() });
         }
-        Block::Image { url, alt } => {
+        Block::Image { url, alt, caption, width } => {
             out.push(DocumentNode::Image {
                 url: url.clone(),
                 alt: alt.clone().unwrap_or_default(),
+                caption: caption.clone(),
+                full_width: width.as_deref() == Some("full"),
             });
         }
         Block::Rule => out.push(DocumentNode::HorizontalRule),
@@ -293,6 +295,11 @@ enum Block {
         url: String,
         #[serde(default)]
         alt: Option<String>,
+        #[serde(default)]
+        caption: Option<String>,
+        /// `column` (the default) or `full`.
+        #[serde(default)]
+        width: Option<String>,
     },
     Rule,
     PageBreak,
@@ -358,6 +365,30 @@ mod tests {
         let doc = parse(input).unwrap();
         let DocumentNode::Section { children, .. } = &doc.nodes[0] else { panic!("expected a section") };
         assert!(matches!(children[0], DocumentNode::Component(Component::Callout(_))));
+    }
+
+    #[test]
+    fn highlights_take_one_to_four_items() {
+        let item = r#"{ "title": "x", "severity": "minor" }"#;
+        let doc = |n: usize| {
+            format!(
+                r#"{{ "schema": 2, "pages": [{{ "blocks": [{{ "type": "highlights", "items": [{}] }}] }}] }}"#,
+                vec![item; n].join(",")
+            )
+        };
+        assert!(parse(&doc(4)).is_ok());
+        assert!(parse(&doc(5)).unwrap_err().to_string().contains("one to four"));
+        assert!(parse(&doc(0)).is_err());
+    }
+
+    #[test]
+    fn images_carry_caption_and_width() {
+        let doc = parse(r#"{ "pages": [{ "blocks": [
+            { "type": "image", "url": "https://example.com/a.png", "alt": "A", "caption": "Cap", "width": "full" }
+        ]}]}"#).unwrap();
+        let DocumentNode::Image { caption, full_width, .. } = &doc.nodes[0] else { panic!("expected an image") };
+        assert_eq!(caption.as_deref(), Some("Cap"));
+        assert!(*full_width);
     }
 
     #[test]

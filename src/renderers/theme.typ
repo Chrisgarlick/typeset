@@ -87,6 +87,7 @@
       #let n = counter(page).get().first()
       #let total = counter(page).final().first()
       #let (n, total) = if meta.has-cover { (n - 1, total - 1) } else { (n, total) }
+      #let total = if meta.has-back-page { total - 1 } else { total }
       #grid(columns: (1fr, auto), column-gutter: t.s5, meta.footer-left, text(number-width: "tabular")[Page #n of #total])
     ])
   },

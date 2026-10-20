@@ -14,19 +14,46 @@
     {
       "blocks": [
         {
+          "type": "contents"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
           "type": "opener",
           "eyebrow": "Summary",
           "title": "At a glance",
           "intro": "An opener starts a numbered section. It carries an **eyebrow**, an intro set slightly larger than body text, and an optional headline figure on the right.",
-          "stat": { "value": "62", "label": "Overall score", "status": "fair" }
+          "stat": {
+            "value": "62",
+            "label": "Overall score",
+            "status": "fair"
+          }
         },
         {
           "type": "scores",
           "items": [
-            { "label": "Accessibility", "value": 36, "benchmark": 90 },
-            { "label": "Performance", "value": 28, "benchmark": 90 },
-            { "label": "SEO", "value": 74, "benchmark": 90 },
-            { "label": "Security", "value": 92, "benchmark": 90 }
+            {
+              "label": "Accessibility",
+              "value": 36,
+              "benchmark": 90
+            },
+            {
+              "label": "Performance",
+              "value": 28,
+              "benchmark": 90
+            },
+            {
+              "label": "SEO",
+              "value": 74,
+              "benchmark": 90
+            },
+            {
+              "label": "Security",
+              "value": 92,
+              "benchmark": 90
+            }
           ],
           "caption": "Scores are averages across five pages. The tick on each gauge marks the target of 90."
         },
@@ -37,10 +64,30 @@
         {
           "type": "metrics",
           "items": [
-            { "value": "7.7 MB", "label": "Home page size", "target": "under 1.5 MB", "status": "poor" },
-            { "value": "15.2 s", "label": "Time to load fully", "target": "under 3 s", "status": "poor" },
-            { "value": "2.4 s", "label": "First content shown", "target": "under 1.8 s", "status": "fair" },
-            { "value": "98%", "label": "Uptime this month", "target": "99.9%", "status": "good" }
+            {
+              "value": "7.7 MB",
+              "label": "Home page size",
+              "target": "under 1.5 MB",
+              "status": "poor"
+            },
+            {
+              "value": "15.2 s",
+              "label": "Time to load fully",
+              "target": "under 3 s",
+              "status": "poor"
+            },
+            {
+              "value": "2.4 s",
+              "label": "First content shown",
+              "target": "under 1.8 s",
+              "status": "fair"
+            },
+            {
+              "value": "98%",
+              "label": "Uptime this month",
+              "target": "99.9%",
+              "status": "good"
+            }
           ]
         },
         {
@@ -55,26 +102,306 @@
       "blocks": [
         {
           "type": "opener",
+          "eyebrow": "Data",
+          "title": "Data visuals",
+          "intro": "A severity summary, scores by page as a heat table, and bars against a target."
+        },
+        {
+          "type": "severity_summary",
+          "counts": {
+            "critical": 2,
+            "serious": 9,
+            "moderate": 14,
+            "minor": 6
+          },
+          "caption": "31 issues across five pages."
+        },
+        {
+          "type": "score_matrix",
+          "columns": [
+            "Accessibility",
+            "Performance",
+            "SEO",
+            "Security"
+          ],
+          "rows": [
+            {
+              "label": "Home",
+              "values": [
+                41,
+                0,
+                58,
+                60
+              ]
+            },
+            {
+              "label": "Shop",
+              "values": [
+                35,
+                31,
+                61,
+                60
+              ]
+            },
+            {
+              "label": "Engagement rings",
+              "values": [
+                33,
+                42,
+                64,
+                60
+              ]
+            },
+            {
+              "label": "Ring category",
+              "values": [
+                36,
+                35,
+                57,
+                60
+              ]
+            },
+            {
+              "label": "Ring product page",
+              "values": [
+                34,
+                33,
+                59,
+                null
+              ]
+            }
+          ],
+          "caption": "A dash means the category wasn't scored for that page."
+        },
+        {
+          "type": "bars",
+          "unit": " s",
+          "target": 3,
+          "better": "lower",
+          "items": [
+            {
+              "label": "Home",
+              "value": 15.2
+            },
+            {
+              "label": "Shop",
+              "value": 10.4
+            },
+            {
+              "label": "Engagement rings",
+              "value": 11.8
+            },
+            {
+              "label": "Ring category",
+              "value": 10.9
+            },
+            {
+              "label": "Ring product page",
+              "value": 2.6
+            }
+          ],
+          "caption": "Time to load fully, in seconds. The dashed line is the 3 second target."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Headlines",
+          "title": "Finding cards and priorities",
+          "intro": "Highlights put up to four headline issues side by side. Finding cards give one issue room. The priority matrix sorts the work by impact and effort."
+        },
+        {
+          "type": "highlights",
+          "items": [
+            {
+              "title": "Pages are very heavy",
+              "severity": "serious",
+              "evidence": {
+                "value": "7.7 MB",
+                "label": "Home page"
+              },
+              "fix": "Compress images and remove unused scripts."
+            },
+            {
+              "title": "Images without alternative text",
+              "severity": "critical",
+              "evidence": {
+                "value": "2",
+                "label": "images"
+              },
+              "fix": "Describe each product image."
+            },
+            {
+              "title": "A test page is indexed",
+              "severity": "moderate",
+              "fix": "Delete it, or set it to draft."
+            }
+          ]
+        },
+        {
+          "type": "finding",
+          "title": "Pages are five times heavier than they should be",
+          "severity": "serious",
+          "pages": [
+            "All 5 pages"
+          ],
+          "why": "Heavy pages load slowly, especially on mobile, and visitors leave before they see anything.",
+          "fix": "Compress and resize images, serve modern formats, and remove scripts the page doesn't use.",
+          "evidence": {
+            "value": "7.7 MB",
+            "label": "Home page"
+          }
+        },
+        {
+          "type": "finding",
+          "title": "Product images have no alternative text",
+          "severity": "critical",
+          "pages": [
+            "Ring product page"
+          ],
+          "why": "Screen reader users can't tell what the product looks like.",
+          "fix": "Add a short written description to each product image.",
+          "evidence": {
+            "value": "2",
+            "label": "images"
+          }
+        },
+        {
+          "type": "priority_matrix",
+          "items": [
+            {
+              "label": "Delete the test page and sample post",
+              "impact": "high",
+              "effort": "low"
+            },
+            {
+              "label": "Add alternative text to product images",
+              "impact": "high",
+              "effort": "low"
+            },
+            {
+              "label": "Cut the page weight",
+              "impact": "high",
+              "effort": "high"
+            },
+            {
+              "label": "Rewrite key pages with more content",
+              "impact": "high",
+              "effort": "high"
+            },
+            {
+              "label": "Hide the WordPress version",
+              "impact": "low",
+              "effort": "low"
+            },
+            {
+              "label": "Rebuild the theme's navigation",
+              "impact": "low",
+              "effort": "high"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
           "eyebrow": "Findings",
           "title": "Accessibility",
           "intro": "The findings table gives each issue a severity badge, how often it was found, where, and what to do.",
-          "stat": { "value": "36", "label": "out of 100", "status": "poor" }
+          "stat": {
+            "value": "36",
+            "label": "out of 100",
+            "status": "poor"
+          }
         },
         {
           "type": "findings",
           "items": [
-            { "title": "Product images have no alternative text", "severity": "critical", "count": 2, "pages": ["Ring product page"], "fix": "Add a short written description to each image so screen readers can describe it." },
-            { "title": "The text size drop-down has no label", "severity": "critical", "pages": ["Ring product page"], "fix": "Add a label so screen reader users know what it is for." },
-            { "title": "Text and background colours don't contrast enough", "severity": "serious", "count": 202, "pages": ["All 5 pages"], "fix": "Darken light or pastel text, particularly prices and links." },
-            { "title": "Links with no readable text", "severity": "serious", "count": 12, "pages": ["All 5 pages"], "fix": "Describe icon-only links, such as the logo and the account icon." },
-            { "title": "Page content isn't grouped into landmarks", "severity": "moderate", "count": 164, "pages": ["Home", "Shop", "Engagement rings"], "fix": "Use proper page structure: header, main content and footer." },
-            { "title": "Decorative images are announced", "severity": "minor", "count": 6, "pages": ["Home"], "fix": "Mark purely decorative images so assistive technology skips them." }
+            {
+              "title": "Product images have no alternative text",
+              "severity": "critical",
+              "count": 2,
+              "pages": [
+                "Ring product page"
+              ],
+              "fix": "Add a short written description to each image so screen readers can describe it."
+            },
+            {
+              "title": "The text size drop-down has no label",
+              "severity": "critical",
+              "pages": [
+                "Ring product page"
+              ],
+              "fix": "Add a label so screen reader users know what it is for."
+            },
+            {
+              "title": "Text and background colours don't contrast enough",
+              "severity": "serious",
+              "count": 202,
+              "pages": [
+                "All 5 pages"
+              ],
+              "fix": "Darken light or pastel text, particularly prices and links."
+            },
+            {
+              "title": "Links with no readable text",
+              "severity": "serious",
+              "count": 12,
+              "pages": [
+                "All 5 pages"
+              ],
+              "fix": "Describe icon-only links, such as the logo and the account icon."
+            },
+            {
+              "title": "Page content isn't grouped into landmarks",
+              "severity": "moderate",
+              "count": 164,
+              "pages": [
+                "Home",
+                "Shop",
+                "Engagement rings"
+              ],
+              "fix": "Use proper page structure: header, main content and footer."
+            },
+            {
+              "title": "Decorative images are announced",
+              "severity": "minor",
+              "count": 6,
+              "pages": [
+                "Home"
+              ],
+              "fix": "Mark purely decorative images so assistive technology skips them."
+            }
           ]
         },
-        { "type": "callout", "tone": "info", "title": "Information", "body": "An information callout, in the neutral tone." },
-        { "type": "callout", "tone": "good", "title": "What's working", "body": "Every page has a unique title, and the site is served over HTTPS." },
-        { "type": "callout", "tone": "warn", "title": "Worth checking", "body": "Two basket pages exist (/basket/ and /mycart/). Customers may land on the wrong one." },
-        { "type": "callout", "tone": "critical", "title": "Fix first", "body": "A test page and a sample post are publicly visible and indexed by search engines." }
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Information",
+          "body": "An information callout, in the neutral tone."
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "What's working",
+          "body": "Every page has a unique title, and the site is served over HTTPS."
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "title": "Worth checking",
+          "body": "Two basket pages exist (/basket/ and /mycart/). Customers may land on the wrong one."
+        },
+        {
+          "type": "callout",
+          "tone": "critical",
+          "title": "Fix first",
+          "body": "A test page and a sample post are publicly visible and indexed by search engines."
+        }
       ]
     },
     {
@@ -91,16 +418,35 @@
             {
               "title": "Quick wins",
               "items": [
-                { "title": "Delete the test page and the sample post", "detail": "Both are live and indexed. Removing them takes minutes.", "effort": "15 minutes" },
-                { "title": "Pick one basket page", "detail": "Redirect the other one to it so every link goes to the same place.", "effort": "30 minutes" },
-                { "title": "Add alternative text to product images", "effort": "1 hour" }
+                {
+                  "title": "Delete the test page and the sample post",
+                  "detail": "Both are live and indexed. Removing them takes minutes.",
+                  "effort": "15 minutes"
+                },
+                {
+                  "title": "Pick one basket page",
+                  "detail": "Redirect the other one to it so every link goes to the same place.",
+                  "effort": "30 minutes"
+                },
+                {
+                  "title": "Add alternative text to product images",
+                  "effort": "1 hour"
+                }
               ]
             },
             {
               "title": "Bigger jobs",
               "items": [
-                { "title": "Cut the page weight", "detail": "Compress images, serve modern formats and remove unused scripts. The home page should drop from 7.7 MB to under 1.5 MB.", "effort": "2 days" },
-                { "title": "Fix colour contrast across the theme", "detail": "Darken the pastel text styles in one place, in the theme's stylesheet.", "effort": "1 day" }
+                {
+                  "title": "Cut the page weight",
+                  "detail": "Compress images, serve modern formats and remove unused scripts. The home page should drop from 7.7 MB to under 1.5 MB.",
+                  "effort": "2 days"
+                },
+                {
+                  "title": "Fix colour contrast across the theme",
+                  "detail": "Darken the pastel text styles in one place, in the theme's stylesheet.",
+                  "effort": "1 day"
+                }
               ]
             }
           ]
@@ -118,17 +464,68 @@
         {
           "type": "facts",
           "items": [
-            { "label": "Site", "value": "example-jewellers.co.uk" },
-            { "label": "Pages checked", "value": "Home, Shop, Engagement rings, Ring category, a ring product page" },
-            { "label": "Checked on", "value": "19 October 2026" },
-            { "label": "Tools", "value": "Automated audits for accessibility, performance, SEO, content and security, plus a manual review" },
-            { "label": "Scoring", "value": "Each type of problem costs points once, with a little extra when it appears many times." }
+            {
+              "label": "Site",
+              "value": "example-jewellers.co.uk"
+            },
+            {
+              "label": "Pages checked",
+              "value": "Home, Shop, Engagement rings, Ring category, a ring product page"
+            },
+            {
+              "label": "Checked on",
+              "value": "19 October 2026"
+            },
+            {
+              "label": "Tools",
+              "value": "Automated audits for accessibility, performance, SEO, content and security, plus a manual review"
+            },
+            {
+              "label": "Scoring",
+              "value": "Each type of problem costs points once, with a little extra when it appears many times."
+            }
           ]
         },
         {
           "type": "table",
-          "headers": ["Rule", "WCAG reference", "Severity"],
-          "rows": [["image-alt", "1.1.1", "Critical"], ["select-name", "4.1.2", "Critical"], ["color-contrast", "1.4.3", "Serious"]]
+          "headers": [
+            "Rule",
+            "WCAG reference",
+            "Severity"
+          ],
+          "rows": [
+            [
+              "image-alt",
+              "1.1.1",
+              "Critical"
+            ],
+            [
+              "select-name",
+              "4.1.2",
+              "Critical"
+            ],
+            [
+              "color-contrast",
+              "1.4.3",
+              "Serious"
+            ]
+          ]
+        },
+        {
+          "type": "image",
+          "url": "https://chrisgarlick.com/og/article.png",
+          "alt": "The Articles share image: a title card",
+          "caption": "Images are fetched before rendering. When one can't be fetched, a placeholder shows its alt text, as in the snapshot tests, which run offline.",
+          "width": "column"
+        },
+        {
+          "type": "back_page",
+          "about": "Websites and software for small businesses, built to be fast, accessible and easy to look after.",
+          "contact": {
+            "name": "Typeset",
+            "email": "hello@example.com",
+            "website": "example.com"
+          }
         }
       ]
     }

@@ -252,7 +252,10 @@ With `"input_format": "json"`, `content` is a JSON document (as a string):
 
 Each entry in `pages` is a section boundary: it starts a new page only when the current one is mostly used.
 
-**Version 1 blocks** (no `schema`, or `"schema": 1`): `heading`, `paragraph`, `markdown`, `bullet_list`, `ordered_list`, `table`, `code`, `blockquote`, `image`, `rule`, `page_break`, `columns` and `section`. These keep working unchanged.
+**Version 1 blocks** (no `schema`, or `"schema": 1`): `heading`, `paragraph`, `markdown`, `bullet_list`, `ordered_list`, `table`, `code`, `blockquote`, `image`, `rule`, `page_break`, `columns` and `section`. These keep working.
+
+- `image` takes `url`, `alt`, and optionally `caption` and `width` (`column`, the default, or `full`). Images are fetched before rendering over HTTPS (PNG, JPEG, WebP or SVG, up to 5 MB, at most 24 per document). One that can't be fetched shows a placeholder with its alt text.
+- `section` and `columns` styles accept brand token names instead of raw values: colours `ink`, `ink-muted`, `heading`, `paper`, `surface`, `rule`, `accent`, `accent-soft`, `cover-bg`, `cover-text`, `good`, `fair`, `poor`; lengths `s1` to `s9`, `r-sm`, `r-md`, `hairline`, `heavy`. Hex colours and raw lengths still work.
 
 **Version 2 components** need `"schema": 2`. They say what something is; the theme decides how it looks. They reject unknown fields, and text fields accept inline markdown.
 
@@ -265,6 +268,14 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 | `scores` | `items: [{ label, value, max? (100), benchmark? }]`, `caption`? | Two to five score gauges |
 | `metrics` | `items: [{ value, label, target?, status? }]` | Headline figures with a status rule |
 | `facts` | `items: [{ label, value }]` | A label and value list |
+| `score_matrix` | `columns`, `rows: [{ label, values }]` (a `null` value shows a dash), `max`?, `caption`? | Scores by page as a heat table of tinted pills |
+| `bars` | `items: [{ label, value }]`, `unit`?, `target`?, `better`? (`lower` \| `higher`), `caption`? | Horizontal bars with a dashed target line, green within the target and red past it |
+| `severity_summary` | `counts: { critical, serious, moderate, minor }`, `caption`? | A segmented bar over four counts |
+| `finding` | `title`, `severity`, `why`?, `fix`?, `pages`?, `evidence`? `{ value, label? }` | One headline issue as a card |
+| `highlights` | `items`: one to four findings (as `finding`, without `type`) | Headline issues side by side as compact cards |
+| `priority_matrix` | `items: [{ label, impact, effort }]`, each `high` \| `low` | Quick wins, big bets, fill-ins and maybe later, with numbered dots and a key |
+| `contents` | `title`? | The sections with numbers and page numbers, linked, on a page of its own |
+| `back_page` | `about`?, `contact`? `{ name?, email?, website?, phone? }` | A closing page on the cover colour |
 
 `status` is `good`, `fair`, `poor` or `neutral`. The full JSON Schema is [`schema/v2.json`](./schema/v2.json), and [`examples/gallery.json`](./examples/gallery.json) uses every component.
 
@@ -284,6 +295,8 @@ curl -H "Authorization: Bearer $TYPESET_TOKEN" \
 ```
 
 ### POST /api/clients
+
+Profiles are checked before saving, and a `400` lists every problem: colours must be `#RRGGBB`; text, headings and muted text need 4.5:1 contrast with the background (accent 3:1, cover text 4.5:1 with the cover); fonts must be Inter, Inter Tight, JetBrains Mono or a known alias (Helvetica, Arial, Courier and similar); logos must be HTTPS; `cover_template` must be a known style.
 
 Create or upsert a profile. The only required fields are `slug` and `name` — every other field has a sensible default.
 

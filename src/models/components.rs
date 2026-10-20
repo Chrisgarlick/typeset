@@ -16,12 +16,35 @@ pub enum Component {
     Scores(Scores),
     Metrics(Metrics),
     Facts(Facts),
+    ScoreMatrix(ScoreMatrix),
+    Bars(Bars),
+    SeveritySummary(SeveritySummary),
+    Finding(FindingCard),
+    PriorityMatrix(PriorityMatrix),
+    Contents(Contents),
+    BackPage(BackPage),
+    Highlights(Highlights),
 }
 
 impl Component {
     /// The JSON `type` names of every component.
-    pub const TYPES: [&'static str; 7] =
-        ["opener", "callout", "findings", "steps", "scores", "metrics", "facts"];
+    pub const TYPES: [&'static str; 15] = [
+        "opener",
+        "callout",
+        "findings",
+        "steps",
+        "scores",
+        "metrics",
+        "facts",
+        "score_matrix",
+        "bars",
+        "severity_summary",
+        "finding",
+        "priority_matrix",
+        "contents",
+        "back_page",
+        "highlights",
+    ];
 
     /// Parse a component from its JSON block, with `type` already removed.
     pub fn from_json(kind: &str, value: serde_json::Value) -> Result<Self, serde_json::Error> {
@@ -33,6 +56,20 @@ impl Component {
             "scores" => Component::Scores(serde_json::from_value(value)?),
             "metrics" => Component::Metrics(serde_json::from_value(value)?),
             "facts" => Component::Facts(serde_json::from_value(value)?),
+            "score_matrix" => Component::ScoreMatrix(serde_json::from_value(value)?),
+            "bars" => Component::Bars(serde_json::from_value(value)?),
+            "severity_summary" => Component::SeveritySummary(serde_json::from_value(value)?),
+            "finding" => Component::Finding(serde_json::from_value(value)?),
+            "priority_matrix" => Component::PriorityMatrix(serde_json::from_value(value)?),
+            "contents" => Component::Contents(serde_json::from_value(value)?),
+            "back_page" => Component::BackPage(serde_json::from_value(value)?),
+            "highlights" => {
+                let h: Highlights = serde_json::from_value(value)?;
+                if h.items.is_empty() || h.items.len() > 4 {
+                    return Err(serde::de::Error::custom("highlights takes one to four items"));
+                }
+                Component::Highlights(h)
+            }
             other => return Err(serde::de::Error::custom(format!("unknown component `{other}`"))),
         })
     }
@@ -70,6 +107,45 @@ impl Component {
                 .collect(),
             Component::Metrics(m) => m.items.iter().map(|i| format!("{}: {}", i.label, i.value)).collect(),
             Component::Facts(f) => f.items.iter().map(|i| format!("{}: {}", i.label, i.value)).collect(),
+            Component::ScoreMatrix(m) => m
+                .rows
+                .iter()
+                .map(|r| {
+                    let values: Vec<String> = r
+                        .values
+                        .iter()
+                        .map(|v| v.map(|v| format!("{v}")).unwrap_or_else(|| "n/a".to_string()))
+                        .collect();
+                    format!("{}: {}", r.label, values.join(", "))
+                })
+                .collect(),
+            Component::Bars(b) => b
+                .items
+                .iter()
+                .map(|i| format!("{}: {}{}", i.label, i.value, b.unit.as_deref().unwrap_or("")))
+                .collect(),
+            Component::SeveritySummary(s) => vec![format!(
+                "Critical {}, serious {}, moderate {}, minor {}",
+                s.counts.critical, s.counts.serious, s.counts.moderate, s.counts.minor
+            )],
+            Component::Finding(f) => {
+                let mut lines = vec![format!("[{}] {}", f.severity.label(), f.title)];
+                lines.extend(f.why.clone());
+                lines.extend(f.fix.clone());
+                lines
+            }
+            Component::PriorityMatrix(m) => m
+                .items
+                .iter()
+                .map(|i| format!("{} (impact {}, effort {})", i.label, i.impact.as_str(), i.effort.as_str()))
+                .collect(),
+            Component::Contents(_) => Vec::new(),
+            Component::BackPage(b) => b.about.iter().cloned().chain(b.contact.lines()).collect(),
+            Component::Highlights(h) => h
+                .items
+                .iter()
+                .map(|f| format!("[{}] {}", f.severity.label(), f.title))
+                .collect(),
         }
     }
 }
@@ -278,4 +354,163 @@ pub struct Facts {
 pub struct Fact {
     pub label: String,
     pub value: String,
+}
+
+/// A heat table: scores by page (rows) and category (columns).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreMatrix {
+    pub columns: Vec<String>,
+    pub rows: Vec<ScoreRow>,
+    #[serde(default = "default_max")]
+    pub max: f64,
+    pub caption: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreRow {
+    pub label: String,
+    /// One per column; `null` where there's no score.
+    pub values: Vec<Option<f64>>,
+}
+
+/// Which direction is good, for colouring bars against their target.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Better {
+    #[default]
+    Lower,
+    Higher,
+}
+
+/// Horizontal bars with an optional dashed target line.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Bars {
+    pub items: Vec<Bar>,
+    /// Appended to each value, e.g. "s" or " MB".
+    pub unit: Option<String>,
+    pub target: Option<f64>,
+    /// Whether lower (the default, e.g. load times) or higher values are good.
+    #[serde(default)]
+    pub better: Better,
+    pub caption: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Bar {
+    pub label: String,
+    pub value: f64,
+}
+
+/// Issue counts by severity: a segmented bar and four counts.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SeveritySummary {
+    pub counts: SeverityCounts,
+    pub caption: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct SeverityCounts {
+    #[serde(default)]
+    pub critical: u32,
+    #[serde(default)]
+    pub serious: u32,
+    #[serde(default)]
+    pub moderate: u32,
+    #[serde(default)]
+    pub minor: u32,
+}
+
+/// One headline issue as a card: why it matters, what to do, the evidence.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FindingCard {
+    pub title: String,
+    pub severity: Severity,
+    pub why: Option<String>,
+    pub fix: Option<String>,
+    #[serde(default)]
+    pub pages: Vec<String>,
+    pub evidence: Option<Evidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Evidence {
+    pub value: String,
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Level {
+    High,
+    Low,
+}
+
+impl Level {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Level::High => "high",
+            Level::Low => "low",
+        }
+    }
+}
+
+/// Impact against effort: quick wins, big bets, fill-ins, maybe later.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PriorityMatrix {
+    pub items: Vec<Priority>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Priority {
+    pub label: String,
+    pub impact: Level,
+    pub effort: Level,
+}
+
+/// A contents list built from the document's sections.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct Contents {
+    pub title: Option<String>,
+}
+
+/// A closing page: the brand mark, an about line and contact details.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BackPage {
+    pub about: Option<String>,
+    #[serde(default)]
+    pub contact: Contact,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct Contact {
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub website: Option<String>,
+    pub phone: Option<String>,
+}
+
+impl Contact {
+    pub fn lines(&self) -> Vec<String> {
+        [&self.name, &self.email, &self.website, &self.phone].into_iter().flatten().cloned().collect()
+    }
+}
+
+/// The headline findings side by side: up to four compact cards.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Highlights {
+    pub items: Vec<FindingCard>,
 }

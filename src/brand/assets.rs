@@ -1,17 +1,21 @@
-//! Logos for the cover and running head, fetched from the profile's URLs.
+//! Images fetched before rendering: the profile's logos and the document's
+//! images, written into the compile root for Typst to read.
 //!
-//! A logo is decoration: any failure (a bad URL, a timeout, an unsupported
-//! type) is logged and the document renders without it, falling back to the
-//! profile's wordmark.
+//! Fetching never fails a render: any failure (a bad URL, a timeout, an
+//! unsupported type, too large) is logged and the document renders without
+//! that image (logos fall back to the wordmark, images to a placeholder).
 
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::models::client_profile::ClientProfile;
+use crate::models::document::DocumentNode;
 
-/// Largest logo accepted.
-const MAX_BYTES: usize = 2 * 1024 * 1024;
+/// Largest image accepted.
+const MAX_BYTES: usize = 5 * 1024 * 1024;
+/// Most images fetched for one document.
+const MAX_IMAGES: usize = 24;
 /// How long a fetched logo is reused before fetching again.
 const CACHE_TTL: Duration = Duration::from_secs(60 * 60);
 const TIMEOUT: Duration = Duration::from_secs(8);
@@ -46,6 +50,35 @@ pub async fn fetch_logos(profile: &ClientProfile) -> Logos {
     }
 }
 
+/// Fetch every image the document uses, keyed by URL. Images are named
+/// `img-N.ext` in the compile root.
+pub async fn fetch_images(nodes: &[DocumentNode]) -> HashMap<String, Asset> {
+    let mut urls = Vec::new();
+    collect_image_urls(nodes, &mut urls);
+    let mut images = HashMap::new();
+    for (i, url) in urls.into_iter().take(MAX_IMAGES).enumerate() {
+        if let Some(asset) = fetch_asset(Some(&url), &format!("img-{i}")).await {
+            images.insert(url, asset);
+        }
+    }
+    images
+}
+
+fn collect_image_urls(nodes: &[DocumentNode], urls: &mut Vec<String>) {
+    for node in nodes {
+        match node {
+            DocumentNode::Image { url, .. } if !urls.contains(url) => urls.push(url.clone()),
+            DocumentNode::Section { children, .. } => collect_image_urls(children, urls),
+            DocumentNode::Columns { children, .. } => {
+                for column in children {
+                    collect_image_urls(&column.nodes, urls);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 async fn fetch_asset(url: Option<&str>, stem: &str) -> Option<Asset> {
     let url = url.map(str::trim).filter(|u| !u.is_empty())?;
     let (bytes, ext) = fetch_cached(url).await?;
@@ -61,7 +94,7 @@ async fn fetch_cached(url: &str) -> Option<(Vec<u8>, &'static str)> {
     let result = match fetch(url).await {
         Ok(found) => Some(found),
         Err(e) => {
-            tracing::warn!(url, error = %e, "logo not used");
+            tracing::warn!(url, error = %e, "image not used");
             None
         }
     };
@@ -71,7 +104,7 @@ async fn fetch_cached(url: &str) -> Option<(Vec<u8>, &'static str)> {
 
 async fn fetch(url: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
     if !url.starts_with("https://") {
-        anyhow::bail!("only https logo URLs are fetched");
+        anyhow::bail!("only https image URLs are fetched");
     }
     let client = reqwest::Client::builder()
         .timeout(TIMEOUT)
@@ -79,7 +112,7 @@ async fn fetch(url: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
         .build()?;
     let response = client.get(url).send().await?.error_for_status()?;
     if response.content_length().is_some_and(|n| n as usize > MAX_BYTES) {
-        anyhow::bail!("logo is over {MAX_BYTES} bytes");
+        anyhow::bail!("image is over {MAX_BYTES} bytes");
     }
     let content_type = response
         .headers()
@@ -89,7 +122,7 @@ async fn fetch(url: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
         .to_ascii_lowercase();
     let bytes = response.bytes().await?;
     if bytes.len() > MAX_BYTES {
-        anyhow::bail!("logo is over {MAX_BYTES} bytes");
+        anyhow::bail!("image is over {MAX_BYTES} bytes");
     }
     let ext = image_extension(&content_type, &bytes)
         .ok_or_else(|| anyhow::anyhow!("not a PNG, JPEG, WebP or SVG image ({content_type})"))?;
@@ -130,6 +163,23 @@ mod tests {
         assert_eq!(image_extension("application/octet-stream", b"\x89PNG\r\n"), Some("png"));
         assert_eq!(image_extension("text/plain", b"<?xml version=\"1.0\"?><svg>"), Some("svg"));
         assert_eq!(image_extension("text/html", b"<html>"), None);
+    }
+
+    #[test]
+    fn collects_each_image_url_once_including_nested_ones() {
+        let image = |url: &str| DocumentNode::Image {
+            url: url.to_string(),
+            alt: String::new(),
+            caption: None,
+            full_width: false,
+        };
+        let nodes = vec![
+            image("https://a.test/1.png"),
+            DocumentNode::Section { style: None, children: vec![image("https://a.test/2.png"), image("https://a.test/1.png")] },
+        ];
+        let mut urls = Vec::new();
+        collect_image_urls(&nodes, &mut urls);
+        assert_eq!(urls, vec!["https://a.test/1.png", "https://a.test/2.png"]);
     }
 
     #[tokio::test]

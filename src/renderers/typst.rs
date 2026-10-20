@@ -2,14 +2,21 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use crate::brand::engine::BrandedDocument;
-use crate::brand::logo::Asset;
-use crate::models::components::{Component, Opener};
+use crate::brand::assets::Asset;
+
+/// Fetched images by URL.
+type Images = std::collections::HashMap<String, Asset>;
+use crate::models::components::{Better, Component, FindingCard, Opener};
 use crate::models::document::{BlockStyle, DocumentNode, StyledColumn};
 
 /// Render a branded document to PDF bytes via the Typst CLI.
 pub fn render(branded: &BrandedDocument) -> anyhow::Result<Vec<u8>> {
     let source = build_source(branded);
-    let assets: Vec<&Asset> = [&branded.logos.light, &branded.logos.dark].into_iter().flatten().collect();
+    let assets: Vec<&Asset> = [&branded.logos.light, &branded.logos.dark]
+        .into_iter()
+        .flatten()
+        .chain(branded.images.values())
+        .collect();
     compile(&source, &assets)
 }
 
@@ -27,7 +34,7 @@ fn build_source(branded: &BrandedDocument) -> String {
     if let Some(c) = &cover {
         write_cover(&mut s, c, branded);
     }
-    write_body(&mut s, &branded.doc.nodes, consumed_body_h1, level);
+    write_body(&mut s, &branded.doc.nodes, consumed_body_h1, level, &branded.images);
 
     s
 }
@@ -228,6 +235,7 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   logo-light: {logo_light},
   logo-dark: {logo_dark},
   has-brand: {has_brand},
+  has-back-page: {has_back_page},
 )
 "##,
         ink = hex_or_default(&p.colour_text, "#1A1A1A"),
@@ -275,6 +283,7 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         logo_light = asset_path(&b.logos.light),
         logo_dark = asset_path(&b.logos.dark),
         has_brand = has_brand,
+        has_back_page = b.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::BackPage(_)))),
     ));
     s.push('\n');
     s.push_str(THEME);
@@ -336,7 +345,7 @@ fn breakable_words(s: &str) -> String {
         .join(" ")
 }
 
-fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, section_level: u8) {
+fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, section_level: u8, images: &Images) {
     let mut skip_next_h1 = consumed_body_h1;
     let mut section = 0;
     for (i, node) in nodes.iter().enumerate() {
@@ -370,11 +379,11 @@ fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, se
                 continue;
             }
         }
-        write_node(s, node);
+        write_node(s, node, images);
     }
 }
 
-fn write_node(s: &mut String, node: &DocumentNode) {
+fn write_node(s: &mut String, node: &DocumentNode, images: &Images) {
     match node {
         DocumentNode::Heading { level, text, .. } => {
             let hashes = "=".repeat(*level as usize);
@@ -416,20 +425,19 @@ fn write_node(s: &mut String, node: &DocumentNode) {
         DocumentNode::SectionBreak => {
             s.push_str("#section-break()\n\n");
         }
-        DocumentNode::Image { url, alt } => {
-            // Best-effort: typst only loads local files in default world; remote URLs
-            // would need pre-fetching. For now, emit a captioned placeholder.
+        DocumentNode::Image { url, alt, caption, full_width } => {
+            let path = images.get(url).map(|a| typst_string(&a.name)).unwrap_or_else(|| "none".to_string());
             s.push_str(&format!(
-                "#figure(caption: [{}])[#text(fill: secondary)[\\[image: {}\\]]]\n\n",
-                typst_content(alt),
-                typst_content(url),
+                "#figure-image({path}, alt: {}, caption: {}, full: {full_width})\n\n",
+                typst_string(alt),
+                opt_content(caption),
             ));
         }
         DocumentNode::Columns { ratios, gutter, children } => {
-            write_columns(s, ratios, gutter.as_deref(), children);
+            write_columns(s, ratios, gutter.as_deref(), children, images);
         }
         DocumentNode::Section { style, children } => {
-            write_section(s, style.as_ref(), children);
+            write_section(s, style.as_ref(), children, images);
         }
         DocumentNode::Component(component) => write_component(s, component),
     }
@@ -473,6 +481,23 @@ fn write_opener(s: &mut String, o: &Opener, number: Option<usize>, level: u8) {
         opt_content(&o.intro),
         o.intro.as_ref().is_some_and(|i| i.chars().count() > LONG_INTRO_CHARS),
     ));
+}
+
+/// A finding's fields as Typst named arguments (or dictionary entries).
+fn finding_args(f: &FindingCard) -> String {
+    let pages: Vec<String> = f.pages.iter().map(|p| content_arg(p)).collect();
+    let evidence = match &f.evidence {
+        Some(e) => format!("(value: {}, label: {})", content_arg(&e.value), opt_content(&e.label)),
+        None => "none".to_string(),
+    };
+    format!(
+        "title: {}, severity: {}, why: {}, fix: {}, pages: ({}), evidence: {evidence}",
+        content_arg(&f.title),
+        typst_string(f.severity.as_str()),
+        opt_content(&f.why),
+        opt_content(&f.fix),
+        if pages.is_empty() { String::new() } else { format!("{},", pages.join(", ")) },
+    )
 }
 
 fn write_component(s: &mut String, component: &Component) {
@@ -566,6 +591,94 @@ fn write_component(s: &mut String, component: &Component) {
                 .collect();
             s.push_str(&format!("#facts(({},))\n\n", items.join(", ")));
         }
+        Component::ScoreMatrix(m) => {
+            let columns: Vec<String> = m.columns.iter().map(|c| content_arg(c)).collect();
+            let rows: Vec<String> = m
+                .rows
+                .iter()
+                .map(|r| {
+                    let values: Vec<String> = (0..m.columns.len())
+                        .map(|i| opt_number(r.values.get(i).copied().flatten()))
+                        .collect();
+                    format!("(label: {}, values: ({},))", content_arg(&r.label), values.join(", "))
+                })
+                .collect();
+            s.push_str(&format!(
+                "#score-matrix(({},), ({},), max: {}, caption: {})\n\n",
+                columns.join(", "),
+                rows.join(",\n  "),
+                if m.max > 0.0 { m.max } else { 100.0 },
+                opt_content(&m.caption),
+            ));
+        }
+        Component::Bars(b) => {
+            let items: Vec<String> = b
+                .items
+                .iter()
+                .map(|i| format!("(label: {}, value: {})", content_arg(&i.label), i.value))
+                .collect();
+            s.push_str(&format!(
+                "#bars(({},), unit: {}, target: {}, better: {}, caption: {})\n\n",
+                items.join(", "),
+                b.unit.as_deref().map(typst_string).unwrap_or_else(|| "none".to_string()),
+                opt_number(b.target),
+                typst_string(match b.better {
+                    Better::Lower => "lower",
+                    Better::Higher => "higher",
+                }),
+                opt_content(&b.caption),
+            ));
+        }
+        Component::SeveritySummary(sv) => {
+            let c = &sv.counts;
+            s.push_str(&format!(
+                "#severity-summary((critical: {}, serious: {}, moderate: {}, minor: {}), caption: {})\n\n",
+                c.critical,
+                c.serious,
+                c.moderate,
+                c.minor,
+                opt_content(&sv.caption),
+            ));
+        }
+        Component::Finding(f) => s.push_str(&format!("#finding-card({})\n\n", finding_args(f))),
+        Component::Highlights(h) => {
+            let items: Vec<String> = h.items.iter().map(|f| format!("({})", finding_args(f))).collect();
+            s.push_str(&format!("#highlights(({},))\n\n", items.join(",\n  ")));
+        }
+        Component::PriorityMatrix(m) => {
+            let items: Vec<String> = m
+                .items
+                .iter()
+                .map(|i| {
+                    format!(
+                        "(label: {}, impact: {}, effort: {})",
+                        content_arg(&i.label),
+                        typst_string(i.impact.as_str()),
+                        typst_string(i.effort.as_str()),
+                    )
+                })
+                .collect();
+            s.push_str(&format!("#priority-matrix(({},))\n\n", items.join(", ")));
+        }
+        Component::Contents(c) => {
+            s.push_str(&format!("#contents(title: {})\n\n", opt_content(&c.title)));
+        }
+        Component::BackPage(b) => {
+            let contact: Vec<String> = [
+                ("Contact", &b.contact.name),
+                ("Email", &b.contact.email),
+                ("Website", &b.contact.website),
+                ("Phone", &b.contact.phone),
+            ]
+            .into_iter()
+            .filter_map(|(label, value)| value.as_ref().map(|v| format!("({}, {})", typst_string(label), content_arg(v))))
+            .collect();
+            s.push_str(&format!(
+                "#back-page(about: {}, contact: ({}))\n\n",
+                opt_content(&b.about),
+                if contact.is_empty() { String::new() } else { format!("{},", contact.join(", ")) },
+            ));
+        }
     }
 }
 
@@ -574,6 +687,7 @@ fn write_columns(
     ratios: &[f32],
     gutter: Option<&str>,
     children: &[StyledColumn],
+    images: &Images,
 ) {
     if children.is_empty() {
         return;
@@ -598,7 +712,7 @@ fn write_columns(
     for child in children {
         let mut inner = String::new();
         for node in &child.nodes {
-            write_node(&mut inner, node);
+            write_node(&mut inner, node, images);
         }
         match child.style.as_ref() {
             Some(style) if !style.is_empty() => {
@@ -616,10 +730,10 @@ fn write_columns(
     s.push_str("))\n\n");
 }
 
-fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[DocumentNode]) {
+fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[DocumentNode], images: &Images) {
     let mut inner = String::new();
     for node in children {
-        write_node(&mut inner, node);
+        write_node(&mut inner, node, images);
     }
     match style {
         Some(style) if !style.is_empty() => {
@@ -643,27 +757,27 @@ fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[Documen
 fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
     let mut args: Vec<String> = Vec::new();
 
-    if let Some(bg) = style.background.as_deref().filter(|b| is_hex(b)) {
-        args.push(format!("fill: rgb(\"{bg}\")"));
+    if let Some(bg) = style.background.as_deref().and_then(colour_value) {
+        args.push(format!("fill: {bg}"));
     }
 
     if let Some(border) = style.border.as_ref() {
-        let w = typst_length(border.width.as_deref(), "1pt");
+        let w = length_value(border.width.as_deref(), "1pt");
         let c = border
             .color
             .as_deref()
-            .filter(|c| is_hex(c))
-            .unwrap_or("#000000");
-        args.push(format!("stroke: {w} + rgb(\"{c}\")"));
+            .and_then(colour_value)
+            .unwrap_or_else(|| "t.rule".to_string());
+        args.push(format!("stroke: {w} + {c}"));
     }
 
     args.push(format!(
         "inset: {}",
-        typst_length(style.padding.as_deref(), "8pt")
+        length_value(style.padding.as_deref(), "t.s4")
     ));
     args.push(format!(
         "radius: {}",
-        typst_length(style.radius.as_deref(), "3pt")
+        length_value(style.radius.as_deref(), "t.r-md")
     ));
     args.push("width: 100%".to_string());
     // Cards and callouts read as one object; never split one across pages.
@@ -671,8 +785,8 @@ fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
 
     s.push_str(&format!("block({})[\n", args.join(", ")));
 
-    if let Some(tc) = style.text_color.as_deref().filter(|c| is_hex(c)) {
-        s.push_str(&format!("  #set text(fill: rgb(\"{tc}\"))\n"));
+    if let Some(tc) = style.text_color.as_deref().and_then(colour_value) {
+        s.push_str(&format!("  #set text(fill: {tc})\n"));
     }
     // Headings in a box are card titles: small, in the box's text colour,
     // and left out of the bookmarks and the running head.
@@ -681,6 +795,38 @@ fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
 
     s.push_str(inner);
     s.push(']');
+}
+
+/// Colour tokens a style may name instead of a hex value, so authors stay on
+/// brand.
+const COLOUR_TOKENS: [&str; 13] = [
+    "ink", "ink-muted", "heading", "paper", "surface", "rule", "accent", "accent-soft", "cover-bg",
+    "cover-text", "good", "fair", "poor",
+];
+
+/// Length tokens a style may name instead of a raw length.
+const LENGTH_TOKENS: [&str; 13] = [
+    "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "r-sm", "r-md", "hairline", "heavy",
+];
+
+/// A style colour as Typst: a token name (`surface`) or a hex value.
+fn colour_value(value: &str) -> Option<String> {
+    let v = value.trim();
+    if COLOUR_TOKENS.contains(&v) {
+        Some(format!("t.{v}"))
+    } else if is_hex(v) {
+        Some(format!("rgb(\"{v}\")"))
+    } else {
+        None
+    }
+}
+
+/// A style length as Typst: a token name (`s5`, `r-md`) or a raw length.
+fn length_value(value: Option<&str>, default: &str) -> String {
+    match value.map(str::trim) {
+        Some(v) if LENGTH_TOKENS.contains(&v) => format!("t.{v}"),
+        other => typst_length(other, default),
+    }
 }
 
 fn is_hex(s: &str) -> bool {
@@ -875,6 +1021,23 @@ pub enum FontRole {
 /// font can't silently fall back to Typst's built-in serif.
 pub const BUNDLED_FONTS: [&str; 3] = ["Inter", "Inter Tight", "JetBrains Mono"];
 
+/// Monospace names that map to JetBrains Mono.
+const MONO_ALIASES: [&str; 8] =
+    ["courier", "courier new", "monospace", "dejavu sans mono", "menlo", "consolas", "dm mono", "ibm plex mono"];
+
+/// Generic sans names, which take the role's bundled family.
+const SANS_ALIASES: [&str; 6] = ["helvetica", "helvetica neue", "arial", "sans-serif", "system-ui", "inter variable"];
+
+/// Whether a profile font name renders as intended: a bundled family or a
+/// known alias for one. Anything else would silently fall back.
+pub fn is_known_font(name: &str) -> bool {
+    let lower = name.trim().to_ascii_lowercase();
+    BUNDLED_FONTS.iter().any(|f| f.eq_ignore_ascii_case(&lower))
+        || MONO_ALIASES.contains(&lower.as_str())
+        || SANS_ALIASES.contains(&lower.as_str())
+        || matches!(lower.as_str(), "inter display" | "inter tight variable" | "jetbrains mono nl")
+}
+
 /// Map a profile's font name to a bundled family: exact matches pass through,
 /// a few known names map to their closest bundled family, and anything else
 /// (including Helvetica, the old default) falls back by role: Inter for text,
@@ -888,8 +1051,7 @@ pub fn font_family(name: &str, role: FontRole) -> String {
     let mapped = match lower.as_str() {
         "inter variable" => "Inter",
         "inter display" | "inter tight variable" => "Inter Tight",
-        "courier" | "courier new" | "monospace" | "dejavu sans mono" | "menlo" | "consolas" | "dm mono"
-        | "ibm plex mono" | "jetbrains mono nl" => "JetBrains Mono",
+        name if MONO_ALIASES.contains(&name) => "JetBrains Mono",
         // Generic sans names (Helvetica, Arial and the rest) and anything
         // unknown take the role's family.
         _ => match role {
@@ -1071,6 +1233,16 @@ mod tests {
         let display = (b.profile.font_size_h1 * 1.45).round();
         assert_eq!(cover_title_size("Short title", &b), display);
         assert!(cover_title_size("Website review: averyveryverylongdomainname.co.uk", &b) < display);
+    }
+
+    #[test]
+    fn styles_accept_token_names() {
+        assert_eq!(colour_value("surface").as_deref(), Some("t.surface"));
+        assert_eq!(colour_value("#112233").as_deref(), Some("rgb(\"#112233\")"));
+        assert_eq!(colour_value("red"), None);
+        assert_eq!(length_value(Some("s5"), "8pt"), "t.s5");
+        assert_eq!(length_value(Some("12pt"), "8pt"), "12pt");
+        assert_eq!(length_value(None, "t.s4"), "t.s4");
     }
 
     #[test]
@@ -1335,6 +1507,29 @@ mod tests {
         assert!(source.contains(r#"#opener(number: "01", level: 2, title: [First]"#), "{source}");
         assert!(source.contains("#heading(level: 2, supplement: [02])[Second]"));
         assert!(source.contains("section-level: 2,"));
+    }
+
+    #[test]
+    fn fetched_images_render_and_missing_ones_get_a_placeholder() {
+        let mut b = branded_json(r#"{ "pages": [{ "blocks": [
+            { "type": "image", "url": "https://example.com/a.png", "alt": "A", "caption": "Cap" },
+            { "type": "image", "url": "https://example.com/missing.png", "alt": "B" }
+        ]}]}"#);
+        b.images.insert(
+            "https://example.com/a.png".to_string(),
+            Asset { name: "img-0.png".to_string(), bytes: Vec::new() },
+        );
+        let source = build_source(&b);
+        assert!(source.contains(r#"#figure-image("img-0.png", alt: "A", caption: [Cap], full: false)"#), "{source}");
+        assert!(source.contains(r#"#figure-image(none, alt: "B", caption: none, full: false)"#));
+    }
+
+    #[test]
+    fn the_back_page_is_left_out_of_the_page_total() {
+        let source = build_source(&branded_json(r#"{ "schema": 2, "pages": [{ "blocks": [
+            { "type": "paragraph", "text": "x" }, { "type": "back_page", "about": "About." }
+        ]}]}"#));
+        assert!(source.contains("has-back-page: true,"));
     }
 
     #[test]

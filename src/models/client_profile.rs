@@ -162,6 +162,87 @@ pub struct CreateClientProfile {
     pub wordmark: Option<String>,
 }
 
+/// WCAG contrast ratio between two `#RRGGBB` colours.
+pub fn contrast_ratio(a: &str, b: &str) -> Option<f64> {
+    fn luminance(hex: &str) -> Option<f64> {
+        let hex = hex.strip_prefix('#')?;
+        if hex.len() != 6 {
+            return None;
+        }
+        let channel = |i: usize| -> Option<f64> {
+            let c = u8::from_str_radix(&hex[i..i + 2], 16).ok()? as f64 / 255.0;
+            Some(if c <= 0.03928 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) })
+        };
+        Some(0.2126 * channel(0)? + 0.7152 * channel(2)? + 0.0722 * channel(4)?)
+    }
+    let (la, lb) = (luminance(a)?, luminance(b)?);
+    let (hi, lo) = if la > lb { (la, lb) } else { (lb, la) };
+    Some((hi + 0.05) / (lo + 0.05))
+}
+
+impl CreateClientProfile {
+    /// Check the profile renders as intended: valid colours with readable
+    /// contrast, fonts Typeset has, HTTPS logos and a known cover style.
+    /// Returns every problem, one per line.
+    pub fn validate(&self) -> Result<(), String> {
+        let mut problems = Vec::new();
+        let colours = [
+            ("colour_primary", &self.colour_primary),
+            ("colour_secondary", &self.colour_secondary),
+            ("colour_accent", &self.colour_accent),
+            ("colour_text", &self.colour_text),
+            ("colour_background", &self.colour_background),
+            ("colour_table_header", &self.colour_table_header),
+            ("colour_table_border", &self.colour_table_border),
+            ("colour_callout_bg", &self.colour_callout_bg),
+            ("cover_bg_colour", &self.cover_bg_colour),
+            ("cover_text_colour", &self.cover_text_colour),
+        ];
+        for (field, value) in colours {
+            if contrast_ratio(value, "#000000").is_none() {
+                problems.push(format!("{field}: `{value}` isn't a #RRGGBB colour"));
+            }
+        }
+        // Pairs the theme sets text in, with the WCAG AA minimum for each.
+        let pairs = [
+            ("colour_text", &self.colour_text, "colour_background", &self.colour_background, 4.5),
+            ("colour_primary", &self.colour_primary, "colour_background", &self.colour_background, 4.5),
+            ("colour_secondary", &self.colour_secondary, "colour_background", &self.colour_background, 4.5),
+            ("colour_text", &self.colour_text, "colour_table_header", &self.colour_table_header, 4.5),
+            ("colour_accent", &self.colour_accent, "colour_background", &self.colour_background, 3.0),
+            ("cover_text_colour", &self.cover_text_colour, "cover_bg_colour", &self.cover_bg_colour, 4.5),
+        ];
+        for (fa, a, fb, b, min) in pairs {
+            if let Some(ratio) = contrast_ratio(a, b) {
+                if ratio < min {
+                    problems.push(format!("{fa} on {fb}: contrast {ratio:.1}:1 is below {min}:1"));
+                }
+            }
+        }
+        for (field, font) in [("font_heading", &self.font_heading), ("font_body", &self.font_body), ("font_mono", &self.font_mono)] {
+            if !crate::renderers::typst::is_known_font(font) {
+                problems.push(format!(
+                    "{field}: `{font}` isn't available; use Inter, Inter Tight or JetBrains Mono"
+                ));
+            }
+        }
+        for (field, url) in [("logo_light_url", &self.logo_light_url), ("logo_dark_url", &self.logo_dark_url)] {
+            if let Some(url) = url.as_deref().filter(|u| !u.trim().is_empty()) {
+                if !url.starts_with("https://") {
+                    problems.push(format!("{field}: logos must be https URLs"));
+                }
+            }
+        }
+        if !["editorial", "band", "dark", "minimal", "bold", "plain"].contains(&self.cover_template.as_str()) {
+            problems.push(format!(
+                "cover_template: `{}` isn't one of editorial, band or dark",
+                self.cover_template
+            ));
+        }
+        if problems.is_empty() { Ok(()) } else { Err(problems.join("\n")) }
+    }
+}
+
 impl ClientProfile {
     /// Default profile used when no client slug is provided
     pub fn default_profile() -> Self {
@@ -247,3 +328,46 @@ fn default_true() -> bool { true }
 fn default_header_template() -> String { "logo-left".to_string() }
 fn default_footer_template() -> String { "page-numbers".to_string() }
 fn default_watermark_opacity() -> f32 { 0.08 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn profile(json: serde_json::Value) -> CreateClientProfile {
+        let mut base = serde_json::json!({ "slug": "test", "name": "Test" });
+        for (k, v) in json.as_object().unwrap() {
+            base[k] = v.clone();
+        }
+        serde_json::from_value(base).unwrap()
+    }
+
+    #[test]
+    fn the_defaults_are_valid() {
+        profile(serde_json::json!({})).validate().unwrap();
+    }
+
+    #[test]
+    fn contrast_follows_wcag() {
+        assert!((contrast_ratio("#000000", "#FFFFFF").unwrap() - 21.0).abs() < 0.01);
+        assert!((contrast_ratio("#777777", "#FFFFFF").unwrap() - 4.48).abs() < 0.01);
+        assert_eq!(contrast_ratio("blue", "#FFFFFF"), None);
+    }
+
+    #[test]
+    fn rejects_unreadable_colours_unknown_fonts_and_plain_http_logos() {
+        let err = profile(serde_json::json!({
+            "colour_text": "#BBBBBB",
+            "colour_accent": "nope",
+            "font_body": "Comic Sans",
+            "logo_light_url": "http://example.com/logo.png",
+            "cover_template": "fancy"
+        }))
+        .validate()
+        .unwrap_err();
+        assert!(err.contains("colour_text on colour_background"), "{err}");
+        assert!(err.contains("colour_accent: `nope`"), "{err}");
+        assert!(err.contains("font_body: `Comic Sans`"), "{err}");
+        assert!(err.contains("logo_light_url"), "{err}");
+        assert!(err.contains("cover_template: `fancy`"), "{err}");
+    }
+}

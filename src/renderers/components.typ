@@ -284,7 +284,7 @@
 
 /// A 270° gauge: a track, the value's arc in its status colour, the figure in
 /// the middle and an optional benchmark tick.
-#let gauge(value, max: 100, benchmark: none, size: 76pt) = {
+#let gauge(value, max: 100, benchmark: none, size: 68pt) = {
   let percent = calc.clamp(value / max * 100, 0, 100)
   let c = status-color(score-status(percent))
   let r = size / 2 - 5pt
@@ -308,11 +308,11 @@
 
 /// Two to five gauges across the grid, each on a card, with a caption.
 #let scores(items, caption: none) = {
-  block(above: t.s6, below: t.s6, breakable: false, wide({
+  block(above: t.s5, below: t.s5, breakable: false, wide({
     grid(
       columns: (1fr,) * items.len(),
       column-gutter: t.s3,
-      ..items.map(s => block(width: 100%, fill: t.surface, radius: t.r-md, inset: (x: t.s3, top: t.s4, bottom: t.s4), align(center)[
+      ..items.map(s => block(width: 100%, fill: t.surface, radius: t.r-md, inset: (x: t.s3, top: t.s3, bottom: t.s3), align(center)[
         #gauge(s.value, max: s.max, benchmark: s.benchmark)
         #v(t.s2, weak: true)
         #text(font: t.font-heading, size: t.body, weight: 600, fill: t.ink, s.label)
@@ -347,3 +347,242 @@
     block(width: 100%, inset: (y: t.s3), stroke: (top: t.hairline + t.rule), f.value),
   )).flatten(),
 )))
+
+// ---------------------------------------------------------------------------
+// Data visuals
+// ---------------------------------------------------------------------------
+
+/// A score as a tinted pill, coloured by status; `none` shows a dash.
+#let score-pill(value, max: 100) = if value == none {
+  text(fill: t.ink-muted)[–]
+} else {
+  let c = status-color(score-status(value / max * 100))
+  box(fill: tint(c, amount: 82%), inset: (x: 8pt, y: 3pt), outset: (y: 1pt), radius: 99pt, text(
+    weight: 600,
+    fill: c.darken(20%),
+    number-width: "tabular",
+    str(calc.round(value)),
+  ))
+}
+
+/// Scores by page and category as a heat table.
+#let score-matrix(columns, rows, max: 100, caption: none) = block(above: t.s6, below: t.s6, wide({
+  table(
+    columns: (1.6fr,) + (1fr,) * columns.len(),
+    align: (x, y) => if x == 0 { left + horizon } else { center + horizon },
+    inset: (x: t.s3, y: 7pt),
+    table.header([Page], ..columns),
+    ..rows.map(r => (text(size: t.small, r.label), ..r.values.map(v => score-pill(v, max: max)))).flatten(),
+  )
+  if caption != none { block(above: t.s3, text(size: t.small, fill: t.ink-muted, caption)) }
+}))
+
+/// Horizontal bars, with a dashed target line. Bars past the target (in the
+/// wrong direction) are poor; within it, good; with no target, accent.
+#let bars(items, unit: none, target: none, better: "lower", caption: none) = block(above: t.s6, below: t.s6, breakable: false, wide({
+  let peak = calc.max(..items.map(i => i.value), if target == none { 0 } else { target })
+  let scale = 82%
+  let row-height = 20pt
+  let fmt(v) = str(v) + if unit != none { unit } else { "" }
+  let color(v) = if target == none { t.accent } else if (better == "lower" and v <= target) or (better == "higher" and v >= target) { t.good } else { t.poor }
+  grid(
+    columns: (t.side, 1fr),
+    stack(..items.map(i => block(height: row-height, width: 100%, align(horizon, text(size: t.small, fill: t.ink, i.label))))),
+    block(width: 100%, {
+      stack(..items.map(i => block(height: row-height, width: 100%, align(horizon, {
+        box(width: scale * (i.value / peak), height: 9pt, fill: color(i.value), radius: (right: 2pt))
+        h(t.s2)
+        text(size: t.small, weight: 600, fill: t.ink, number-width: "tabular", fmt(i.value))
+      }))))
+      if target != none {
+        place(top + left, dx: scale * (target / peak), dy: -3pt, line(angle: 90deg, length: row-height * items.len() + 6pt, stroke: (paint: t.ink, thickness: 0.8pt, dash: "dashed")))
+        place(top + left, dx: scale * (target / peak) + 3pt, dy: -12pt, text(size: t.eyebrow, fill: t.ink-muted)[Target #fmt(target)])
+      }
+    }),
+  )
+  if caption != none { block(above: t.s4, text(size: t.small, fill: t.ink-muted, caption)) }
+}))
+
+/// Issue counts by severity: a segmented bar over four counts.
+#let severity-summary(counts, caption: none) = block(above: t.s5, below: t.s5, breakable: false, wide({
+  let levels = ("critical", "serious", "moderate", "minor")
+  let present = levels.filter(l => counts.at(l) > 0)
+  if present.len() > 0 {
+    grid(
+      columns: present.map(l => counts.at(l) * 1fr),
+      column-gutter: 2pt,
+      ..present.map(l => rect(width: 100%, height: 8pt, fill: severity-colors.at(l), radius: 2pt)),
+    )
+  }
+  v(t.s3)
+  grid(
+    columns: (1fr,) * 4,
+    column-gutter: t.s4,
+    ..levels.map(l => {
+      block(below: t.s2, text(font: t.font-heading, size: t.h2, weight: 600, fill: if counts.at(l) > 0 { severity-colors.at(l) } else { t.ink-muted }, number-width: "tabular", str(counts.at(l))))
+      severity-badge(l)
+    }),
+  )
+  if caption != none { block(above: t.s3, text(size: t.small, fill: t.ink-muted, caption)) }
+}))
+
+// ---------------------------------------------------------------------------
+// Finding card and priority matrix
+// ---------------------------------------------------------------------------
+
+/// A headline issue: a severity rule, the badge and where, the title, then
+/// why it matters and what to do side by side, with evidence on the right.
+#let finding-card(title: none, severity: "moderate", why: none, fix: none, pages: (), evidence: none) = block(
+  above: t.s4,
+  below: t.s4,
+  breakable: false,
+  wide(block(
+    width: 100%,
+    fill: t.surface,
+    radius: (right: t.r-md),
+    stroke: (left: 4pt + severity-colors.at(severity, default: t.ink-muted)),
+    inset: (left: t.s5, right: t.s5, y: t.s4),
+  )[
+    #grid(
+      columns: (1fr, auto),
+      column-gutter: t.s5,
+      {
+        block(below: t.s3, { severity-badge(severity); if pages.len() > 0 { h(t.s3); pages.map(p => chip(p, fill: t.paper)).join(" ") } })
+        block(text(font: t.font-heading, size: t.h3, weight: 600, fill: t.ink, title))
+      },
+      if evidence != none {
+        align(right, {
+          block(below: t.s1, text(font: t.font-heading, size: t.h2, weight: 600, fill: severity-colors.at(severity, default: t.ink), number-width: "tabular", evidence.value))
+          if evidence.label != none { block(text(size: t.eyebrow, fill: t.ink-muted, evidence.label)) }
+        })
+      },
+    )
+    #{
+      let parts = ()
+      if why != none { parts.push({ block(below: t.s2, eyebrow-text("Why it matters")); why }) }
+      if fix != none { parts.push({ block(below: t.s2, eyebrow-text("What to do")); fix }) }
+      // Side by side when there are both; otherwise one full-width column.
+      if parts.len() > 0 { block(above: t.s3, grid(columns: (1fr,) * parts.len(), column-gutter: t.s6, ..parts)) }
+    }
+  ]),
+)
+
+/// Up to four headline findings side by side: a severity rule, the badge,
+/// the evidence large, the title and the fix. Equal heights.
+#let highlights(items) = block(above: t.s5, below: t.s5, breakable: false, wide(grid(
+  columns: (1fr,) * items.len(),
+  column-gutter: t.s3,
+  fill: t.surface,
+  inset: (x: t.s4, top: t.s4, bottom: t.s4),
+  stroke: (x, y) => (top: 3pt + severity-colors.at(items.at(x).severity, default: t.ink-muted)),
+  ..items.map(f => {
+    // Narrow cards: no hyphenation.
+    set text(hyphenate: false)
+    block(below: t.s3, severity-badge(f.severity))
+    if f.evidence != none {
+      block(below: t.s1, text(font: t.font-heading, size: t.h2 * 1.2, weight: 600, fill: severity-colors.at(f.severity, default: t.ink), number-width: "tabular", f.evidence.value))
+      if f.evidence.label != none { block(below: t.s3, text(size: t.eyebrow, fill: t.ink-muted, f.evidence.label)) }
+    }
+    block(below: t.s2, text(font: t.font-heading, size: t.body * 1.05, weight: 600, fill: t.ink, f.title))
+    if f.fix != none { block(text(size: t.small, fill: t.ink-muted, f.fix)) }
+  }),
+)))
+
+/// Impact against effort as a two by two, with numbered dots and a key.
+#let priority-matrix(items) = block(above: t.s5, below: t.s5, breakable: false, wide({
+  let numbered = items.enumerate().map(((i, item)) => (n: i + 1, ..item))
+  let dot(n, c) = box(circle(radius: 7pt, fill: c, align(center + horizon, text(size: 7.5pt, weight: 700, fill: t.paper, number-width: "tabular", str(n)))))
+  let quadrant(name, impact, effort, c) = block(width: 100%, height: 58pt, fill: tint(c, amount: 88%), radius: t.r-sm, inset: t.s3, {
+    block(below: t.s3, eyebrow-text(name, fill: c.darken(15%)))
+    numbered.filter(i => i.impact == impact and i.effort == effort).map(i => dot(i.n, c)).join(h(4pt))
+  })
+  let axis(body) = text(size: t.eyebrow, fill: t.ink-muted, body)
+  grid(
+    columns: (1.15fr, 1fr),
+    column-gutter: t.s6,
+    grid(
+      columns: (auto, 1fr, 1fr),
+      column-gutter: t.s2,
+      row-gutter: t.s2,
+      [], align(center, axis[Low effort]), align(center, axis[High effort]),
+      align(horizon, rotate(-90deg, reflow: true, axis[High impact])), quadrant("Quick wins", "high", "low", t.good), quadrant("Big bets", "high", "high", t.accent),
+      align(horizon, rotate(-90deg, reflow: true, axis[Low impact])), quadrant("Fill-ins", "low", "low", t.ink-muted), quadrant("Maybe later", "low", "high", t.fair),
+    ),
+    {
+      for i in numbered {
+        let c = if i.impact == "high" and i.effort == "low" { t.good } else if i.impact == "high" { t.accent } else if i.effort == "low" { t.ink-muted } else { t.fair }
+        block(below: t.s2, grid(columns: (auto, 1fr), column-gutter: t.s3, dot(i.n, c), align(horizon, text(size: t.small, fill: t.ink, i.label))))
+      }
+    },
+  )
+}))
+
+// ---------------------------------------------------------------------------
+// Contents and back page
+// ---------------------------------------------------------------------------
+
+/// The sections with their numbers and pages, linked, on a page of its own.
+#let contents(title: none) = {
+  block(below: t.s7, wide({
+    line(length: 100%, stroke: t.heavy + t.ink)
+    v(t.s5)
+    grid(columns: (t.side, 1fr), [], text(font: t.font-heading, size: t.h1, weight: 600, tracking: -0.015em, fill: t.heading, if title != none { title } else [Contents]))
+  }))
+  // Entries are links, but read as a list: no underline.
+  show underline: it => it.body
+  context {
+    let offset = if meta.has-cover { 1 } else { 0 }
+    for entry in query(heading.where(level: meta.section-level, outlined: true)) {
+      let page-number = counter(page).at(entry.location()).first() - offset
+      block(above: 0pt, below: 0pt, wide(link(entry.location(), block(width: 100%, inset: (y: t.s3), stroke: (bottom: t.hairline + t.rule), grid(
+        columns: (t.side, 1fr, auto),
+        align: horizon,
+        text(font: t.font-heading, size: t.body, weight: 600, fill: t.accent, number-width: "tabular", section-number(entry)),
+        [#text(font: t.font-heading, size: t.h3, weight: 600, fill: t.ink, entry.body) #box(width: 1fr, repeat(text(fill: t.rule)[.#h(3pt)]))],
+        text(size: t.body, fill: t.ink-muted, number-width: "tabular", str(page-number)),
+      )))))
+    }
+  }
+  pagebreak(weak: true)
+}
+
+/// A closing page on the cover colour: the brand mark, an about line and
+/// contact details.
+#let back-page(about: none, contact: ()) = page(margin: 0mm, header: none, footer: none, fill: t.cover-bg)[
+  #set text(fill: t.cover-text, hyphenate: false)
+  #pad(left: t.margin-left, right: t.margin-right, top: t.margin-top, bottom: t.margin-bottom)[
+    #brand-mark(height: 14pt, dark: true, color: t.cover-text)
+    #v(1fr)
+    #if about != none { block(width: 80%, below: t.s7, text(size: t.h3, fill: t.cover-text.transparentize(15%), about)) }
+    #if contact.len() > 0 {
+      block(width: 100%, inset: (top: t.s4), stroke: (top: t.hairline + t.cover-text.transparentize(75%)), grid(
+        columns: (1fr,) * calc.max(contact.len(), 2),
+        column-gutter: t.s5,
+        ..contact.map(c => {
+          block(below: t.s2, eyebrow-text(c.at(0), fill: t.cover-text.transparentize(45%)))
+          text(size: t.body, c.at(1))
+        }),
+      ))
+    }
+  ]
+]
+
+// ---------------------------------------------------------------------------
+// Figures
+// ---------------------------------------------------------------------------
+
+/// An image with an optional caption, in the text column or across the full
+/// grid. `path` is `none` when the image couldn't be fetched: a framed
+/// placeholder shows the alt text instead.
+#let figure-image(path, alt: "", caption: none, full: false) = {
+  let body = if path != none {
+    block(width: 100%, stroke: t.hairline + t.rule, clip: true, radius: t.r-sm, image(path, width: 100%, alt: if alt == "" { none } else { alt }))
+  } else {
+    block(width: 100%, height: 48pt, fill: t.surface, radius: t.r-sm, align(center + horizon, text(size: t.small, fill: t.ink-muted)[Image unavailable#if alt != "" [: #alt]]))
+  }
+  let fig = block(above: t.s6, below: t.s6, breakable: false, {
+    body
+    if caption != none { block(above: t.s3, text(size: t.small, fill: t.ink-muted, caption)) }
+  })
+  if full { wide(fig) } else { fig }
+}

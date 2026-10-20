@@ -32,6 +32,9 @@ pub enum DocumentNode {
     Image {
         url: String,
         alt: String,
+        caption: Option<String>,
+        /// Span the full grid rather than the text column.
+        full_width: bool,
     },
     PageBreak,
     /// A boundary between sections (JSON `pages`): a new page only when the

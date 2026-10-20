@@ -30,6 +30,7 @@ pub async fn create_client(
     State(state): State<AppState>,
     Json(body): Json<CreateClientProfile>,
 ) -> Result<Json<ClientProfile>, AppError> {
+    body.validate().map_err(AppError::BadRequest)?;
     let profile = state.db.upsert_client_profile(&body).await?;
     Ok(Json(profile))
 }

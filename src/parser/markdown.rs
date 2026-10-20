@@ -87,6 +87,7 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
     let mut image_alt = String::new();
     let mut in_image = false;
     let mut link_stack: Vec<String> = Vec::new();
+    let mut image_title = String::new();
 
     for event in parser {
         match event {
@@ -247,12 +248,15 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
                 in_image = true;
                 image_url = dest_url.to_string();
                 image_alt.clear();
-                let _ = title; // title not used currently
+                image_title = title.to_string();
             }
             Event::End(TagEnd::Image) => {
+                // The markdown title (`![alt](url "title")`) is the caption.
                 nodes.push(DocumentNode::Image {
                     url: image_url.clone(),
                     alt: image_alt.trim().to_string(),
+                    caption: Some(image_title.clone()).filter(|t| !t.is_empty()),
+                    full_width: false,
                 });
                 in_image = false;
                 image_url.clear();
