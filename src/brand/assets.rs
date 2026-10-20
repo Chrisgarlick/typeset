@@ -81,8 +81,36 @@ fn collect_image_urls(nodes: &[DocumentNode], urls: &mut Vec<String>) {
 
 async fn fetch_asset(url: Option<&str>, stem: &str) -> Option<Asset> {
     let url = url.map(str::trim).filter(|u| !u.is_empty())?;
-    let (bytes, ext) = fetch_cached(url).await?;
+    let (bytes, ext) = if url.starts_with("data:") {
+        match decode_data_uri(url) {
+            Ok(found) => found,
+            Err(e) => {
+                tracing::warn!(error = %e, "embedded image not used");
+                return None;
+            }
+        }
+    } else {
+        fetch_cached(url).await?
+    };
     Some(Asset { name: format!("{stem}.{ext}"), bytes })
+}
+
+/// An image embedded in the document as `data:image/png;base64,...`, for
+/// images that shouldn't live at a public URL.
+fn decode_data_uri(uri: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
+    let (head, data) = uri
+        .split_once(',')
+        .ok_or_else(|| anyhow::anyhow!("not a data URI"))?;
+    let mime = head
+        .strip_prefix("data:")
+        .and_then(|h| h.strip_suffix(";base64"))
+        .ok_or_else(|| anyhow::anyhow!("only base64 data URIs are read"))?;
+    let bytes = crate::encoding::base64_decode(data).ok_or_else(|| anyhow::anyhow!("invalid base64"))?;
+    if bytes.len() > MAX_BYTES {
+        anyhow::bail!("image is over {MAX_BYTES} bytes");
+    }
+    let ext = image_extension(mime, &bytes).ok_or_else(|| anyhow::anyhow!("not a PNG, JPEG, WebP or SVG image ({mime})"))?;
+    Ok((bytes, ext))
 }
 
 async fn fetch_cached(url: &str) -> Option<(Vec<u8>, &'static str)> {
@@ -180,6 +208,15 @@ mod tests {
         let mut urls = Vec::new();
         collect_image_urls(&nodes, &mut urls);
         assert_eq!(urls, vec!["https://a.test/1.png", "https://a.test/2.png"]);
+    }
+
+    #[test]
+    fn reads_data_uri_images() {
+        let png = [0x89, b'P', b'N', b'G', 13, 10, 26, 10];
+        let uri = format!("data:image/png;base64,{}", crate::encoding::base64_encode(&png));
+        assert_eq!(decode_data_uri(&uri).unwrap(), (png.to_vec(), "png"));
+        assert!(decode_data_uri("data:text/plain;base64,aGk=").is_err());
+        assert!(decode_data_uri("data:image/png,raw").is_err());
     }
 
     #[tokio::test]

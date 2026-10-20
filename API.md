@@ -268,7 +268,7 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 
 **Version 1 blocks** (no `schema`, or `"schema": 1`): `heading`, `paragraph`, `markdown`, `bullet_list`, `ordered_list`, `table`, `code`, `blockquote`, `image`, `rule`, `page_break`, `columns` and `section`. These keep working.
 
-- `image` takes `url`, `alt` (required in schema 2 documents), and optionally `caption` and `width` (`column`, the default, or `full`). Images are fetched before rendering over HTTPS (PNG, JPEG, WebP or SVG, up to 5 MB, at most 24 per document). One that can't be fetched shows a placeholder with its alt text.
+- `image` takes `url`, `alt` (required in schema 2 documents), and optionally `caption` and `width` (`column`, the default, or `full`). `url` is an HTTPS address, fetched before rendering, or a base64 data URI (`data:image/jpeg;base64,...`) for images that shouldn't be public. PNG, JPEG, WebP or SVG, up to 5 MB each, at most 24 per document; a whole request can be up to 25 MB. An image that can't be used shows a placeholder with its alt text.
 - `section` and `columns` styles accept brand token names instead of raw values: colours `ink`, `ink-muted`, `heading`, `paper`, `surface`, `rule`, `accent`, `accent-soft`, `cover-bg`, `cover-text`, `good`, `fair`, `poor`; lengths `s1` to `s9`, `r-sm`, `r-md`, `hairline`, `heavy`. Hex colours and raw lengths still work.
 
 **Version 2 components** need `"schema": 2`. They say what something is; the theme decides how it looks. They reject unknown fields, and text fields accept inline markdown.

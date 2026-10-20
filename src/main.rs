@@ -1,5 +1,6 @@
 mod brand;
 mod config;
+mod encoding;
 mod db;
 mod error;
 mod models;
@@ -25,6 +26,10 @@ use tracing_subscriber::EnvFilter;
 use crate::config::Config;
 use crate::db::queries::Database;
 use crate::state::AppState;
+
+/// The largest render request: a document with its embedded images. nginx's
+/// `client_max_body_size` for /api/ must allow at least this.
+const MAX_DOCUMENT_BYTES: usize = 25 * 1024 * 1024;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -63,6 +68,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/render", post(routes::render::handle_render))
         .route("/api/preview", post(routes::preview::handle_preview))
         .route("/api/proof", post(routes::proof::handle_proof))
+        // Documents can embed images (data URIs), so allow more than axum's 2MB.
+        .layer(axum::extract::DefaultBodyLimit::max(MAX_DOCUMENT_BYTES))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,
