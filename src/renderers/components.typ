@@ -24,6 +24,15 @@
   upper(body),
 )
 
+/// A display figure that shrinks to fit its column on one line, down to
+/// `min` (a long range such as "5,948 to 6,800 ms" must not wrap).
+#let fit-figure(body, size: t.h2, min: t.body * 1.1, fill: t.ink, weight: 600) = layout(region => {
+  let set-in(s) = text(font: t.font-heading, size: s, weight: weight, tracking: -0.01em, fill: fill, number-width: "tabular", hyphenate: false, body)
+  let natural = measure(set-in(size)).width
+  let fitted = if natural > region.width and natural > 0pt { calc.max(min / 1pt, size / 1pt * region.width / natural) * 1pt } else { size }
+  set-in(fitted)
+})
+
 #let chip(body, fill: t.surface, color: t.ink) = box(
   fill: fill,
   inset: (x: 5pt, y: 2pt),
@@ -332,7 +341,7 @@
   column-gutter: t.s5,
   row-gutter: t.s5,
   ..items.map(m => block(width: 100%, inset: (top: t.s4), stroke: (top: 2.5pt + status-color(m.status)), {
-    block(below: t.s3, text(font: t.font-heading, size: t.h2 * 1.25, weight: 600, tracking: -0.01em, fill: t.ink, number-width: "tabular", m.value))
+    block(below: t.s3, fit-figure(m.value, size: t.h2 * 1.25))
     block(below: t.s2, text(size: t.small, weight: 600, fill: t.ink, m.label))
     if m.target != none { block(text(size: t.eyebrow, fill: t.ink-muted)[Target: #m.target]) }
   })),
@@ -452,7 +461,7 @@
       },
       if evidence != none {
         align(right, {
-          block(below: t.s1, text(font: t.font-heading, size: t.h2, weight: 600, fill: severity-colors.at(severity, default: t.ink), number-width: "tabular", evidence.value))
+          block(below: t.s1, width: 38mm, align(right, fit-figure(evidence.value, size: t.h2, fill: severity-colors.at(severity, default: t.ink))))
           if evidence.label != none { block(text(size: t.eyebrow, fill: t.ink-muted, evidence.label)) }
         })
       },
@@ -480,7 +489,7 @@
     set text(hyphenate: false)
     block(below: t.s3, severity-badge(f.severity))
     if f.evidence != none {
-      block(below: t.s1, text(font: t.font-heading, size: t.h2 * 1.2, weight: 600, fill: severity-colors.at(f.severity, default: t.ink), number-width: "tabular", f.evidence.value))
+      block(below: t.s1, fit-figure(f.evidence.value, size: t.h2 * 1.2, fill: severity-colors.at(f.severity, default: t.ink)))
       if f.evidence.label != none { block(below: t.s3, text(size: t.eyebrow, fill: t.ink-muted, f.evidence.label)) }
     }
     block(below: t.s2, text(font: t.font-heading, size: t.body * 1.05, weight: 600, fill: t.ink, f.title))
