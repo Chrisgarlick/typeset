@@ -11,7 +11,7 @@ pub fn parse(input: &str) -> anyhow::Result<ParsedDocument> {
     let mut nodes = Vec::new();
     for (idx, page) in doc.pages.iter().enumerate() {
         if idx > 0 {
-            nodes.push(DocumentNode::PageBreak);
+            nodes.push(DocumentNode::SectionBreak);
         }
         for block in &page.blocks {
             push_block(&mut nodes, block);
@@ -300,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn inserts_pagebreak_between_pages() {
+    fn inserts_section_break_between_pages() {
         let input = r#"{
             "pages": [
                 { "blocks": [ { "type": "paragraph", "text": "a" } ] },
@@ -309,7 +309,7 @@ mod tests {
         }"#;
         let doc = parse(input).unwrap();
         assert_eq!(doc.nodes.len(), 3);
-        assert!(matches!(doc.nodes[1], DocumentNode::PageBreak));
+        assert!(matches!(doc.nodes[1], DocumentNode::SectionBreak));
     }
 
     #[test]

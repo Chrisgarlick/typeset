@@ -174,16 +174,16 @@ impl ClientProfile {
             font_heading: "Inter Tight".to_string(),
             font_body: "Inter".to_string(),
             font_mono: "JetBrains Mono".to_string(),
-            font_size_base: 11.0,
-            font_size_h1: 24.0,
-            font_size_h2: 18.0,
+            font_size_base: 10.5,
+            font_size_h1: 30.0,
+            font_size_h2: 20.0,
             font_size_h3: 14.0,
-            line_height: 1.5,
+            line_height: 1.55,
             page_size: "A4".to_string(),
-            margin_top: 25.4,
-            margin_bottom: 25.4,
-            margin_left: 25.4,
-            margin_right: 25.4,
+            margin_top: 24.0,
+            margin_bottom: 22.0,
+            margin_left: 22.0,
+            margin_right: 22.0,
             paragraph_spacing: 8.0,
             section_spacing: 16.0,
             logo_light_url: None,
@@ -220,13 +220,13 @@ fn default_colour_callout_bg() -> String { "#F8F9FA".to_string() }
 fn default_font_heading() -> String { "Inter Tight".to_string() }
 fn default_font_body() -> String { "Inter".to_string() }
 fn default_font_mono() -> String { "JetBrains Mono".to_string() }
-fn default_font_size_base() -> f32 { 11.0 }
-fn default_font_size_h1() -> f32 { 24.0 }
-fn default_font_size_h2() -> f32 { 18.0 }
+fn default_font_size_base() -> f32 { 10.5 }
+fn default_font_size_h1() -> f32 { 30.0 }
+fn default_font_size_h2() -> f32 { 20.0 }
 fn default_font_size_h3() -> f32 { 14.0 }
-fn default_line_height() -> f32 { 1.5 }
+fn default_line_height() -> f32 { 1.55 }
 fn default_page_size() -> String { "A4".to_string() }
-fn default_margin() -> f32 { 25.4 }
+fn default_margin() -> f32 { 22.0 }
 fn default_paragraph_spacing() -> f32 { 8.0 }
 fn default_section_spacing() -> f32 { 16.0 }
 fn default_logo_width() -> f32 { 40.0 }

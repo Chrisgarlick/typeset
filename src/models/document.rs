@@ -34,6 +34,9 @@ pub enum DocumentNode {
         alt: String,
     },
     PageBreak,
+    /// A boundary between sections (JSON `pages`): a new page only when the
+    /// current one is mostly used, in renderers that can tell.
+    SectionBreak,
     Columns {
         ratios: Vec<f32>,
         gutter: Option<String>,

@@ -278,16 +278,16 @@ Optional fields (defaults shown):
 | `colour_table_header` | `#F5F5F5` |
 | `colour_table_border` | `#E0E0E0` |
 | `colour_callout_bg` | `#F8F9FA` |
-| `font_heading` | `Helvetica` |
-| `font_body` | `Helvetica` |
-| `font_mono` | `Courier` |
-| `font_size_base` | `11.0` |
-| `font_size_h1` | `24.0` |
-| `font_size_h2` | `18.0` |
+| `font_heading` | `Inter Tight` |
+| `font_body` | `Inter` |
+| `font_mono` | `JetBrains Mono` |
+| `font_size_base` | `10.5` |
+| `font_size_h1` | `30.0` |
+| `font_size_h2` | `20.0` |
 | `font_size_h3` | `14.0` |
-| `line_height` | `1.5` |
+| `line_height` | `1.55` (baseline to baseline, as in CSS) |
 | `page_size` | `A4` |
-| `margin_top` / `bottom` / `left` / `right` | `25.4` (mm) |
+| `margin_top` / `bottom` / `left` / `right` | `22.0` (mm). The left margin also holds a margin column a quarter of the text width wide, for section numbers; tables and column layouts extend across it. |
 | `paragraph_spacing` | `8.0` |
 | `section_spacing` | `16.0` |
 | `logo_light_url` / `logo_dark_url` | `null` |

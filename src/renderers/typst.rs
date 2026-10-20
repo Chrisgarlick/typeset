@@ -18,13 +18,13 @@ fn build_source(branded: &BrandedDocument) -> String {
     let mut s = String::with_capacity(4096);
 
     let (cover, consumed_body_h1) = extract_cover(branded);
-    write_preamble(&mut s, branded, &cover);
-    write_show_rules(&mut s, branded);
+    let level = section_level(&branded.doc.nodes, consumed_body_h1);
+    write_preamble(&mut s, branded, &cover, level);
     write_imports(&mut s);
     if let Some(c) = &cover {
         write_cover(&mut s, c, branded);
     }
-    write_body(&mut s, &branded.doc.nodes, consumed_body_h1);
+    write_body(&mut s, &branded.doc.nodes, consumed_body_h1, level);
 
     s
 }
@@ -73,162 +73,164 @@ fn extract_cover(branded: &BrandedDocument) -> (Option<CoverData>, bool) {
     )
 }
 
-fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>) {
+/// The theme: every style rule. It reads `t` and `meta`, which
+/// `write_preamble` emits above it.
+const THEME: &str = include_str!("theme.typ");
+
+/// Which heading level opens a section: the shallowest level among the
+/// body's top-level headings (after the cover's H1, if it took one).
+fn section_level(nodes: &[DocumentNode], consumed_body_h1: bool) -> u8 {
+    let mut skip_h1 = consumed_body_h1;
+    let mut level = u8::MAX;
+    for node in nodes {
+        if let DocumentNode::Heading { level: l, .. } = node {
+            if skip_h1 && *l == 1 {
+                skip_h1 = false;
+                continue;
+            }
+            level = level.min(*l);
+        }
+    }
+    if level == u8::MAX { 1 } else { level }
+}
+
+/// Paper height in millimetres, for the space a new section needs.
+fn paper_height_mm(page_size: &str) -> f32 {
+    match paper_name(page_size) {
+        "us-letter" => 279.4,
+        "us-legal" => 355.6,
+        _ => 297.0,
+    }
+}
+
+/// Paper width in millimetres, for sizing the margin column.
+fn paper_width_mm(page_size: &str) -> f32 {
+    match paper_name(page_size) {
+        "us-letter" | "us-legal" => 215.9,
+        _ => 210.0,
+    }
+}
+
+/// Emit the design tokens (`t`) and document facts (`meta`) the theme reads.
+fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>, section_level: u8) {
     let p = &b.profile;
 
     let doc_title = cover
         .as_ref()
         .map(|c| c.title.clone())
         .unwrap_or_else(|| "Document".to_string());
-    let author = cover
-        .as_ref()
-        .and_then(|c| c.author.clone())
-        .unwrap_or_default();
+    let author = cover.as_ref().and_then(|c| c.author.clone());
+    let description = cover.as_ref().and_then(|c| c.subtitle.clone());
+    let footer_left = match cover.as_ref().and_then(|c| c.recipient.clone()) {
+        Some(r) => format!("Prepared for {}", typst_content(&r)),
+        None => typst_content(&doc_title),
+    };
 
-    let has_cover = if cover.is_some() { "true" } else { "false" };
+    let base = p.font_size_base.clamp(7.0, 16.0);
+    // Line height is baseline to baseline, as in CSS; Typst's leading is the
+    // gap below the cap height, so take Inter's cap height (about 0.73em) off.
+    let leading = (p.line_height - 0.73).clamp(0.35, 1.2);
+    let content_mm = paper_width_mm(&p.page_size) - p.margin_left - p.margin_right;
+    let side_mm = (content_mm * 0.25).max(0.0);
+
     s.push_str(&format!(
-        r#"#set document(title: {title}, author: {author})
-
-#let primary = rgb("{primary}")
-#let secondary = rgb("{secondary}")
-#let accent = rgb("{accent}")
-#let text-color = rgb("{text}")
-#let bg-color = rgb("{background}")
-#let table-header-bg = rgb("{table_header}")
-#let table-border-color = rgb("{table_border}")
-#let callout-bg = rgb("{callout_bg}")
-#let cover-bg-color = rgb("{cover_bg}")
-#let cover-text-color = rgb("{cover_text}")
-
-#let header-text = {header_text}
-#let has-cover = {has_cover}
-
-#set page(
-  paper: "{paper}",
-  margin: (top: {mt}mm, bottom: {mb}mm, left: {ml}mm, right: {mr}mm),
-  header: context {{
-    let n = counter(page).get().first()
-    if has-cover and n == 1 [] else [
-      #text(size: 8pt, fill: secondary, header-text)
-      #v(-0.5em)
-      #line(length: 100%, stroke: 0.3pt + table-border-color)
-    ]
-  }},
-  footer: context {{
-    let n = counter(page).get().first()
-    let total = counter(page).final().first()
-    let display-n = if has-cover {{ n - 1 }} else {{ n }}
-    let display-total = if has-cover {{ total - 1 }} else {{ total }}
-    if has-cover and n == 1 [] else [
-      #line(length: 100%, stroke: 0.3pt + table-border-color)
-      #align(right)[#text(size: 8pt, fill: secondary)[Page #display-n of #display-total]]
-    ]
-  }},
+        r##"#let t = (
+  ink: rgb("{ink}"),
+  ink-muted: rgb("{muted}"),
+  heading: rgb("{heading}"),
+  paper: rgb("{paper}"),
+  surface: rgb("{surface}"),
+  rule: rgb("{rule}"),
+  accent: rgb("{accent}"),
+  accent-soft: rgb("{accent_soft}"),
+  cover-bg: rgb("{cover_bg}"),
+  cover-text: rgb("{cover_text}"),
+  good: rgb("#1F7A4D"),
+  fair: rgb("#B7791F"),
+  poor: rgb("#B42318"),
+  font-body: "{font_body}",
+  font-heading: "{font_heading}",
+  font-mono: "{font_mono}",
+  display: {display}pt,
+  h1: {h1}pt,
+  h2: {h2}pt,
+  h3: {h3}pt,
+  body: {base}pt,
+  small: {small}pt,
+  eyebrow: {eyebrow}pt,
+  leading: {leading}em,
+  par-spacing: {par_spacing}pt,
+  s1: 2pt, s2: 4pt, s3: 8pt, s4: 12pt, s5: 16pt, s6: 24pt, s7: 32pt, s8: 48pt, s9: 64pt,
+  r-sm: 3pt,
+  r-md: 6pt,
+  hairline: 0.5pt,
+  heavy: 2.5pt,
+  margin-top: {mt}mm,
+  margin-bottom: {mb}mm,
+  margin-left: {ml}mm,
+  margin-right: {mr}mm,
+  side: {side}mm,
+  section-need: {section_need}mm,
 )
 
-#let font-body = "{font_body}"
-#let font-heading = "{font_heading}"
-#let font-mono = "{font_mono}"
-#set text(font: font-body, size: {base_size}pt, fill: text-color, lang: "en", region: "gb", hyphenate: true)
-#show heading: set text(font: font-heading)
-#set par(leading: {leading}em, spacing: 1.4em, justify: false)
-#set block(spacing: 1.4em)
-#set list(marker: text(fill: accent)[•], spacing: 0.6em)
-#set enum(spacing: 0.6em)
-"#,
-        title = typst_string(&doc_title),
-        author = typst_string(&author),
-        primary = hex_or_default(&p.colour_primary, "#000000"),
-        secondary = hex_or_default(&p.colour_secondary, "#333333"),
+#let meta = (
+  title: {title},
+  author: {author},
+  description: {description},
+  running-title: [{running_title}],
+  footer-left: [{footer_left}],
+  paper: "{paper_size}",
+  has-cover: {has_cover},
+  section-level: {section_level},
+  header: {header},
+  footer: {footer},
+)
+"##,
+        ink = hex_or_default(&p.colour_text, "#1A1A1A"),
+        muted = hex_or_default(&p.colour_secondary, "#555555"),
+        heading = hex_or_default(&p.colour_primary, "#000000"),
+        paper = hex_or_default(&p.colour_background, "#FFFFFF"),
+        surface = hex_or_default(&p.colour_table_header, "#F5F5F5"),
+        rule = hex_or_default(&p.colour_table_border, "#E0E0E0"),
         accent = hex_or_default(&p.colour_accent, "#0066CC"),
-        text = hex_or_default(&p.colour_text, "#1A1A1A"),
-        background = hex_or_default(&p.colour_background, "#FFFFFF"),
-        table_header = hex_or_default(&p.colour_table_header, "#F5F5F5"),
-        table_border = hex_or_default(&p.colour_table_border, "#E0E0E0"),
-        callout_bg = hex_or_default(&p.colour_callout_bg, "#F8F9FA"),
+        accent_soft = hex_or_default(&p.colour_callout_bg, "#F8F9FA"),
         cover_bg = hex_or_default(&p.cover_bg_colour, "#000000"),
         cover_text = hex_or_default(&p.cover_text_colour, "#FFFFFF"),
-        header_text = typst_string(&doc_title),
-        paper = paper_name(&p.page_size),
+        font_body = font_family(&p.font_body, FontRole::Body),
+        font_heading = font_family(&p.font_heading, FontRole::Heading),
+        font_mono = font_family(&p.font_mono, FontRole::Mono),
+        display = (p.font_size_h1 * 1.45).round(),
+        h1 = p.font_size_h1,
+        h2 = p.font_size_h2,
+        h3 = p.font_size_h3,
+        base = base,
+        small = (base * 0.86 * 10.0).round() / 10.0,
+        eyebrow = (base * 0.78 * 10.0).round() / 10.0,
+        leading = (leading * 100.0).round() / 100.0,
+        par_spacing = p.paragraph_spacing.max(base * 0.9),
         mt = p.margin_top,
         mb = p.margin_bottom,
         ml = p.margin_left,
         mr = p.margin_right,
-        font_body = font_family(&p.font_body, FontRole::Body),
-        font_heading = font_family(&p.font_heading, FontRole::Heading),
-        font_mono = font_family(&p.font_mono, FontRole::Mono),
-        base_size = p.font_size_base,
-        leading = (p.line_height - 1.0).max(0.4),
+        side = (side_mm * 10.0).round() / 10.0,
+        section_need = ((paper_height_mm(&p.page_size) - p.margin_top - p.margin_bottom) * 0.3).round(),
+        title = typst_string(&doc_title),
+        author = match author {
+            Some(a) => format!("({},)", typst_string(&a)),
+            None => "()".to_string(),
+        },
+        description = description.map(|d| typst_string(&d)).unwrap_or_else(|| "none".to_string()),
+        running_title = typst_content(&doc_title),
+        footer_left = footer_left,
+        paper_size = paper_name(&p.page_size),
+        has_cover = cover.is_some(),
+        section_level = section_level,
+        header = p.header_enabled,
+        footer = p.footer_enabled,
     ));
-}
-
-fn write_show_rules(s: &mut String, b: &BrandedDocument) {
-    let p = &b.profile;
-    s.push_str(&format!(
-        r##"
-#show heading.where(level: 1): it => {{
-  pagebreak(weak: true)
-  block(below: 0.4em, sticky: true)[
-    #set text(size: {h1}pt, weight: "bold", fill: primary)
-    #it.body
-  ]
-  line(length: 100%, stroke: 0.6pt + accent)
-  v(0.8em)
-}}
-
-#show heading.where(level: 2): it => {{
-  pagebreak(weak: true)
-  block(below: 0.8em, above: 0em, sticky: true)[
-    #set text(size: {h2}pt, weight: "bold", fill: secondary)
-    #it.body
-  ]
-  v(0.4em)
-}}
-
-#show heading.where(level: 3): it => block(below: 0.6em, above: 1.2em, sticky: true)[
-  #set text(size: {h3}pt, weight: "bold", fill: text-color)
-  #it.body
-]
-
-#show heading.where(level: 4): set text(size: {h4}pt, weight: "bold")
-#show heading: set block(sticky: true)
-
-#let mono-stack = (font-mono,)
-
-#show raw.where(block: true): it => block(
-  breakable: false,
-  width: 100%,
-  fill: rgb("#1F1F23"),
-  inset: (x: 12pt, y: 10pt),
-  radius: 3pt,
-  stroke: none,
-  above: 1.4em,
-  below: 1.4em,
-)[
-  #set text(fill: rgb("#E5E7EB"), font: mono-stack, size: {code_size}pt)
-  #set par(leading: 0.55em, justify: false)
-  #it
-]
-
-#show raw.where(block: false): it => box(
-  fill: callout-bg,
-  inset: (x: 3pt, y: 1pt),
-  outset: (y: 2pt),
-  radius: 2pt,
-)[#text(font: mono-stack, size: {code_size}pt)[#it]]
-
-#show table: set block(breakable: true)
-#show list: set block(sticky: true)
-#show enum: set block(sticky: true)
-
-#show link: set text(fill: accent)
-"##,
-        h1 = p.font_size_h1,
-        h2 = p.font_size_h2,
-        h3 = p.font_size_h3,
-        h4 = p.font_size_base + 1.0,
-        code_size = p.font_size_base - 1.0,
-    ));
+    s.push('\n');
+    s.push_str(THEME);
+    s.push('\n');
 }
 
 fn write_imports(s: &mut String) {
@@ -240,71 +242,90 @@ fn write_imports(s: &mut String) {
 }
 
 fn write_cover(s: &mut String, c: &CoverData, _b: &BrandedDocument) {
-    // The cover is its own page with full-bleed cover_bg_colour and text in
-    // cover_text_colour. Accent rule and metadata labels also tinted from
-    // cover-text-color so they remain readable against the dark background.
     s.push_str(
         r#"
-#page(
-  margin: 0mm,
-  header: none,
-  footer: none,
-  fill: cover-bg-color,
-)[
-  #set text(fill: cover-text-color)
-  #pad(x: 25mm, top: 30mm, bottom: 18mm)[
-    #v(35%)
+#page(margin: 0mm, header: none, footer: none, fill: t.cover-bg)[
+  #set text(fill: t.cover-text, hyphenate: false)
+  #pad(left: t.margin-left, right: t.margin-right, top: t.margin-top * 1.4, bottom: t.margin-bottom)[
+    #v(30%)
 "#,
     );
-
     s.push_str(&format!(
-        "    #text(font: font-heading, size: 38pt, weight: \"bold\", fill: cover-text-color)[{}]\n",
-        typst_content(&c.title)
+        "    #block(width: 100%)[#text(font: t.font-heading, size: {:.1}pt, weight: 600, tracking: -0.02em)[{}]]\n",
+        cover_title_size(&c.title, _b),
+        typst_content(&breakable_words(&c.title))
     ));
-    s.push_str("    #v(2mm)\n");
-    s.push_str("    #line(length: 80mm, stroke: 1.5pt + accent)\n");
-
+    s.push_str("    #v(t.s5)\n    #line(length: 24mm, stroke: 3pt + t.accent.lighten(35%))\n");
     if let Some(sub) = &c.subtitle {
         s.push_str(&format!(
-            "    #v(4mm)\n    #text(size: 16pt, fill: cover-text-color.transparentize(25%))[{}]\n",
+            "    #v(t.s5)\n    #block(width: 75%)[#text(size: t.h3, fill: t.cover-text.transparentize(25%))[{}]]\n",
             typst_content(sub)
         ));
     }
-
-    s.push_str("    #v(1fr)\n");
-    s.push_str("    #stack(spacing: 6mm,\n");
-
-    let label_fmt = "fill: cover-text-color.transparentize(40%)";
-    let value_fmt = "fill: cover-text-color";
-
-    if let Some(r) = &c.recipient {
-        s.push_str(&format!(
-            "      [#text(size: 8pt, {label_fmt})[PREPARED FOR] \\ #text(size: 12pt, weight: \"bold\", {value_fmt})[{}]],\n",
-            typst_content(r)
-        ));
-    }
-    if let Some(a) = &c.author {
-        s.push_str(&format!(
-            "      [#text(size: 8pt, {label_fmt})[BY] \\ #text(size: 12pt, {value_fmt})[{}]],\n",
-            typst_content(a)
-        ));
-    }
-    if let Some(d) = &c.date {
-        s.push_str(&format!(
-            "      [#text(size: 8pt, {label_fmt})[DATE] \\ #text(size: 12pt, weight: \"bold\", {value_fmt})[{}]],\n",
-            typst_content(d)
-        ));
-    }
-
+    s.push_str("    #v(1fr)\n    #grid(columns: (1fr, 1fr, 1fr), column-gutter: t.s5,\n");
+    let field = |label: &str, value: &Option<String>| -> String {
+        match value {
+            Some(v) => format!(
+                "      [#text(size: t.eyebrow, weight: 600, tracking: 0.12em, fill: t.cover-text.transparentize(45%))[{label}] \\ #v(t.s1) #text(size: t.body)[{}]],\n",
+                typst_content(v)
+            ),
+            None => "      [],\n".to_string(),
+        }
+    };
+    s.push_str(&field("PREPARED FOR", &c.recipient));
+    s.push_str(&field("BY", &c.author));
+    s.push_str(&field("DATE", &c.date));
     s.push_str("    )\n  ]\n]\n\n");
 }
 
-fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool) {
+/// The cover title's size: the display size, shrunk until the longest word
+/// fits the line (Inter Tight semibold averages about 0.52em a character).
+fn cover_title_size(title: &str, b: &BrandedDocument) -> f32 {
+    let p = &b.profile;
+    let display = (p.font_size_h1 * 1.45).round();
+    let width_pt = (paper_width_mm(&p.page_size) - p.margin_left - p.margin_right) * 72.0 / 25.4;
+    let longest = title.split_whitespace().map(|w| w.chars().count()).max().unwrap_or(1) as f32;
+    (width_pt * 0.95 / (longest * 0.52)).clamp(24.0, display)
+}
+
+/// Let long unbroken words (domains, paths) wrap after dots and slashes
+/// instead of running off the page.
+fn breakable_words(s: &str) -> String {
+    s.split(' ')
+        .map(|word| {
+            if word.chars().count() > 24 {
+                word.replace('.', ".\u{200B}").replace('/', "/\u{200B}")
+            } else {
+                word.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, section_level: u8) {
     let mut skip_next_h1 = consumed_body_h1;
-    for node in nodes {
+    let mut section = 0;
+    for (i, node) in nodes.iter().enumerate() {
         if skip_next_h1 {
             if let DocumentNode::Heading { level: 1, .. } = node {
                 skip_next_h1 = false;
+                continue;
+            }
+        }
+        // A section heading makes its own break; don't make two.
+        if matches!(node, DocumentNode::SectionBreak)
+            && matches!(nodes.get(i + 1), Some(DocumentNode::Heading { level, .. }) if *level <= section_level)
+        {
+            continue;
+        }
+        if let DocumentNode::Heading { level, text, .. } = node {
+            if *level == section_level {
+                section += 1;
+                s.push_str(&format!(
+                    "#heading(level: {level}, supplement: [{section:02}])[{}]\n\n",
+                    typst_inline(text)
+                ));
                 continue;
             }
         }
@@ -346,10 +367,13 @@ fn write_node(s: &mut String, node: &DocumentNode) {
             s.push_str("]\n\n");
         }
         DocumentNode::HorizontalRule => {
-            s.push_str("#line(length: 100%, stroke: 0.3pt + table-border-color)\n\n");
+            s.push_str("#hairline()\n\n");
         }
         DocumentNode::PageBreak => {
             s.push_str("#pagebreak()\n\n");
+        }
+        DocumentNode::SectionBreak => {
+            s.push_str("#section-break()\n\n");
         }
         DocumentNode::Image { url, alt } => {
             // Best-effort: typst only loads local files in default world; remote URLs
@@ -388,7 +412,7 @@ fn write_columns(
         ratio_strs.push(format!("{r}fr"));
     }
 
-    s.push_str("#grid(\n");
+    s.push_str("#wide(grid(\n");
     s.push_str(&format!("  columns: ({}),\n", ratio_strs.join(", ")));
     s.push_str(&format!(
         "  column-gutter: {},\n",
@@ -413,7 +437,7 @@ fn write_columns(
             }
         }
     }
-    s.push_str(")\n\n");
+    s.push_str("))\n\n");
 }
 
 fn write_section(s: &mut String, style: Option<&BlockStyle>, children: &[DocumentNode]) {
@@ -466,17 +490,18 @@ fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
         typst_length(style.radius.as_deref(), "3pt")
     ));
     args.push("width: 100%".to_string());
+    // Cards and callouts read as one object; never split one across pages.
+    args.push("breakable: false".to_string());
 
     s.push_str(&format!("block({})[\n", args.join(", ")));
 
     if let Some(tc) = style.text_color.as_deref().filter(|c| is_hex(c)) {
         s.push_str(&format!("  #set text(fill: rgb(\"{tc}\"))\n"));
-        // Override the global heading show rules so headings inside the styled
-        // scope adopt the slot's text colour instead of brand primary/secondary.
-        s.push_str(&format!(
-            "  #show heading: set text(fill: rgb(\"{tc}\"))\n"
-        ));
     }
+    // Headings in a box are card titles: small, in the box's text colour,
+    // and left out of the bookmarks and the running head.
+    s.push_str("  #set heading(outlined: false, bookmarked: false)\n");
+    s.push_str("  #show heading: boxed-heading\n");
 
     s.push_str(inner);
     s.push(']');
@@ -499,18 +524,37 @@ fn typst_length(value: Option<&str>, default: &str) -> String {
     if ok { trimmed.to_string() } else { default.to_string() }
 }
 
+/// Column widths for a table too wide for the text column: a column whose
+/// longest cell is short sizes to fit (`auto`); the rest share the remaining
+/// width by average length, so long prose columns get the room.
+fn table_columns(headers: &[String], rows: &[Vec<String>]) -> Vec<String> {
+    (0..headers.len())
+        .map(|i| {
+            let cells: Vec<usize> = std::iter::once(&headers[i])
+                .chain(rows.iter().filter_map(|r| r.get(i)))
+                .map(|c| c.chars().count())
+                .collect();
+            let longest = cells.iter().copied().max().unwrap_or(0);
+            if longest <= 16 {
+                return "auto".to_string();
+            }
+            let average = cells.iter().sum::<usize>() as f32 / cells.len().max(1) as f32;
+            // Square root, so a long prose column doesn't starve a short one.
+            format!("{:.1}fr", average.max(12.0).sqrt())
+        })
+        .collect()
+}
+
 fn write_table(s: &mut String, headers: &[String], rows: &[Vec<String>]) {
     if headers.is_empty() {
         return;
     }
     let cols = headers.len();
-    s.push_str(&format!(
-        "#table(\n  columns: {},\n  stroke: 0.3pt + table-border-color,\n  fill: (_, row) => if row == 0 {{ table-header-bg }} else {{ none }},\n",
-        cols
-    ));
+    let widths = table_columns(headers, rows);
+    s.push_str(&format!("#fit-table(({},),\n", widths.join(", ")));
     s.push_str("  table.header(");
     for h in headers {
-        s.push_str(&format!("[*{}*], ", typst_inline(h)));
+        s.push_str(&format!("[{}], ", typst_inline(h)));
     }
     s.push_str("),\n");
     for row in rows {
@@ -787,6 +831,67 @@ mod tests {
         assert_eq!(font_family("Comic Sans", FontRole::Body), "Inter");
     }
 
+    fn branded_json(input: &str) -> BrandedDocument {
+        let doc = crate::parser::json::parse(input).expect("parse");
+        let profile = crate::models::client_profile::ClientProfile::default_profile();
+        BrandedDocument::prepare(doc, profile).expect("prepare")
+    }
+
+    #[test]
+    fn sections_are_numbered_from_the_top_heading_level() {
+        let source = build_source(&branded_json(r#"{
+            "frontmatter": { "title": "Doc" },
+            "pages": [
+                { "blocks": [{ "type": "heading", "level": 2, "text": "First" },
+                             { "type": "heading", "level": 3, "text": "Inside" }] },
+                { "blocks": [{ "type": "heading", "level": 2, "text": "Second" }] }
+            ]
+        }"#));
+        assert!(source.contains("#heading(level: 2, supplement: [01])[First]"));
+        assert!(source.contains("#heading(level: 2, supplement: [02])[Second]"));
+        assert!(source.contains("=== Inside"));
+        assert!(source.contains("section-level: 2,"));
+        // The page boundary is a soft break, and the section heading makes it.
+        assert!(!source.contains("#pagebreak()"));
+        assert!(!source.contains("#section-break()"));
+    }
+
+    #[test]
+    fn table_columns_fit_short_content_and_share_the_rest() {
+        let headers = vec!["Issue".to_string(), "Severity".to_string(), "What to do".to_string()];
+        let rows = vec![vec![
+            "Images have no alternative text describing them for screen readers".to_string(),
+            "Critical".to_string(),
+            "Add a short written description to each image".to_string(),
+        ]];
+        let widths = table_columns(&headers, &rows);
+        assert_eq!(widths[1], "auto");
+        assert!(widths[0].ends_with("fr") && widths[2].ends_with("fr"));
+    }
+
+    #[test]
+    fn headings_in_styled_boxes_stay_out_of_the_bookmarks() {
+        let source = build_source(&branded_json(r##"{
+            "pages": [{ "blocks": [{
+                "type": "section",
+                "background": "#111111",
+                "text_color": "#FFFFFF",
+                "blocks": [{ "type": "heading", "level": 3, "text": "Card" }]
+            }]}]
+        }"##));
+        assert!(source.contains("#set heading(outlined: false, bookmarked: false)"));
+        assert!(source.contains("#show heading: boxed-heading"));
+        assert!(source.contains("breakable: false"));
+    }
+
+    #[test]
+    fn long_cover_titles_shrink_to_fit() {
+        let b = branded_json(r#"{ "pages": [] }"#);
+        let display = (b.profile.font_size_h1 * 1.45).round();
+        assert_eq!(cover_title_size("Short title", &b), display);
+        assert!(cover_title_size("Website review: averyveryverylongdomainname.co.uk", &b) < display);
+    }
+
     #[test]
     fn hex_falls_back_on_invalid() {
         assert_eq!(hex_or_default("not-a-hex", "#000000"), "#000000");
@@ -850,6 +955,70 @@ mod tests {
         }
         assert!(names.iter().any(|n| n.starts_with("InterTight")), "headings should use Inter Tight: {names:?}");
         assert!(names.iter().any(|n| n.starts_with("JetBrainsMono")), "code should use JetBrains Mono: {names:?}");
+    }
+
+    /// Render a local file for design review. Not a test: run with
+    /// `TYPESET_PREVIEW_IN=doc.json TYPESET_PREVIEW_OUT=out.pdf
+    /// [TYPESET_PREVIEW_PROFILE=overrides.json] cargo test preview -- --ignored`.
+    /// The profile file overrides fields on the default profile. The Typst
+    /// source is written next to the PDF.
+    #[test]
+    #[ignore]
+    fn preview() {
+        let input = std::env::var("TYPESET_PREVIEW_IN").expect("TYPESET_PREVIEW_IN");
+        let out = std::env::var("TYPESET_PREVIEW_OUT").expect("TYPESET_PREVIEW_OUT");
+        let content = std::fs::read_to_string(&input).expect("read input");
+        let doc = if input.ends_with(".json") {
+            crate::parser::json::parse(&content).expect("parse json")
+        } else {
+            crate::parser::markdown::parse(&content)
+        };
+        let mut profile = serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile()).unwrap();
+        if let Ok(path) = std::env::var("TYPESET_PREVIEW_PROFILE") {
+            let overrides: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            for (k, v) in overrides.as_object().unwrap() {
+                profile[k] = v.clone();
+            }
+        }
+        let profile = serde_json::from_value(profile).expect("profile");
+        let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+        std::fs::write(format!("{out}.typ"), build_source(&branded)).unwrap();
+        std::fs::write(&out, render(&branded).expect("render")).unwrap();
+    }
+
+    /// Many sections must still lay out in one pass. Position-dependent
+    /// breaks used to need a pass per section and gave up at Typst's limit,
+    /// which scrambled the section numbers.
+    #[test]
+    fn many_sections_lay_out_without_convergence_warnings() {
+        if !typst_available() {
+            return;
+        }
+        let pages: Vec<String> = (1..=14)
+            .map(|i| format!(
+                r#"{{ "blocks": [{{ "type": "heading", "level": 2, "text": "Section {i}" }},
+                   {{ "type": "paragraph", "text": "{}" }}] }}"#,
+                "Words to fill some of the page. ".repeat(i * 6)
+            ))
+            .collect();
+        let input = format!(r#"{{ "frontmatter": {{ "title": "Many" }}, "pages": [{}] }}"#, pages.join(","));
+        let source = build_source(&branded_json(&input));
+
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(tmp.path().join("input.typ"), &source).unwrap();
+        let output = std::process::Command::new("typst")
+            .args(["compile", "--root"])
+            .arg(tmp.path())
+            .arg("--font-path")
+            .arg(font_dir())
+            .arg("--ignore-system-fonts")
+            .arg(tmp.path().join("input.typ"))
+            .arg(tmp.path().join("out.pdf"))
+            .output()
+            .unwrap();
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "{stderr}");
+        assert!(!stderr.contains("did not converge"), "{stderr}");
     }
 
     /// Smoke test for the full AI strategy example file.

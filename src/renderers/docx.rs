@@ -177,7 +177,7 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
             docx.add_paragraph(Paragraph::new().add_run(Run::new()))
         }
 
-        DocumentNode::PageBreak => {
+        DocumentNode::PageBreak | DocumentNode::SectionBreak => {
             let run = Run::new().add_break(BreakType::Page);
             docx.add_paragraph(Paragraph::new().add_run(run))
         }
