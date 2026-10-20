@@ -296,7 +296,8 @@ and `pdffonts` lists only bundled families.
 - [x] H2 no longer forces page breaks; sticky headings; widow and orphan control.
 - [x] PDF bookmarks and metadata.
 
-*Done 20 Oct 2026 (local; not yet deployed).* How it was built, and where it differs from the plan:
+*Done and deployed 20 Oct 2026 (83da864, then a fix: Inter's `tnum` widens hyphens, so
+tabular figures now apply to digits only).* How it was built, and where it differs from the plan:
 - **Theme file.** All style rules moved to `src/renderers/theme.typ` (the start of Phase 2's
   theme). The renderer emits `t` (tokens) and `meta` (document facts) above it. Old variable
   names stay as aliases for hand-written fletcher code.
@@ -321,6 +322,7 @@ and `pdffonts` lists only bundled families.
   dark callouts.
 - **Cover.** The title shrinks to fit its longest word (the Myers domain no longer runs off the
   page).
+- **Profile.** `chris-garlick-light` updated on the server the same day.
 - **Defaults.** The default profile uses the new scale (10.5 / 30 / 20 / 14, line height 1.55,
   22mm margins). `chris-garlick-light` moves to it, with paper `#FAF8F3` (decided 20 Oct: warm
   paper rather than white).

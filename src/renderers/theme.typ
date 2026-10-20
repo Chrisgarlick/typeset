@@ -67,11 +67,11 @@
   },
   footer: if meta.footer {
     context wide(block(width: 100%, inset: (top: t.s3), stroke: (top: t.hairline + t.rule))[
-      #set text(font: t.font-body, size: t.eyebrow, fill: t.ink-muted, number-width: "tabular", hyphenate: false)
+      #set text(font: t.font-body, size: t.eyebrow, fill: t.ink-muted, hyphenate: false)
       #let n = counter(page).get().first()
       #let total = counter(page).final().first()
       #let (n, total) = if meta.has-cover { (n - 1, total - 1) } else { (n, total) }
-      #grid(columns: (1fr, auto), column-gutter: t.s5, meta.footer-left, [Page #n of #total])
+      #grid(columns: (1fr, auto), column-gutter: t.s5, meta.footer-left, text(number-width: "tabular")[Page #n of #total])
     ])
   },
 )
@@ -194,7 +194,12 @@
   inset: (x: t.s3, y: 6pt),
   fill: (x, y) => if y == 0 { t.surface },
 )
-#show table: set text(size: t.small, number-width: "tabular", hyphenate: false)
+#show table: set text(size: t.small, hyphenate: false)
+// Tabular figures on digits only: Inter's `tnum` also widens hyphens.
+#show table: it => {
+  show regex("\d+"): set text(number-width: "tabular")
+  it
+}
 #show table: set par(leading: 0.5em)
 #show table: set block(breakable: true)
 #show table.cell.where(y: 0): set text(weight: 600, size: t.eyebrow, tracking: 0.02em)
