@@ -126,7 +126,11 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   }},
 )
 
-#set text(font: ("{font_body}", "Inter", "Helvetica Neue", "Helvetica", "Arial", "Liberation Sans"), size: {base_size}pt, fill: text-color)
+#let font-body = "{font_body}"
+#let font-heading = "{font_heading}"
+#let font-mono = "{font_mono}"
+#set text(font: font-body, size: {base_size}pt, fill: text-color, lang: "en", region: "gb", hyphenate: true)
+#show heading: set text(font: font-heading)
 #set par(leading: {leading}em, spacing: 1.4em, justify: false)
 #set block(spacing: 1.4em)
 #set list(marker: text(fill: accent)[•], spacing: 0.6em)
@@ -150,7 +154,9 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         mb = p.margin_bottom,
         ml = p.margin_left,
         mr = p.margin_right,
-        font_body = font_family(&p.font_body),
+        font_body = font_family(&p.font_body, FontRole::Body),
+        font_heading = font_family(&p.font_heading, FontRole::Heading),
+        font_mono = font_family(&p.font_mono, FontRole::Mono),
         base_size = p.font_size_base,
         leading = (p.line_height - 1.0).max(0.4),
     ));
@@ -187,7 +193,7 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
 #show heading.where(level: 4): set text(size: {h4}pt, weight: "bold")
 #show heading: set block(sticky: true)
 
-#let mono-stack = ("DejaVu Sans Mono", "Menlo", "Consolas", "Courier New", "Liberation Mono")
+#let mono-stack = (font-mono,)
 
 #show raw.where(block: true): it => block(
   breakable: false,
@@ -223,7 +229,6 @@ fn write_show_rules(s: &mut String, b: &BrandedDocument) {
         h4 = p.font_size_base + 1.0,
         code_size = p.font_size_base - 1.0,
     ));
-    let _ = &p.font_mono;
 }
 
 fn write_imports(s: &mut String) {
@@ -253,7 +258,7 @@ fn write_cover(s: &mut String, c: &CoverData, _b: &BrandedDocument) {
     );
 
     s.push_str(&format!(
-        "    #text(size: 38pt, weight: \"bold\", fill: cover-text-color)[{}]\n",
+        "    #text(font: font-heading, size: 38pt, weight: \"bold\", fill: cover-text-color)[{}]\n",
         typst_content(&c.title)
     ));
     s.push_str("    #v(2mm)\n");
@@ -505,7 +510,7 @@ fn write_table(s: &mut String, headers: &[String], rows: &[Vec<String>]) {
     ));
     s.push_str("  table.header(");
     for h in headers {
-        s.push_str(&format!("[*{}*], ", typst_content(h)));
+        s.push_str(&format!("[*{}*], ", typst_inline(h)));
     }
     s.push_str("),\n");
     for row in rows {
@@ -513,7 +518,7 @@ fn write_table(s: &mut String, headers: &[String], rows: &[Vec<String>]) {
             if i >= cols {
                 break;
             }
-            s.push_str(&format!("  [{}], ", typst_content(cell)));
+            s.push_str(&format!("  [{}], ", typst_inline(cell)));
         }
         // Pad missing cells
         for _ in row.len()..cols {
@@ -576,11 +581,48 @@ fn typst_content(s: &str) -> String {
     out
 }
 
-/// Escape for inline markdown-style content where typst's markup is used.
-/// Same as `typst_content` for now — kept distinct so future formatting
-/// (bold, italic from markdown inline runs) can diverge.
+/// Inline text with its formatting: `**bold**`, `*italic*`, `~~struck~~`,
+/// `` `code` `` and `[links](https://...)` become Typst markup; everything
+/// else is escaped literally. Text that parses as block syntax (a heading,
+/// a list, a quote) is not inline text at all, so it's kept literal rather
+/// than reinterpreted.
 fn typst_inline(s: &str) -> String {
-    typst_content(s)
+    use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
+
+    if !s.contains(['*', '_', '`', '[', '~', '\\', '<', '&']) {
+        return typst_content(s);
+    }
+    let mut out = String::with_capacity(s.len() + 16);
+    let mut link_open: Vec<bool> = Vec::new();
+    for event in Parser::new_ext(s, Options::ENABLE_STRIKETHROUGH) {
+        match event {
+            Event::Start(Tag::Paragraph) | Event::End(TagEnd::Paragraph) => {}
+            Event::Text(t) => out.push_str(&typst_content(&t)),
+            Event::Code(c) => out.push_str(&format!("#raw({})", typst_string(&c))),
+            Event::Start(Tag::Strong) => out.push_str("#strong["),
+            Event::Start(Tag::Emphasis) => out.push_str("#emph["),
+            Event::Start(Tag::Strikethrough) => out.push_str("#strike["),
+            Event::End(TagEnd::Strong) | Event::End(TagEnd::Emphasis) | Event::End(TagEnd::Strikethrough) => out.push(']'),
+            Event::Start(Tag::Link { dest_url, .. }) => {
+                let safe = ["https://", "http://", "mailto:"].iter().any(|p| dest_url.starts_with(p));
+                if safe {
+                    out.push_str(&format!("#link({})[", typst_string(&dest_url)));
+                }
+                link_open.push(safe);
+            }
+            Event::End(TagEnd::Link) => {
+                if link_open.pop().unwrap_or(false) {
+                    out.push(']');
+                }
+            }
+            Event::SoftBreak => out.push(' '),
+            Event::HardBreak => out.push_str(" \\ "),
+            Event::Html(h) | Event::InlineHtml(h) => out.push_str(&typst_content(&h)),
+            // Block syntax: not inline text, keep the original literally.
+            _ => return typst_content(s),
+        }
+    }
+    out.trim_end().to_string()
 }
 
 fn hex_or_default<'a>(value: &'a str, fallback: &'a str) -> &'a str {
@@ -599,15 +641,57 @@ fn paper_name(page_size: &str) -> &'static str {
     }
 }
 
-fn font_family(name: &str) -> String {
-    // Map common PDF builtin names to fonts typically present in the runtime image.
-    let mapped = match name {
-        "Helvetica" => "Inter",
-        "Courier" => "DejaVu Sans Mono",
-        "Times" | "Times Roman" => "DejaVu Serif",
-        other => other,
+/// What a font is for, which decides the fallback when a profile names a
+/// family Typeset doesn't bundle.
+#[derive(Clone, Copy)]
+pub enum FontRole {
+    Body,
+    Heading,
+    Mono,
+}
+
+/// Families bundled in `assets/fonts`. Compiles use only these
+/// (`--ignore-system-fonts`), so output is the same everywhere and a missing
+/// font can't silently fall back to Typst's built-in serif.
+pub const BUNDLED_FONTS: [&str; 3] = ["Inter", "Inter Tight", "JetBrains Mono"];
+
+/// Map a profile's font name to a bundled family: exact matches pass through,
+/// a few known names map to their closest bundled family, and anything else
+/// (including Helvetica, the old default) falls back by role: Inter for text,
+/// Inter Tight for headings, JetBrains Mono for code.
+pub fn font_family(name: &str, role: FontRole) -> String {
+    let trimmed = name.trim();
+    if let Some(found) = BUNDLED_FONTS.iter().find(|f| f.eq_ignore_ascii_case(trimmed)) {
+        return found.to_string();
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    let mapped = match lower.as_str() {
+        "inter variable" => "Inter",
+        "inter display" | "inter tight variable" => "Inter Tight",
+        "courier" | "courier new" | "monospace" | "dejavu sans mono" | "menlo" | "consolas" | "dm mono"
+        | "ibm plex mono" | "jetbrains mono nl" => "JetBrains Mono",
+        // Generic sans names (Helvetica, Arial and the rest) and anything
+        // unknown take the role's family.
+        _ => match role {
+            FontRole::Body => "Inter",
+            FontRole::Heading => "Inter Tight",
+            FontRole::Mono => "JetBrains Mono",
+        },
     };
-    mapped.replace('"', "\\\"")
+    mapped.to_string()
+}
+
+/// Where the bundled fonts live: `TYPESET_FONT_DIR`, then the image's
+/// `/app/assets/fonts`, then the repository's `assets/fonts`.
+fn font_dir() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("TYPESET_FONT_DIR") {
+        return dir.into();
+    }
+    let image = std::path::PathBuf::from("/app/assets/fonts");
+    if image.is_dir() {
+        return image;
+    }
+    std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/fonts"))
 }
 
 // ---------------------------------------------------------------------------
@@ -626,6 +710,9 @@ fn compile(source: &str) -> anyhow::Result<Vec<u8>> {
 
     let result = Command::new("typst")
         .args(["compile", "--root", tmp.path().to_str().unwrap()])
+        .arg("--font-path")
+        .arg(font_dir())
+        .arg("--ignore-system-fonts")
         .arg(&input)
         .arg(&output)
         .stdin(Stdio::null())
@@ -658,6 +745,49 @@ mod tests {
     }
 
     #[test]
+    fn inline_formatting_becomes_typst_markup() {
+        assert_eq!(
+            typst_inline("Plain **bold** and *italic* with `code`"),
+            r#"Plain #strong[bold] and #emph[italic] with #raw("code")"#
+        );
+        assert_eq!(
+            typst_inline("See [the site](https://example.com) now"),
+            r#"See #link("https://example.com")[the site] now"#
+        );
+        assert_eq!(typst_inline("~~gone~~"), "#strike[gone]");
+    }
+
+    #[test]
+    fn inline_text_stays_escaped() {
+        assert_eq!(typst_inline("Cost #1 is $5 <fast>"), r"Cost \#1 is \$5 \<fast\>");
+        // A literal asterisk with no partner is text, not emphasis.
+        assert_eq!(typst_inline("5 * 3"), r"5 \* 3");
+    }
+
+    #[test]
+    fn inline_links_only_allow_web_and_mail_schemes() {
+        assert_eq!(typst_inline("[x](javascript:alert(1))"), "x");
+        assert_eq!(typst_inline("[x](mailto:a@b.com)"), r#"#link("mailto:a@b.com")[x]"#);
+    }
+
+    #[test]
+    fn block_syntax_in_inline_text_is_kept_literal() {
+        assert_eq!(typst_inline("# not a heading *really*"), typst_content("# not a heading *really*"));
+        assert_eq!(typst_inline("- not a list"), typst_content("- not a list"));
+    }
+
+    #[test]
+    fn fonts_resolve_to_bundled_families() {
+        assert_eq!(font_family("Inter", FontRole::Body), "Inter");
+        assert_eq!(font_family("inter tight", FontRole::Heading), "Inter Tight");
+        assert_eq!(font_family("Helvetica", FontRole::Heading), "Inter Tight");
+        assert_eq!(font_family("Helvetica", FontRole::Body), "Inter");
+        assert_eq!(font_family("DM Mono", FontRole::Mono), "JetBrains Mono");
+        assert_eq!(font_family("Instrument Serif", FontRole::Heading), "Inter Tight");
+        assert_eq!(font_family("Comic Sans", FontRole::Body), "Inter");
+    }
+
+    #[test]
     fn hex_falls_back_on_invalid() {
         assert_eq!(hex_or_default("not-a-hex", "#000000"), "#000000");
         assert_eq!(hex_or_default("#FF0000", "#000000"), "#FF0000");
@@ -675,6 +805,51 @@ mod tests {
             .arg("--version")
             .output()
             .is_ok()
+    }
+
+    /// Every compile embeds only bundled fonts: no fallback to Typst's
+    /// built-in Libertinus or New Computer Modern.
+    #[test]
+    fn renders_embed_only_bundled_fonts() {
+        if !typst_available() {
+            return;
+        }
+        let input = r#"{
+            "frontmatter": { "title": "Fonts" },
+            "pages": [{ "blocks": [
+                { "type": "heading", "level": 2, "text": "A heading" },
+                { "type": "paragraph", "text": "Body with **bold**, *italic* and `code`." },
+                { "type": "code", "language": "rust", "content": "fn main() {}" }
+            ]}]
+        }"#;
+        let doc = crate::parser::json::parse(input).expect("parse");
+        let profile = crate::models::client_profile::ClientProfile::default_profile();
+        let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+        let bytes = render(&branded).expect("render");
+        let pdf = String::from_utf8_lossy(&bytes);
+
+        let mut names: Vec<String> = pdf
+            .match_indices("/BaseFont /")
+            .map(|(i, m)| {
+                pdf[i + m.len()..]
+                    .chars()
+                    .take_while(|c| c.is_ascii_alphanumeric() || *c == '+' || *c == '-')
+                    .collect::<String>()
+            })
+            .map(|n| n.split_once('+').map(|(_, f)| f.to_string()).unwrap_or(n))
+            .collect();
+        names.sort();
+        names.dedup();
+
+        assert!(!names.is_empty(), "no fonts found in the PDF");
+        for name in &names {
+            assert!(
+                name.starts_with("Inter") || name.starts_with("JetBrainsMono"),
+                "unexpected font {name} in {names:?}"
+            );
+        }
+        assert!(names.iter().any(|n| n.starts_with("InterTight")), "headings should use Inter Tight: {names:?}");
+        assert!(names.iter().any(|n| n.starts_with("JetBrainsMono")), "code should use JetBrains Mono: {names:?}");
     }
 
     /// Smoke test for the full AI strategy example file.

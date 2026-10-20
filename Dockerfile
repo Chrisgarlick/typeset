@@ -19,7 +19,7 @@ RUN cargo build --release
 
 # Stage 2: Fetch Typst CLI
 FROM debian:bookworm-slim AS typst-fetch
-ARG TYPST_VERSION=0.13.0
+ARG TYPST_VERSION=0.14.2
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates xz-utils \
     && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
        -o /tmp/typst.tar.xz \
@@ -34,13 +34,15 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates \
       libssl3 \
-      fonts-dejavu \
-      fonts-inter \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/typeset /usr/local/bin/typeset
 COPY --from=typst-fetch /usr/local/bin/typst /usr/local/bin/typst
 COPY migrations/ /app/migrations/
+
+# Typst sees only these fonts (--font-path with --ignore-system-fonts)
+COPY assets/fonts/ /app/assets/fonts/
+ENV TYPESET_FONT_DIR=/app/assets/fonts
 
 # Pre-cache the fletcher package so first render doesn't hit the network
 ENV TYPST_PACKAGE_CACHE_PATH=/app/.typst-cache

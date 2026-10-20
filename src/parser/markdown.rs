@@ -83,6 +83,7 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
     let mut image_url = String::new();
     let mut image_alt = String::new();
     let mut in_image = false;
+    let mut link_stack: Vec<String> = Vec::new();
 
     for event in parser {
         match event {
@@ -258,15 +259,40 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
             Event::Text(text) => {
                 if in_image {
                     image_alt.push_str(&text);
-                } else {
+                } else if in_code_block {
                     text_buf.push_str(&text);
+                } else {
+                    text_buf.push_str(&escape_inline(&text));
                 }
             }
 
             Event::Code(code) => {
-                text_buf.push('`');
+                let fence = if code.contains('`') { "`` " } else { "`" };
+                text_buf.push_str(fence);
                 text_buf.push_str(&code);
-                text_buf.push('`');
+                text_buf.push_str(&fence.chars().rev().collect::<String>());
+            }
+
+            // Inline formatting is kept as markdown in the node's text, which
+            // the renderers read back (see `typst_inline`).
+            Event::Start(Tag::Strong) | Event::End(TagEnd::Strong) if !in_image => {
+                text_buf.push_str("**");
+            }
+            Event::Start(Tag::Emphasis) | Event::End(TagEnd::Emphasis) if !in_image => {
+                text_buf.push('*');
+            }
+            Event::Start(Tag::Strikethrough) | Event::End(TagEnd::Strikethrough) if !in_image => {
+                text_buf.push_str("~~");
+            }
+            Event::Start(Tag::Link { dest_url, .. }) if !in_image => {
+                text_buf.push('[');
+                link_stack.push(dest_url.to_string());
+            }
+            Event::End(TagEnd::Link) if !in_image => {
+                let url = link_stack.pop().unwrap_or_default();
+                text_buf.push_str("](");
+                text_buf.push_str(&url.replace(' ', "%20").replace(')', "%29"));
+                text_buf.push(')');
             }
 
             Event::SoftBreak => {
@@ -286,6 +312,19 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
     }
 
     nodes
+}
+
+/// Backslash-escape the characters inline markdown gives meaning to, so
+/// literal text survives being parsed again as inline markdown.
+fn escape_inline(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        if matches!(c, '\\' | '*' | '_' | '`' | '[' | ']' | '~' | '<' | '&') {
+            out.push('\\');
+        }
+        out.push(c);
+    }
+    out
 }
 
 fn slugify(text: &str) -> String {
@@ -308,6 +347,24 @@ fn slugify(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn inline_formatting_survives_parsing() {
+        let doc = parse("A **bold** and *soft* [link](https://example.com), with `x` and 5 * 3.");
+        let DocumentNode::Paragraph { text } = &doc.nodes[0] else {
+            panic!("expected a paragraph");
+        };
+        assert_eq!(text, r"A **bold** and *soft* [link](https://example.com), with `x` and 5 \* 3.");
+    }
+
+    #[test]
+    fn code_blocks_are_not_escaped() {
+        let doc = parse("```\nlet a = b * c_d;\n```");
+        let DocumentNode::CodeBlock { code, .. } = &doc.nodes[0] else {
+            panic!("expected a code block");
+        };
+        assert_eq!(code, "let a = b * c_d;");
+    }
 
     #[test]
     fn test_parse_frontmatter() {

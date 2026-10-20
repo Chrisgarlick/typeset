@@ -171,9 +171,9 @@ impl ClientProfile {
             colour_table_header: "#F5F5F5".to_string(),
             colour_table_border: "#E0E0E0".to_string(),
             colour_callout_bg: "#F8F9FA".to_string(),
-            font_heading: "Helvetica".to_string(),
-            font_body: "Helvetica".to_string(),
-            font_mono: "Courier".to_string(),
+            font_heading: "Inter Tight".to_string(),
+            font_body: "Inter".to_string(),
+            font_mono: "JetBrains Mono".to_string(),
             font_size_base: 11.0,
             font_size_h1: 24.0,
             font_size_h2: 18.0,
@@ -217,9 +217,9 @@ fn default_colour_background() -> String { "#FFFFFF".to_string() }
 fn default_colour_table_header() -> String { "#F5F5F5".to_string() }
 fn default_colour_table_border() -> String { "#E0E0E0".to_string() }
 fn default_colour_callout_bg() -> String { "#F8F9FA".to_string() }
-fn default_font_heading() -> String { "Helvetica".to_string() }
-fn default_font_body() -> String { "Helvetica".to_string() }
-fn default_font_mono() -> String { "Courier".to_string() }
+fn default_font_heading() -> String { "Inter Tight".to_string() }
+fn default_font_body() -> String { "Inter".to_string() }
+fn default_font_mono() -> String { "JetBrains Mono".to_string() }
 fn default_font_size_base() -> f32 { 11.0 }
 fn default_font_size_h1() -> f32 { 24.0 }
 fn default_font_size_h2() -> f32 { 18.0 }
