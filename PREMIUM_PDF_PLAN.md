@@ -505,6 +505,9 @@ after the figure fix.
   between the cover and the sections, so PDF/UA still holds, and the contents page groups
   sections under them. `~/dev/myers/combine.py` builds the pack from the three documents.
 
+- **Added after Phase 5: data-URI images** (e97f575), so private images (Lee's design routes) are
+  sent inside the request rather than hosted. Requests may be up to 25MB (axum and nginx).
+
 *Result:* all four phases' acceptance checks pass; the gallery snapshots, 75 tests and three real
 documents are the regression net.
 
