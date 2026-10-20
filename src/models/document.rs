@@ -46,6 +46,8 @@ pub enum DocumentNode {
         style: Option<BlockStyle>,
         children: Vec<DocumentNode>,
     },
+    /// A schema v2 component.
+    Component(crate::models::components::Component),
 }
 
 #[derive(Debug, Clone, Serialize, Default)]
@@ -94,4 +96,10 @@ pub struct Frontmatter {
     pub author: Option<String>,
     pub document_type: Option<String>,
     pub client: Option<String>,
+    /// A short label above the cover title, e.g. "Website review".
+    pub eyebrow: Option<String>,
+    /// A document reference shown on the cover.
+    pub reference: Option<String>,
+    /// Cover style: `editorial`, `band` or `dark`. Defaults to the profile's.
+    pub cover: Option<String>,
 }

@@ -184,6 +184,15 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
 
         DocumentNode::Image { .. } => docx, // deferred to v1.1
 
+        // Components have no Word design yet: their text as paragraphs.
+        DocumentNode::Component(component) => {
+            let mut d = docx;
+            for line in component.plain_lines() {
+                d = render_node(d, &DocumentNode::Paragraph { text: line }, branded);
+            }
+            d
+        }
+
         DocumentNode::Columns { children, .. } => {
             let mut d = docx;
             for column in children {

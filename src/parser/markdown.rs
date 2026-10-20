@@ -50,6 +50,9 @@ fn parse_frontmatter_yaml(yaml: &str) -> Frontmatter {
         }
         match key {
             "title" => fm.title = Some(val),
+            "eyebrow" => fm.eyebrow = Some(val),
+            "reference" => fm.reference = Some(val),
+            "cover" => fm.cover = Some(val),
             "subtitle" => fm.subtitle = Some(val),
             "recipient" => fm.recipient = Some(val),
             "date" => fm.date = Some(val),

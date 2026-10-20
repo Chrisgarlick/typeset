@@ -1,0 +1,473 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://typeset.chrisgarlick.com/schema/v2.json",
+  "title": "Typeset JSON document, schema 2",
+  "description": "Schema 2 adds components. v1 blocks (heading, paragraph, markdown, bullet_list, ordered_list, table, code, blockquote, image, rule, page_break, columns, section) keep working and are described in API.md; they are accepted here without field checks. Component blocks reject unknown fields.",
+  "type": "object",
+  "required": [
+    "schema",
+    "pages"
+  ],
+  "properties": {
+    "schema": {
+      "const": 2
+    },
+    "frontmatter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "recipient": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "author": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "date": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "eyebrow": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "reference": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "document_type": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "client": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "cover": {
+          "enum": [
+            "editorial",
+            "band",
+            "dark"
+          ]
+        }
+      },
+      "required": []
+    },
+    "pages": {
+      "type": "array",
+      "description": "Each page is a section boundary: a new page only when the current one is mostly used.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/block"
+            }
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "detail": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "effort": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "title"
+      ]
+    },
+    "v1_block": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "heading",
+            "paragraph",
+            "markdown",
+            "bullet_list",
+            "ordered_list",
+            "table",
+            "code",
+            "blockquote",
+            "image",
+            "rule",
+            "page_break",
+            "columns",
+            "section"
+          ]
+        }
+      }
+    },
+    "block": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1_block"
+        },
+        {
+          "$ref": "#/$defs/opener"
+        },
+        {
+          "$ref": "#/$defs/callout"
+        },
+        {
+          "$ref": "#/$defs/findings"
+        },
+        {
+          "$ref": "#/$defs/steps"
+        },
+        {
+          "$ref": "#/$defs/scores"
+        },
+        {
+          "$ref": "#/$defs/metrics"
+        },
+        {
+          "$ref": "#/$defs/facts"
+        }
+      ]
+    },
+    "opener": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "opener"
+        },
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "eyebrow": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "intro": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "stat": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            },
+            "label": {
+              "type": "string",
+              "description": "Text; inline markdown (bold, italic, links, code) allowed."
+            },
+            "status": {
+              "enum": [
+                "good",
+                "fair",
+                "poor",
+                "neutral"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "title"
+      ],
+      "description": "Opens a numbered section: eyebrow, title, intro and an optional headline figure. Counts as an H2 section."
+    },
+    "callout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "callout"
+        },
+        "tone": {
+          "enum": [
+            "info",
+            "good",
+            "warn",
+            "critical",
+            "brand"
+          ],
+          "default": "info"
+        },
+        "title": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "body": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "type",
+        "body"
+      ],
+      "description": "A tinted note with a rule in its tone's colour."
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "findings"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "severity": {
+                "enum": [
+                  "critical",
+                  "serious",
+                  "moderate",
+                  "minor"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "How many times it was found."
+              },
+              "pages": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Text; inline markdown (bold, italic, links, code) allowed."
+                },
+                "description": "Where: page names, or one entry such as \"All 5 pages\"."
+              },
+              "fix": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              }
+            },
+            "required": [
+              "title",
+              "severity"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "Issues as a table with severity badges."
+    },
+    "steps": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "steps"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/step"
+                }
+              }
+            },
+            "required": [
+              "items"
+            ]
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          },
+          "description": "A single untitled group."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "description": "Numbered steps, optionally grouped. Give groups or items."
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "scores"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "value": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number",
+                "default": 100
+              },
+              "benchmark": {
+                "type": "number",
+                "description": "A target, marked on the gauge."
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        },
+        "caption": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "A row of two to five score gauges."
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "metrics"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "label": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "target": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "status": {
+                "enum": [
+                  "good",
+                  "fair",
+                  "poor",
+                  "neutral"
+                ]
+              }
+            },
+            "required": [
+              "value",
+              "label"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "Headline figures, up to four per row."
+    },
+    "facts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "facts"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "value": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "Label and value pairs."
+    }
+  }
+}

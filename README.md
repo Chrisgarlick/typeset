@@ -159,6 +159,9 @@ client: acme
 | `date` | string | "DATE" (free-form) |
 | `document_type` | string | Categorisation only (used for logging) |
 | `client` | string | Client profile slug for branding |
+| `eyebrow` | string | A short label above the cover title |
+| `reference` | string | A document reference on the cover |
+| `cover` | string | Cover style: `editorial`, `band` or `dark` |
 
 Restrictions: single-line `key: value` only. No nested objects, no arrays, no multi-line strings. Surrounding quotes (`"` or `'`) are tolerated.
 
@@ -236,7 +239,9 @@ TYPESET_PREVIEW_IN=examples/ai-strategy.json TYPESET_PREVIEW_OUT=/tmp/out.pdf \
   TYPESET_PREVIEW_PROFILE=profile-overrides.json cargo test preview -- --ignored
 ```
 
-The page design lives in `src/renderers/theme.typ`; the renderer emits the design tokens (`t`) and document facts (`meta`) above it.
+The page design lives in `src/renderers/theme.typ` and the schema v2 components in `src/renderers/components.typ`; the renderer emits the design tokens (`t`) and document facts (`meta`) above them.
+
+`cargo test gallery_matches_snapshots` compares `examples/gallery.json` with the approved PNGs in `tests/snapshots` (only when the installed Typst matches the Dockerfile's version). After an intended design change, check the new renders in `tests/snapshots/failed/`, then approve them with `UPDATE_SNAPSHOTS=1 cargo test gallery_matches_snapshots`.
 
 # Deployment
 

@@ -1,0 +1,136 @@
+{
+  "schema": 2,
+  "frontmatter": {
+    "title": "Component gallery",
+    "subtitle": "Every schema v2 component, as it renders. The visual spec and the regression fixture.",
+    "eyebrow": "Typeset",
+    "recipient": "Anyone writing for Typeset",
+    "author": "Typeset",
+    "date": "20 October 2026",
+    "reference": "TS-GALLERY-2",
+    "cover": "editorial"
+  },
+  "pages": [
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Summary",
+          "title": "At a glance",
+          "intro": "An opener starts a numbered section. It carries an **eyebrow**, an intro set slightly larger than body text, and an optional headline figure on the right.",
+          "stat": { "value": "62", "label": "Overall score", "status": "fair" }
+        },
+        {
+          "type": "scores",
+          "items": [
+            { "label": "Accessibility", "value": 36, "benchmark": 90 },
+            { "label": "Performance", "value": 28, "benchmark": 90 },
+            { "label": "SEO", "value": 74, "benchmark": 90 },
+            { "label": "Security", "value": 92, "benchmark": 90 }
+          ],
+          "caption": "Scores are averages across five pages. The tick on each gauge marks the target of 90."
+        },
+        {
+          "type": "paragraph",
+          "text": "Body text sits in the text column, about 75 characters a line, with *italic*, **bold**, `inline code` and [links](https://example.com) available everywhere text is accepted."
+        },
+        {
+          "type": "metrics",
+          "items": [
+            { "value": "7.7 MB", "label": "Home page size", "target": "under 1.5 MB", "status": "poor" },
+            { "value": "15.2 s", "label": "Time to load fully", "target": "under 3 s", "status": "poor" },
+            { "value": "2.4 s", "label": "First content shown", "target": "under 1.8 s", "status": "fair" },
+            { "value": "98%", "label": "Uptime this month", "target": "99.9%", "status": "good" }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "What would make the biggest difference",
+          "body": "Callouts are tinted, never dark, so headings and links inside them stay readable. Speed comes first: the pages are **five times** heavier than they need to be."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Findings",
+          "title": "Accessibility",
+          "intro": "The findings table gives each issue a severity badge, how often it was found, where, and what to do.",
+          "stat": { "value": "36", "label": "out of 100", "status": "poor" }
+        },
+        {
+          "type": "findings",
+          "items": [
+            { "title": "Product images have no alternative text", "severity": "critical", "count": 2, "pages": ["Ring product page"], "fix": "Add a short written description to each image so screen readers can describe it." },
+            { "title": "The text size drop-down has no label", "severity": "critical", "pages": ["Ring product page"], "fix": "Add a label so screen reader users know what it is for." },
+            { "title": "Text and background colours don't contrast enough", "severity": "serious", "count": 202, "pages": ["All 5 pages"], "fix": "Darken light or pastel text, particularly prices and links." },
+            { "title": "Links with no readable text", "severity": "serious", "count": 12, "pages": ["All 5 pages"], "fix": "Describe icon-only links, such as the logo and the account icon." },
+            { "title": "Page content isn't grouped into landmarks", "severity": "moderate", "count": 164, "pages": ["Home", "Shop", "Engagement rings"], "fix": "Use proper page structure: header, main content and footer." },
+            { "title": "Decorative images are announced", "severity": "minor", "count": 6, "pages": ["Home"], "fix": "Mark purely decorative images so assistive technology skips them." }
+          ]
+        },
+        { "type": "callout", "tone": "info", "title": "Information", "body": "An information callout, in the neutral tone." },
+        { "type": "callout", "tone": "good", "title": "What's working", "body": "Every page has a unique title, and the site is served over HTTPS." },
+        { "type": "callout", "tone": "warn", "title": "Worth checking", "body": "Two basket pages exist (/basket/ and /mycart/). Customers may land on the wrong one." },
+        { "type": "callout", "tone": "critical", "title": "Fix first", "body": "A test page and a sample post are publicly visible and indexed by search engines." }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Plan",
+          "title": "Next steps",
+          "intro": "Steps are numbered in the margin column and run on across groups, each with an effort estimate."
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "Quick wins",
+              "items": [
+                { "title": "Delete the test page and the sample post", "detail": "Both are live and indexed. Removing them takes minutes.", "effort": "15 minutes" },
+                { "title": "Pick one basket page", "detail": "Redirect the other one to it so every link goes to the same place.", "effort": "30 minutes" },
+                { "title": "Add alternative text to product images", "effort": "1 hour" }
+              ]
+            },
+            {
+              "title": "Bigger jobs",
+              "items": [
+                { "title": "Cut the page weight", "detail": "Compress images, serve modern formats and remove unused scripts. The home page should drop from 7.7 MB to under 1.5 MB.", "effort": "2 days" },
+                { "title": "Fix colour contrast across the theme", "detail": "Darken the pastel text styles in one place, in the theme's stylesheet.", "effort": "1 day" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Reference",
+          "title": "About this review",
+          "intro": "Facts set out label and value, with labels in the margin column."
+        },
+        {
+          "type": "facts",
+          "items": [
+            { "label": "Site", "value": "example-jewellers.co.uk" },
+            { "label": "Pages checked", "value": "Home, Shop, Engagement rings, Ring category, a ring product page" },
+            { "label": "Checked on", "value": "19 October 2026" },
+            { "label": "Tools", "value": "Automated audits for accessibility, performance, SEO, content and security, plus a manual review" },
+            { "label": "Scoring", "value": "Each type of problem costs points once, with a little extra when it appears many times." }
+          ]
+        },
+        {
+          "type": "table",
+          "headers": ["Rule", "WCAG reference", "Severity"],
+          "rows": [["image-alt", "1.1.1", "Critical"], ["select-name", "4.1.2", "Critical"], ["color-contrast", "1.4.3", "Serious"]]
+        }
+      ]
+    }
+  ]
+}

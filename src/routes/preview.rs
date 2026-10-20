@@ -52,8 +52,9 @@ pub async fn handle_preview(
         }
     }
 
-    let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
+    let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
         .map_err(|e| AppError::RenderError(e.to_string()))?;
+    branded.logos = crate::brand::logo::fetch_logos(&branded.profile).await;
 
     let (bytes, content_type, filename) = match req.format {
         crate::models::render_job::RenderFormat::Pdf

@@ -61,6 +61,11 @@ pub struct ClientProfile {
     pub watermark_text: Option<String>,
     pub watermark_opacity: f32,
 
+    /// Brand name set in the heading font, used where there's no logo image.
+    #[serde(default)]
+    #[sqlx(default)]
+    pub wordmark: Option<String>,
+
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -152,6 +157,9 @@ pub struct CreateClientProfile {
     pub watermark_text: Option<String>,
     #[serde(default = "default_watermark_opacity")]
     pub watermark_opacity: f32,
+
+    #[serde(default)]
+    pub wordmark: Option<String>,
 }
 
 impl ClientProfile {
@@ -202,6 +210,7 @@ impl ClientProfile {
             footer_border: true,
             watermark_text: None,
             watermark_opacity: 0.08,
+            wordmark: None,
             created_at: now,
             updated_at: now,
         }

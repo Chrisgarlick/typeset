@@ -70,6 +70,7 @@ The main endpoint. Returns the rendered file as a download (`Content-Disposition
   "document_type": "proposal | report | brief | sop | invoice | general",
   "format": "pdf | docx | both",
   "client": "optional client profile slug",
+  "input_format": "markdown | json (default markdown)",
   "overrides": {
     "title": "optional",
     "subtitle": "optional",
@@ -85,6 +86,7 @@ Field notes:
 - `document_type` — currently used for logging/categorisation. Must be one of the values listed.
 - `format` — `"pdf"`, `"docx"`, or `"both"`. (`"both"` currently returns the PDF only.)
 - `client` — optional. If omitted, the built-in default profile is used. If supplied, the slug must exist under your API key's user ID.
+- `input_format` — `"markdown"` (the default) or `"json"`, a structured document; see [JSON documents](#json-documents).
 - `overrides` — any field here overrides the equivalent frontmatter value at render time.
 
 ### Response
@@ -93,6 +95,7 @@ Field notes:
   - `Content-Type: application/pdf` (or the DOCX mime type)
   - `Content-Disposition: attachment; filename="document.pdf"`
 - **Errors:** JSON `{ "error": "...", "status": <code> }`
+  - `400` — the document doesn't parse. For JSON documents the message names the block, e.g. `pages[1].blocks[2] (findings): unknown variant `high`, expected one of `critical`, `serious`, `moderate`, `minor``
   - `401` — missing or malformed `Authorization` header
   - `404` — referenced `client` slug doesn't exist for this user
   - `500` — render failure or DB error
@@ -195,6 +198,9 @@ client: acme
 | `author` | string | Author name |
 | `document_type` | string | Same enum as the API field |
 | `client` | string | Client profile slug |
+| `eyebrow` | string | A short label above the cover title, e.g. "Website review" |
+| `reference` | string | A document reference, shown on the cover |
+| `cover` | string | Cover style: `editorial`, `band` or `dark`. Defaults to the profile's `cover_template` |
 
 Any other YAML keys are silently ignored. The parser is intentionally simple — single-line `key: value` pairs only. **No nested structures, no arrays, no multi-line strings.** Strip outer quotes (`"` or `'`) are tolerated.
 
@@ -226,7 +232,41 @@ The renderer handles the following CommonMark + GFM elements:
 - Images (`![alt](url)`)
 - Strikethrough (`~~text~~`)
 
-Inline bold/italic/code work within paragraphs. Page breaks can be inserted via the renderer's logic (look for explicit markers in `examples/` if needed).
+Inline bold, italic, code, strikethrough and links work in paragraphs, list items, table cells and headings. A line containing only `{{pagebreak}}` forces a page break; otherwise the renderer places breaks (see the README's authoring rules).
+
+---
+
+## JSON documents
+
+With `"input_format": "json"`, `content` is a JSON document (as a string):
+
+```json
+{
+  "schema": 2,
+  "frontmatter": { "title": "…", "subtitle": "…", "eyebrow": "Website review", "recipient": "…", "author": "…", "date": "…", "cover": "editorial" },
+  "pages": [
+    { "blocks": [ { "type": "opener", "title": "Summary" }, { "type": "paragraph", "text": "…" } ] }
+  ]
+}
+```
+
+Each entry in `pages` is a section boundary: it starts a new page only when the current one is mostly used.
+
+**Version 1 blocks** (no `schema`, or `"schema": 1`): `heading`, `paragraph`, `markdown`, `bullet_list`, `ordered_list`, `table`, `code`, `blockquote`, `image`, `rule`, `page_break`, `columns` and `section`. These keep working unchanged.
+
+**Version 2 components** need `"schema": 2`. They say what something is; the theme decides how it looks. They reject unknown fields, and text fields accept inline markdown.
+
+| Type | Fields | Renders as |
+|------|--------|------------|
+| `opener` | `title`, `eyebrow`?, `intro`?, `stat`? `{ value, label?, status? }` | A numbered section opening (counts as an H2 section), with an optional headline figure |
+| `callout` | `body`, `title`?, `tone`? (`info` \| `good` \| `warn` \| `critical` \| `brand`) | A tinted note with a rule in the tone's colour |
+| `findings` | `items: [{ title, severity, count?, pages?, fix? }]`, severity `critical` \| `serious` \| `moderate` \| `minor` | A findings table with severity badges and page chips |
+| `steps` | `groups: [{ title?, items: [{ title, detail?, effort? }] }]`, or `items` for one group | Numbered steps with effort chips |
+| `scores` | `items: [{ label, value, max? (100), benchmark? }]`, `caption`? | Two to five score gauges |
+| `metrics` | `items: [{ value, label, target?, status? }]` | Headline figures with a status rule |
+| `facts` | `items: [{ label, value }]` | A label and value list |
+
+`status` is `good`, `fair`, `poor` or `neutral`. The full JSON Schema is [`schema/v2.json`](./schema/v2.json), and [`examples/gallery.json`](./examples/gallery.json) uses every component.
 
 ---
 
@@ -305,6 +345,11 @@ Optional fields (defaults shown):
 | `footer_border` | `true` |
 | `watermark_text` | `null` |
 | `watermark_opacity` | `0.08` |
+| `wordmark` | `null`. A brand name set in the heading font, used on covers and in the running head when there's no logo image |
+
+Logos: `logo_light_url` is the logo for light backgrounds (pages, the editorial and band covers' paper areas); `logo_dark_url` for dark ones (the dark cover, the band). They're fetched at render over HTTPS (PNG, JPEG, WebP or SVG, up to 2 MB, cached for an hour). If a logo can't be fetched, the document renders with the wordmark instead.
+
+`cover_template`: `editorial` (paper, brand mark, strong type), `band` (an accent band across the top) or `dark` (a dark full page). Older values (`minimal`, `bold`, `plain`) give the dark cover.
 
 ### GET /api/clients/:slug
 

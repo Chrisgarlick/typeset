@@ -2,4 +2,4 @@
 .env
 team/
 update-team.md
-.claude
+.claudetests/snapshots/failed/

@@ -6,6 +6,8 @@ pub struct BrandedDocument {
     pub doc: ParsedDocument,
     pub page: PageDimensions,
     pub colours: ResolvedColours,
+    /// Logo images, fetched by the route before rendering.
+    pub logos: super::logo::Logos,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +44,7 @@ impl BrandedDocument {
             doc,
             page,
             colours,
+            logos: Default::default(),
         })
     }
 }

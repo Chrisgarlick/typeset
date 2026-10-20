@@ -34,6 +34,16 @@
 
 #let wide(body) = pad(left: -t.side, body)
 
+/// The brand mark: the logo for this background, else the wordmark.
+#let brand-mark(height: 10pt, dark: false, color: t.ink) = {
+  let logo = if dark { meta.logo-dark } else { meta.logo-light }
+  if logo != none {
+    image(logo, height: height)
+  } else if meta.wordmark != none {
+    text(font: t.font-heading, size: height * 1.1, weight: 600, tracking: -0.01em, fill: color, meta.wordmark)
+  }
+}
+
 /// The current section's name for the running head: the section that opens
 /// on this page, or else the last one before it.
 #let section-name() = {
@@ -62,7 +72,13 @@
   header: if meta.header {
     context wide(block(width: 100%, inset: (bottom: t.s3), stroke: (bottom: t.hairline + t.rule))[
       #set text(font: t.font-body, size: t.eyebrow, fill: t.ink-muted, hyphenate: false)
-      #grid(columns: (1fr, auto), column-gutter: t.s5, meta.running-title, section-name())
+      #grid(
+        columns: (1fr, auto),
+        column-gutter: t.s5,
+        align: (left + horizon, right + horizon),
+        if meta.has-brand { brand-mark(height: 8pt) } else { meta.running-title },
+        section-name(),
+      )
     ])
   },
   footer: if meta.footer {

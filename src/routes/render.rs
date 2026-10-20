@@ -45,8 +45,9 @@ pub async fn handle_render(
         if let Some(a) = &overrides.author { fm.author = Some(a.clone()); }
     }
 
-    let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
+    let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
         .map_err(|e| AppError::RenderError(e.to_string()))?;
+    branded.logos = crate::brand::logo::fetch_logos(&branded.profile).await;
 
     let (bytes, content_type, ext) = match req.format {
         RenderFormat::Pdf | RenderFormat::Both => {

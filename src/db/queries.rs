@@ -60,7 +60,7 @@ impl Database {
                 cover_enabled, cover_template, cover_bg_colour, cover_text_colour,
                 header_enabled, header_template, header_border,
                 footer_enabled, footer_template, footer_border,
-                watermark_text, watermark_opacity
+                watermark_text, watermark_opacity, wordmark
             ) VALUES (
                 $1, $2, $3,
                 $4, $5, $6, $7,
@@ -73,7 +73,7 @@ impl Database {
                 $31, $32, $33, $34,
                 $35, $36, $37,
                 $38, $39, $40,
-                $41, $42
+                $41, $42, $43
             )
             ON CONFLICT (slug) DO UPDATE SET
                 name = EXCLUDED.name,
@@ -116,6 +116,7 @@ impl Database {
                 footer_border = EXCLUDED.footer_border,
                 watermark_text = EXCLUDED.watermark_text,
                 watermark_opacity = EXCLUDED.watermark_opacity,
+                wordmark = EXCLUDED.wordmark,
                 updated_at = NOW()
             RETURNING *
             "#,
@@ -162,6 +163,7 @@ impl Database {
         .bind(profile.footer_border)
         .bind(&profile.watermark_text)
         .bind(profile.watermark_opacity)
+        .bind(&profile.wordmark)
         .fetch_one(&self.pool)
         .await
     }

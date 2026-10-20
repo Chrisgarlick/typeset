@@ -2,12 +2,15 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use crate::brand::engine::BrandedDocument;
+use crate::brand::logo::Asset;
+use crate::models::components::{Component, Opener};
 use crate::models::document::{BlockStyle, DocumentNode, StyledColumn};
 
 /// Render a branded document to PDF bytes via the Typst CLI.
 pub fn render(branded: &BrandedDocument) -> anyhow::Result<Vec<u8>> {
     let source = build_source(branded);
-    compile(&source)
+    let assets: Vec<&Asset> = [&branded.logos.light, &branded.logos.dark].into_iter().flatten().collect();
+    compile(&source, &assets)
 }
 
 // ---------------------------------------------------------------------------
@@ -35,6 +38,20 @@ struct CoverData {
     recipient: Option<String>,
     author: Option<String>,
     date: Option<String>,
+    eyebrow: Option<String>,
+    reference: Option<String>,
+    style: &'static str,
+}
+
+/// The cover style: the document's choice, else the profile's template.
+/// Templates from before the editorial covers (`minimal`, `bold`, `plain`)
+/// keep the dark cover they had.
+fn cover_style(document: Option<&str>, profile_template: &str) -> &'static str {
+    match document.unwrap_or(profile_template).trim().to_ascii_lowercase().as_str() {
+        "editorial" => "editorial",
+        "band" => "band",
+        _ => "dark",
+    }
 }
 
 /// Returns (cover, did_consume_body_h1).
@@ -68,6 +85,9 @@ fn extract_cover(branded: &BrandedDocument) -> (Option<CoverData>, bool) {
             recipient: fm.and_then(|f| f.recipient.clone()),
             author: fm.and_then(|f| f.author.clone()),
             date: fm.and_then(|f| f.date.clone()),
+            eyebrow: fm.and_then(|f| f.eyebrow.clone()),
+            reference: fm.and_then(|f| f.reference.clone()),
+            style: cover_style(fm.and_then(|f| f.cover.as_deref()), &branded.profile.cover_template),
         }),
         consumed_body_h1,
     )
@@ -76,22 +96,36 @@ fn extract_cover(branded: &BrandedDocument) -> (Option<CoverData>, bool) {
 /// The theme: every style rule. It reads `t` and `meta`, which
 /// `write_preamble` emits above it.
 const THEME: &str = include_str!("theme.typ");
+/// The schema v2 components, drawn with the theme's tokens.
+const COMPONENTS: &str = include_str!("components.typ");
 
 /// Which heading level opens a section: the shallowest level among the
-/// body's top-level headings (after the cover's H1, if it took one).
+/// body's top-level headings (after the cover's H1, if it took one), with
+/// openers counting as H2.
 fn section_level(nodes: &[DocumentNode], consumed_body_h1: bool) -> u8 {
     let mut skip_h1 = consumed_body_h1;
     let mut level = u8::MAX;
     for node in nodes {
-        if let DocumentNode::Heading { level: l, .. } = node {
-            if skip_h1 && *l == 1 {
-                skip_h1 = false;
-                continue;
+        match node {
+            DocumentNode::Heading { level: l, .. } => {
+                if skip_h1 && *l == 1 {
+                    skip_h1 = false;
+                    continue;
+                }
+                level = level.min(*l);
             }
-            level = level.min(*l);
+            // An opener is a section heading at H2, the usual section level
+            // for JSON documents.
+            DocumentNode::Component(Component::Opener(_)) => level = level.min(2),
+            _ => {}
         }
     }
     if level == u8::MAX { 1 } else { level }
+}
+
+/// A logo's path inside the compile root, as a Typst value.
+fn asset_path(asset: &Option<Asset>) -> String {
+    asset.as_ref().map(|a| typst_string(&a.name)).unwrap_or_else(|| "none".to_string())
 }
 
 /// Paper height in millimetres, for the space a new section needs.
@@ -121,9 +155,15 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         .unwrap_or_else(|| "Document".to_string());
     let author = cover.as_ref().and_then(|c| c.author.clone());
     let description = cover.as_ref().and_then(|c| c.subtitle.clone());
-    let footer_left = match cover.as_ref().and_then(|c| c.recipient.clone()) {
-        Some(r) => format!("Prepared for {}", typst_content(&r)),
-        None => typst_content(&doc_title),
+    let wordmark = p.wordmark.clone().filter(|w| !w.trim().is_empty());
+    let has_brand = wordmark.is_some() || b.logos.light.is_some();
+    // With a brand mark in the running head, the title moves to the footer.
+    let recipient = cover.as_ref().and_then(|c| c.recipient.clone());
+    let footer_left = match (has_brand, recipient) {
+        (true, Some(r)) => format!("{} · Prepared for {}", typst_content(&doc_title), typst_content(&r)),
+        (true, None) => typst_content(&doc_title),
+        (false, Some(r)) => format!("Prepared for {}", typst_content(&r)),
+        (false, None) => typst_content(&doc_title),
     };
 
     let base = p.font_size_base.clamp(7.0, 16.0);
@@ -184,6 +224,10 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
   section-level: {section_level},
   header: {header},
   footer: {footer},
+  wordmark: {wordmark},
+  logo-light: {logo_light},
+  logo-dark: {logo_dark},
+  has-brand: {has_brand},
 )
 "##,
         ink = hex_or_default(&p.colour_text, "#1A1A1A"),
@@ -227,9 +271,15 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         section_level = section_level,
         header = p.header_enabled,
         footer = p.footer_enabled,
+        wordmark = wordmark.as_deref().map(typst_string).unwrap_or_else(|| "none".to_string()),
+        logo_light = asset_path(&b.logos.light),
+        logo_dark = asset_path(&b.logos.dark),
+        has_brand = has_brand,
     ));
     s.push('\n');
     s.push_str(THEME);
+    s.push('\n');
+    s.push_str(COMPONENTS);
     s.push('\n');
 }
 
@@ -241,41 +291,24 @@ fn write_imports(s: &mut String) {
     );
 }
 
-fn write_cover(s: &mut String, c: &CoverData, _b: &BrandedDocument) {
-    s.push_str(
-        r#"
-#page(margin: 0mm, header: none, footer: none, fill: t.cover-bg)[
-  #set text(fill: t.cover-text, hyphenate: false)
-  #pad(left: t.margin-left, right: t.margin-right, top: t.margin-top * 1.4, bottom: t.margin-bottom)[
-    #v(30%)
-"#,
-    );
+fn write_cover(s: &mut String, c: &CoverData, b: &BrandedDocument) {
     s.push_str(&format!(
-        "    #block(width: 100%)[#text(font: t.font-heading, size: {:.1}pt, weight: 600, tracking: -0.02em)[{}]]\n",
-        cover_title_size(&c.title, _b),
-        typst_content(&breakable_words(&c.title))
+        "#cover(style: {}, title: [{}], title-size: {:.1}pt, subtitle: {}, eyebrow: {}, recipient: {}, author: {}, date: {}, reference: {})\n\n",
+        typst_string(c.style),
+        typst_content(&breakable_words(&c.title)),
+        cover_title_size(&c.title, b),
+        plain_arg(&c.subtitle),
+        plain_arg(&c.eyebrow),
+        plain_arg(&c.recipient),
+        plain_arg(&c.author),
+        plain_arg(&c.date),
+        plain_arg(&c.reference),
     ));
-    s.push_str("    #v(t.s5)\n    #line(length: 24mm, stroke: 3pt + t.accent.lighten(35%))\n");
-    if let Some(sub) = &c.subtitle {
-        s.push_str(&format!(
-            "    #v(t.s5)\n    #block(width: 75%)[#text(size: t.h3, fill: t.cover-text.transparentize(25%))[{}]]\n",
-            typst_content(sub)
-        ));
-    }
-    s.push_str("    #v(1fr)\n    #grid(columns: (1fr, 1fr, 1fr), column-gutter: t.s5,\n");
-    let field = |label: &str, value: &Option<String>| -> String {
-        match value {
-            Some(v) => format!(
-                "      [#text(size: t.eyebrow, weight: 600, tracking: 0.12em, fill: t.cover-text.transparentize(45%))[{label}] \\ #v(t.s1) #text(size: t.body)[{}]],\n",
-                typst_content(v)
-            ),
-            None => "      [],\n".to_string(),
-        }
-    };
-    s.push_str(&field("PREPARED FOR", &c.recipient));
-    s.push_str(&field("BY", &c.author));
-    s.push_str(&field("DATE", &c.date));
-    s.push_str("    )\n  ]\n]\n\n");
+}
+
+/// Frontmatter text as Typst content, escaped literally.
+fn plain_arg(text: &Option<String>) -> String {
+    text.as_deref().map(|t| format!("[{}]", typst_content(t))).unwrap_or_else(|| "none".to_string())
 }
 
 /// The cover title's size: the display size, shrunk until the longest word
@@ -315,8 +348,16 @@ fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, se
         }
         // A section heading makes its own break; don't make two.
         if matches!(node, DocumentNode::SectionBreak)
-            && matches!(nodes.get(i + 1), Some(DocumentNode::Heading { level, .. }) if *level <= section_level)
+            && matches!(
+                nodes.get(i + 1),
+                Some(DocumentNode::Heading { level, .. }) if *level <= section_level
+            ) | matches!(nodes.get(i + 1), Some(DocumentNode::Component(Component::Opener(_))))
         {
+            continue;
+        }
+        if let DocumentNode::Component(Component::Opener(o)) = node {
+            section += 1;
+            write_opener(s, o, Some(section), section_level);
             continue;
         }
         if let DocumentNode::Heading { level, text, .. } = node {
@@ -389,6 +430,141 @@ fn write_node(s: &mut String, node: &DocumentNode) {
         }
         DocumentNode::Section { style, children } => {
             write_section(s, style.as_ref(), children);
+        }
+        DocumentNode::Component(component) => write_component(s, component),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Components: each becomes a call to its function in components.typ
+// ---------------------------------------------------------------------------
+
+/// Text with inline formatting, as Typst content.
+fn content_arg(text: &str) -> String {
+    format!("[{}]", typst_inline(text))
+}
+
+fn opt_content(text: &Option<String>) -> String {
+    text.as_deref().map(content_arg).unwrap_or_else(|| "none".to_string())
+}
+
+fn opt_number(value: Option<f64>) -> String {
+    value.map(|v| format!("{v}")).unwrap_or_else(|| "none".to_string())
+}
+
+/// Intros longer than this are set at body size rather than enlarged.
+const LONG_INTRO_CHARS: usize = 280;
+
+fn write_opener(s: &mut String, o: &Opener, number: Option<usize>, level: u8) {
+    let stat = match &o.stat {
+        Some(st) => format!(
+            "(value: {}, label: {}, status: {})",
+            content_arg(&st.value),
+            opt_content(&st.label),
+            st.status.map(|v| typst_string(v.as_str())).unwrap_or_else(|| "none".to_string()),
+        ),
+        None => "none".to_string(),
+    };
+    s.push_str(&format!(
+        "#opener(number: {}, level: {level}, title: {}, eyebrow: {}, intro: {}, long-intro: {}, stat: {stat})\n\n",
+        number.map(|n| format!("\"{n:02}\"")).unwrap_or_else(|| "none".to_string()),
+        content_arg(&o.title),
+        opt_content(&o.eyebrow),
+        opt_content(&o.intro),
+        o.intro.as_ref().is_some_and(|i| i.chars().count() > LONG_INTRO_CHARS),
+    ));
+}
+
+fn write_component(s: &mut String, component: &Component) {
+    match component {
+        // An opener inside a layout block isn't a numbered section.
+        Component::Opener(o) => write_opener(s, o, None, 2),
+        Component::Callout(c) => {
+            s.push_str(&format!(
+                "#callout(tone: {}, title: {})[{}]\n\n",
+                typst_string(c.tone.as_str()),
+                opt_content(&c.title),
+                typst_inline(&c.body),
+            ));
+        }
+        Component::Findings(f) => {
+            let items: Vec<String> = f
+                .items
+                .iter()
+                .map(|i| {
+                    let pages: Vec<String> = i.pages.iter().map(|p| content_arg(p)).collect();
+                    format!(
+                        "(title: {}, severity: {}, count: {}, pages: ({}), fix: {})",
+                        content_arg(&i.title),
+                        typst_string(i.severity.as_str()),
+                        i.count.map(|c| c.to_string()).unwrap_or_else(|| "none".to_string()),
+                        if pages.is_empty() { String::new() } else { format!("{},", pages.join(", ")) },
+                        opt_content(&i.fix),
+                    )
+                })
+                .collect();
+            s.push_str(&format!("#findings(({},))\n\n", items.join(",\n  ")));
+        }
+        Component::Steps(st) => {
+            let groups: Vec<String> = st
+                .groups()
+                .map(|g| {
+                    let items: Vec<String> = g
+                        .items
+                        .iter()
+                        .map(|i| {
+                            format!(
+                                "(title: {}, detail: {}, effort: {})",
+                                content_arg(&i.title),
+                                opt_content(&i.detail),
+                                opt_content(&i.effort),
+                            )
+                        })
+                        .collect();
+                    format!("(title: {}, items: ({},))", opt_content(&g.title), items.join(", "))
+                })
+                .collect();
+            s.push_str(&format!("#steps(({},))\n\n", groups.join(",\n  ")));
+        }
+        Component::Scores(sc) => {
+            let items: Vec<String> = sc
+                .items
+                .iter()
+                .map(|i| {
+                    format!(
+                        "(label: {}, value: {}, max: {}, benchmark: {})",
+                        content_arg(&i.label),
+                        i.value,
+                        if i.max > 0.0 { i.max } else { 100.0 },
+                        opt_number(i.benchmark),
+                    )
+                })
+                .collect();
+            s.push_str(&format!("#scores(({},), caption: {})\n\n", items.join(", "), opt_content(&sc.caption)));
+        }
+        Component::Metrics(m) => {
+            let items: Vec<String> = m
+                .items
+                .iter()
+                .map(|i| {
+                    format!(
+                        "(value: {}, label: {}, target: {}, status: {})",
+                        content_arg(&i.value),
+                        content_arg(&i.label),
+                        opt_content(&i.target),
+                        i.status.map(|v| typst_string(v.as_str())).unwrap_or_else(|| "none".to_string()),
+                    )
+                })
+                .collect();
+            s.push_str(&format!("#metrics(({},))\n\n", items.join(", ")));
+        }
+        Component::Facts(f) => {
+            let items: Vec<String> = f
+                .items
+                .iter()
+                .map(|i| format!("(label: {}, value: {})", content_arg(&i.label), content_arg(&i.value)))
+                .collect();
+            s.push_str(&format!("#facts(({},))\n\n", items.join(", ")));
         }
     }
 }
@@ -742,7 +918,9 @@ fn font_dir() -> std::path::PathBuf {
 // Subprocess
 // ---------------------------------------------------------------------------
 
-fn compile(source: &str) -> anyhow::Result<Vec<u8>> {
+/// Compile Typst source to PDF. `assets` (logos) are written into the
+/// compile root under their own names, which the source refers to.
+fn compile(source: &str, assets: &[&Asset]) -> anyhow::Result<Vec<u8>> {
     let tmp = tempfile::tempdir()?;
     let input = tmp.path().join("doc.typ");
     let output = tmp.path().join("doc.pdf");
@@ -750,6 +928,9 @@ fn compile(source: &str) -> anyhow::Result<Vec<u8>> {
     {
         let mut f = std::fs::File::create(&input)?;
         f.write_all(source.as_bytes())?;
+    }
+    for asset in assets {
+        std::fs::write(tmp.path().join(&asset.name), &asset.bytes)?;
     }
 
     let result = Command::new("typst")
@@ -1019,6 +1200,151 @@ mod tests {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(output.status.success(), "{stderr}");
         assert!(!stderr.contains("did not converge"), "{stderr}");
+    }
+
+    /// The Typst version the Docker image pins; snapshots are only
+    /// comparable when rendered by the same version.
+    fn pinned_typst_version() -> String {
+        let dockerfile = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/Dockerfile")).unwrap();
+        dockerfile
+            .lines()
+            .find_map(|l| l.trim().strip_prefix("ARG TYPST_VERSION="))
+            .unwrap()
+            .to_string()
+    }
+
+    fn installed_typst_version() -> Option<String> {
+        let out = std::process::Command::new("typst").arg("--version").output().ok()?;
+        String::from_utf8_lossy(&out.stdout).split_whitespace().nth(1).map(str::to_string)
+    }
+
+    fn gallery_profile() -> crate::models::client_profile::ClientProfile {
+        let mut profile = serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile()).unwrap();
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/gallery_profile.json");
+        let overrides: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        for (k, v) in overrides.as_object().unwrap() {
+            profile[k] = v.clone();
+        }
+        serde_json::from_value(profile).unwrap()
+    }
+
+    /// Visual regression: the gallery, page by page, against the approved
+    /// PNGs in tests/snapshots. `UPDATE_SNAPSHOTS=1` approves the current
+    /// render; a mismatch writes the new pages to tests/snapshots/failed/.
+    /// Skipped unless the installed Typst is the version the image pins.
+    #[test]
+    fn gallery_matches_snapshots() {
+        let pinned = pinned_typst_version();
+        if installed_typst_version().as_deref() != Some(pinned.as_str()) {
+            eprintln!("typst {pinned} not installed; skipping snapshots");
+            return;
+        }
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let json = std::fs::read_to_string(root.join("examples/gallery.json")).unwrap();
+        let doc = crate::parser::json::parse(&json).unwrap();
+        let branded = BrandedDocument::prepare(doc, gallery_profile()).unwrap();
+
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(tmp.path().join("doc.typ"), build_source(&branded)).unwrap();
+        let out = std::process::Command::new("typst")
+            .args(["compile", "--root"])
+            .arg(tmp.path())
+            .arg("--font-path")
+            .arg(font_dir())
+            .args(["--ignore-system-fonts", "--format", "png", "--ppi", "60"])
+            .arg(tmp.path().join("doc.typ"))
+            .arg(tmp.path().join("page-{0p}.png"))
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+
+        let mut pages: Vec<_> = std::fs::read_dir(tmp.path())
+            .unwrap()
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|x| x == "png"))
+            .collect();
+        pages.sort();
+
+        let snapshots = root.join("tests/snapshots");
+        if std::env::var("UPDATE_SNAPSHOTS").is_ok() {
+            std::fs::create_dir_all(&snapshots).unwrap();
+            for old in std::fs::read_dir(&snapshots).unwrap().flatten() {
+                if old.path().extension().is_some_and(|x| x == "png") {
+                    std::fs::remove_file(old.path()).unwrap();
+                }
+            }
+            for page in &pages {
+                std::fs::copy(page, snapshots.join(format!("gallery-{}", page.file_name().unwrap().to_string_lossy()))).unwrap();
+            }
+            return;
+        }
+
+        let mut failed = Vec::new();
+        for page in &pages {
+            let name = format!("gallery-{}", page.file_name().unwrap().to_string_lossy());
+            let approved = std::fs::read(snapshots.join(&name)).unwrap_or_default();
+            if approved != std::fs::read(page).unwrap() {
+                let dir = snapshots.join("failed");
+                std::fs::create_dir_all(&dir).unwrap();
+                std::fs::copy(page, dir.join(&name)).unwrap();
+                failed.push(name);
+            }
+        }
+        let approved_count = std::fs::read_dir(&snapshots)
+            .map(|d| d.flatten().filter(|e| e.path().extension().is_some_and(|x| x == "png")).count())
+            .unwrap_or(0);
+        assert!(
+            failed.is_empty() && approved_count == pages.len(),
+            "gallery changed: {failed:?} ({} pages now, {approved_count} approved). New renders are in tests/snapshots/failed/; \
+             check them, then run with UPDATE_SNAPSHOTS=1 to approve.",
+            pages.len()
+        );
+    }
+
+    #[test]
+    fn every_cover_style_renders() {
+        if !typst_available() {
+            return;
+        }
+        for style in ["editorial", "band", "dark"] {
+            let input = format!(
+                r#"{{ "schema": 2, "frontmatter": {{ "title": "Cover", "eyebrow": "Review", "recipient": "A client", "cover": "{style}" }},
+                   "pages": [{{ "blocks": [{{ "type": "paragraph", "text": "Body." }}] }}] }}"#
+            );
+            let doc = crate::parser::json::parse(&input).unwrap();
+            let branded = BrandedDocument::prepare(doc, gallery_profile()).unwrap();
+            assert!(build_source(&branded).contains(&format!("#cover(style: \"{style}\"")));
+            render(&branded).unwrap_or_else(|e| panic!("{style}: {e}"));
+        }
+    }
+
+    #[test]
+    fn old_cover_templates_keep_the_dark_cover() {
+        assert_eq!(cover_style(None, "minimal"), "dark");
+        assert_eq!(cover_style(None, "bold"), "dark");
+        assert_eq!(cover_style(None, "editorial"), "editorial");
+        assert_eq!(cover_style(Some("band"), "minimal"), "band");
+    }
+
+    #[test]
+    fn openers_are_numbered_sections() {
+        let source = build_source(&branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Doc" }, "pages": [
+            { "blocks": [{ "type": "opener", "title": "First" }, { "type": "heading", "level": 3, "text": "Sub" }] },
+            { "blocks": [{ "type": "heading", "level": 2, "text": "Second" }] }
+        ]}"#));
+        assert!(source.contains(r#"#opener(number: "01", level: 2, title: [First]"#), "{source}");
+        assert!(source.contains("#heading(level: 2, supplement: [02])[Second]"));
+        assert!(source.contains("section-level: 2,"));
+    }
+
+    #[test]
+    fn the_wordmark_replaces_the_title_in_the_running_head() {
+        let mut b = branded_json(r#"{ "frontmatter": { "title": "Doc", "recipient": "Lee" }, "pages": [] }"#);
+        b.profile.wordmark = Some("Chris Garlick".to_string());
+        let source = build_source(&b);
+        assert!(source.contains(r#"wordmark: "Chris Garlick","#));
+        assert!(source.contains("has-brand: true,"));
+        assert!(source.contains("footer-left: [Doc · Prepared for Lee]"));
     }
 
     /// Smoke test for the full AI strategy example file.

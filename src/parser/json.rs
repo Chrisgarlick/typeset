@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+use crate::models::components::Component;
 use crate::models::document::{
     BlockStyle, Border, DocumentNode, Frontmatter, ParsedDocument, StyledColumn,
 };
@@ -7,14 +8,19 @@ use crate::models::document::{
 pub fn parse(input: &str) -> anyhow::Result<ParsedDocument> {
     let doc: JsonDocument = serde_json::from_str(input)
         .map_err(|e| anyhow::anyhow!("invalid JSON document: {e}"))?;
+    let schema = doc.schema.unwrap_or(1);
+    if !(1..=2).contains(&schema) {
+        anyhow::bail!("invalid JSON document: `schema` must be 1 or 2, not {schema}");
+    }
 
     let mut nodes = Vec::new();
     for (idx, page) in doc.pages.iter().enumerate() {
         if idx > 0 {
             nodes.push(DocumentNode::SectionBreak);
         }
-        for block in &page.blocks {
-            push_block(&mut nodes, block);
+        for (b, value) in page.blocks.iter().enumerate() {
+            let path = format!("pages[{idx}].blocks[{b}]");
+            push_value(&mut nodes, value, schema, &path)?;
         }
     }
 
@@ -24,7 +30,27 @@ pub fn parse(input: &str) -> anyhow::Result<ParsedDocument> {
     })
 }
 
-fn push_block(out: &mut Vec<DocumentNode>, block: &Block) {
+/// Parse one block. Components (schema 2) are checked strictly and their
+/// errors name the block's path; everything else is a v1 block.
+fn push_value(out: &mut Vec<DocumentNode>, value: &serde_json::Value, schema: u32, path: &str) -> anyhow::Result<()> {
+    let kind = value.get("type").and_then(|t| t.as_str()).unwrap_or_default();
+    if Component::TYPES.contains(&kind) {
+        if schema < 2 {
+            anyhow::bail!("{path}: the `{kind}` block needs \"schema\": 2 at the top of the document");
+        }
+        let mut fields = value.clone();
+        if let Some(map) = fields.as_object_mut() {
+            map.remove("type");
+        }
+        let component = Component::from_json(kind, fields).map_err(|e| anyhow::anyhow!("{path} ({kind}): {e}"))?;
+        out.push(DocumentNode::Component(component));
+        return Ok(());
+    }
+    let block: Block = serde_json::from_value(value.clone()).map_err(|e| anyhow::anyhow!("{path}: {e}"))?;
+    push_block(out, &block, schema, path)
+}
+
+fn push_block(out: &mut Vec<DocumentNode>, block: &Block, schema: u32, path: &str) -> anyhow::Result<()> {
     match block {
         Block::Heading { level, text } => {
             let id = slugify(text);
@@ -74,19 +100,17 @@ fn push_block(out: &mut Vec<DocumentNode>, block: &Block) {
         Block::Rule => out.push(DocumentNode::HorizontalRule),
         Block::PageBreak => out.push(DocumentNode::PageBreak),
         Block::Columns { ratios, gutter, children } => {
-            let columns: Vec<StyledColumn> = children
-                .iter()
-                .map(|slot| {
-                    let mut nodes = Vec::new();
-                    for b in &slot.blocks {
-                        push_block(&mut nodes, b);
-                    }
-                    StyledColumn {
-                        style: slot.style().filter(|s| !s.is_empty()),
-                        nodes,
-                    }
-                })
-                .collect();
+            let mut columns: Vec<StyledColumn> = Vec::new();
+            for (c, slot) in children.iter().enumerate() {
+                let mut nodes = Vec::new();
+                for (b, value) in slot.blocks.iter().enumerate() {
+                    push_value(&mut nodes, value, schema, &format!("{path}.children[{c}].blocks[{b}]"))?;
+                }
+                columns.push(StyledColumn {
+                    style: slot.style().filter(|s| !s.is_empty()),
+                    nodes,
+                });
+            }
             out.push(DocumentNode::Columns {
                 ratios: ratios.clone(),
                 gutter: gutter.clone(),
@@ -102,8 +126,8 @@ fn push_block(out: &mut Vec<DocumentNode>, block: &Block) {
             blocks,
         } => {
             let mut children = Vec::new();
-            for b in blocks {
-                push_block(&mut children, b);
+            for (b, value) in blocks.iter().enumerate() {
+                push_value(&mut children, value, schema, &format!("{path}.blocks[{b}]"))?;
             }
             let style = BlockStyle {
                 background: background.clone(),
@@ -118,6 +142,7 @@ fn push_block(out: &mut Vec<DocumentNode>, block: &Block) {
             });
         }
     }
+    Ok(())
 }
 
 fn slugify(text: &str) -> String {
@@ -137,6 +162,9 @@ fn slugify(text: &str) -> String {
 
 #[derive(Debug, Deserialize)]
 struct JsonDocument {
+    /// 1 (the default) or 2, which enables components.
+    #[serde(default)]
+    schema: Option<u32>,
     #[serde(default)]
     frontmatter: Option<JsonFrontmatter>,
     pages: Vec<Page>,
@@ -151,6 +179,12 @@ struct JsonFrontmatter {
     author: Option<String>,
     document_type: Option<String>,
     client: Option<String>,
+    #[serde(default)]
+    eyebrow: Option<String>,
+    #[serde(default)]
+    reference: Option<String>,
+    #[serde(default)]
+    cover: Option<String>,
 }
 
 impl From<JsonFrontmatter> for Frontmatter {
@@ -163,6 +197,9 @@ impl From<JsonFrontmatter> for Frontmatter {
             author: f.author,
             document_type: f.document_type,
             client: f.client,
+            eyebrow: f.eyebrow,
+            reference: f.reference,
+            cover: f.cover,
         }
     }
 }
@@ -170,13 +207,13 @@ impl From<JsonFrontmatter> for Frontmatter {
 #[derive(Debug, Deserialize)]
 struct Page {
     #[serde(default)]
-    blocks: Vec<Block>,
+    blocks: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
 struct Slot {
     #[serde(default)]
-    blocks: Vec<Block>,
+    blocks: Vec<serde_json::Value>,
     #[serde(default)]
     background: Option<String>,
     #[serde(default)]
@@ -277,13 +314,71 @@ enum Block {
         #[serde(default)]
         radius: Option<String>,
         #[serde(default)]
-        blocks: Vec<Block>,
+        blocks: Vec<serde_json::Value>,
     },
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn components_need_schema_2() {
+        let input = r#"{ "pages": [{ "blocks": [{ "type": "facts", "items": [] }] }] }"#;
+        let err = parse(input).unwrap_err().to_string();
+        assert!(err.contains("pages[0].blocks[0]"), "{err}");
+        assert!(err.contains("\"schema\": 2"), "{err}");
+    }
+
+    #[test]
+    fn component_errors_name_the_block_and_field() {
+        let input = r#"{ "schema": 2, "pages": [{ "blocks": [
+            { "type": "paragraph", "text": "fine" },
+            { "type": "findings", "items": [{ "title": "x", "severity": "high" }] }
+        ]}]}"#;
+        let err = parse(input).unwrap_err().to_string();
+        assert!(err.contains("pages[0].blocks[1] (findings)"), "{err}");
+        assert!(err.contains("high"), "{err}");
+    }
+
+    #[test]
+    fn components_reject_unknown_fields() {
+        let input = r#"{ "schema": 2, "pages": [{ "blocks": [
+            { "type": "callout", "body": "x", "colour": "red" }
+        ]}]}"#;
+        let err = parse(input).unwrap_err().to_string();
+        assert!(err.contains("unknown field `colour`"), "{err}");
+    }
+
+    #[test]
+    fn components_parse_inside_layout_blocks() {
+        let input = r#"{ "schema": 2, "pages": [{ "blocks": [
+            { "type": "section", "blocks": [{ "type": "callout", "tone": "warn", "body": "x" }] }
+        ]}]}"#;
+        let doc = parse(input).unwrap();
+        let DocumentNode::Section { children, .. } = &doc.nodes[0] else { panic!("expected a section") };
+        assert!(matches!(children[0], DocumentNode::Component(Component::Callout(_))));
+    }
+
+    #[test]
+    fn rejects_unknown_schema_versions() {
+        assert!(parse(r#"{ "schema": 3, "pages": [] }"#).is_err());
+    }
+
+    #[test]
+    fn the_gallery_parses() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/gallery.json");
+        parse(&std::fs::read_to_string(path).unwrap()).expect("gallery.json");
+    }
+
+    #[test]
+    fn the_json_schema_covers_every_component() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/schema/v2.json");
+        let schema: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        for kind in Component::TYPES {
+            assert_eq!(schema["$defs"][kind]["properties"]["type"]["const"], kind, "schema/v2.json is missing `{kind}`");
+        }
+    }
 
     #[test]
     fn parses_minimal_doc() {

@@ -337,20 +337,58 @@ left, or before blocks that stay whole.
 *Acceptance:* no half-empty pages in the Myers report; headings never stranded; consistent rhythm.
 
 ### Phase 2: Core components (55 → 75)
-- [ ] `theme.typ` with the cover (editorial and band), the section opener, the callout, the severity
+- [x] `theme.typ` with the cover (editorial and band), the section opener, the callout, the severity
       badge, the findings table, the step plan, the score row (gauges), metrics, facts.
-- [ ] Logos rendered on the cover and in the running head (B3). The running head has room for
+- [x] Logos rendered on the cover and in the running head (B3). The running head has room for
       the mark on the left (moved here from Phase 1).
-- [ ] Schema v2 for these blocks, the JSON Schema and validation.
-- [ ] `examples/gallery.json` and visual regression snapshots.
+- [x] Schema v2 for these blocks, the JSON Schema and validation.
+- [x] `examples/gallery.json` and visual regression snapshots.
 
-*Acceptance:* the gallery renders pixel-stable; a hand-written v2 Myers report looks like a design
-studio made it.
+*Done 20 Oct 2026 (local; not yet deployed).* How it was built, and where it differs from the plan:
+- **Files.** Components live in `src/renderers/components.typ` beside `theme.typ` (two files rather
+  than a `theme/` folder). The renderer passes each block's fields as Typst arguments, with text
+  already converted to content, so inline markdown works in every text field.
+- **Covers.** `editorial` (paper, brand mark, heavy rule, eyebrow, title, accent device, a hairline
+  metadata grid: Prepared for, Prepared by, Date, Reference), `band` (the same under a 46% accent
+  band) and `dark` (the old cover, now with the brand mark and metadata grid). Chosen by
+  frontmatter `cover`, else the profile's `cover_template`; old templates (`minimal`, `bold`,
+  `plain`) keep the dark cover. New frontmatter: `eyebrow`, `reference`, `cover`.
+- **Opener** instead of the planned `section` block (that name is the v1 layout block). It is a
+  real heading, so it's numbered, bookmarked and named in the running head, and counts as an H2
+  section. Long intros (over 280 characters) drop to body size.
+- **Brand mark.** Logos are fetched at render (HTTPS only, PNG/JPEG/WebP/SVG, 2 MB, cached an hour,
+  never failing the render; adds `reqwest`). No profile had a logo, and the site's own mark is
+  typographic, so profiles gain a `wordmark` (migration 003): the brand name in the heading font,
+  used when there's no logo. With a mark in the running head, the document title moves to the
+  footer.
+- **Components:** callout (tinted, 3pt tone rule, drawn icon; never dark), severity badge (critical
+  filled, others tinted), findings (badge, issue with "Found N times", page chips, fix; zebra rows),
+  steps (numbers in the margin column without leading zeros, so they don't read as section
+  numbers; effort chips), scores (270° gauges drawn as polylines, Lighthouse thresholds 90/50,
+  benchmark tick, on cards), metrics (status rule, large value, label, target), facts (labels in
+  the margin column).
+- **Validation.** Components need `"schema": 2`, reject unknown fields, and errors name the block
+  (`pages[1].blocks[2] (findings): unknown variant `high`…`). `schema/v2.json` (JSON Schema
+  2020-12) documents it; a test checks it lists every component. Components also parse inside
+  `section` and `columns`. DOCX renders components as plain paragraphs.
+- **Snapshots.** `gallery_matches_snapshots` compares each gallery page at 60 ppi, byte for byte,
+  with `tests/snapshots/`, only when the installed Typst matches the Dockerfile's pin (Typst output
+  is deterministic for a version). Mismatches land in `tests/snapshots/failed/`;
+  `UPDATE_SNAPSHOTS=1` approves. No pixel tolerance, so no image crate was needed.
+- **Not done:** token names for `section`/`columns` styling (4.5) and the extra profile fields in
+  section 5 (`font_display`, status colours, `logo_mark_url`, validation on save). Moved to
+  Phase 3.
+
+*Acceptance check:* a v2 Myers report, converted by script from the existing report (same words,
+restructured into openers with score stats, gauges, findings tables, steps and facts), renders at
+12 pages with an editorial cover. It reads as designed.
 
 ### Phase 3: Data visuals and structure (75 → 88)
 - [ ] The score matrix (heat table), bar comparison, severity summary, priority matrix.
 - [ ] The contents page and back page; finding cards for headline issues.
-- [ ] Images and figures with safe fetching (B4).
+- [ ] Images and figures with safe fetching (B4). Reuse the logo fetcher.
+- [ ] Token names for `section`/`columns` styling (4.5) and the remaining profile fields and
+      validation from section 5 (moved from Phase 2).
 
 *Acceptance:* the Myers summary fits on one "at a glance" page: score gauges, a severity summary,
 the top three findings as cards, and a priority matrix.
