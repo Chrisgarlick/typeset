@@ -391,7 +391,7 @@ restructured into openers with score stats, gauges, findings tables, steps and f
 - [x] Token names for `section`/`columns` styling (4.5) and ~~the remaining profile fields and~~
       validation from section 5 (moved from Phase 2).
 
-*Done 20 Oct 2026 (local; not yet deployed).* How it was built, and where it differs from the plan:
+*Done and deployed 20 Oct 2026 (4be1311).* How it was built, and where it differs from the plan:
 - **Components:** `score_matrix` (tinted pills by status; `null` shows a dash), `bars` (dashed target
   line; `better: lower | higher` decides green or red; accent with no target), `severity_summary`
   (segmented bar, four counts with badges), `finding` (card: severity rule, badge, page chips,
@@ -424,14 +424,42 @@ matrix whose quadrants follow the report's own "biggest difference" list and qui
 jobs split) fits on one page.
 
 ### Phase 4: Wire it into scout (88 → 94)
-- [ ] `typeset-format.md` rewritten around v2 components; the scout validator follows the JSON
+- [x] `typeset-format.md` rewritten around v2 components; the scout validator follows the JSON
       Schema.
-- [ ] scout passes structured data (scores per page, measurements, counts) straight into
+- [x] scout passes structured data (scores per page, measurements, counts) straight into
       components (`score_matrix`, `bars`, `metrics`), so Claude places components rather than
       re-typing numbers. Fewer chances to misstate a figure.
-- [ ] `/api/proof` thumbnails used by `scout review` to check layout before saving.
+- [x] `/api/proof` thumbnails used by `scout review` to check layout before saving.
 
-*Acceptance:* a fresh `scout review` produces the premium layout with no hand edits.
+*Done 20 Oct 2026 (Typeset d37cf99 and 6ea0bf2, deployed; scout v0.7.1).* How it was built, and
+where it differs from the plan:
+- **Fair scores in scout.** Kritano floors categories to 0 on real sites, so scout's summary now
+  scores each page itself: each failing rule costs its severity weight once, plus 1 per 5
+  instances (rounded down), the extra capped at the weight. It reproduces the figures worked out
+  by hand for the Myers review exactly (36 / 28 / 60 / 60). Kritano's numbers stay in the
+  summary as `kritano_scores`, and old reviews are re-summarised on `scout review rewrite`.
+- **Includes, not retyping.** Scout writes `components.json` (`scores`, `score_matrix`,
+  `severity_summary`) from the data; Claude places them with `{"type": "include", "ref": …}` and
+  scout swaps them in before sending. Measurements (`metrics`, `bars`) still come from Claude
+  reading per-page messages: Kritano reports them as text, not numbers, so there's nothing
+  structured to pass. Revisit if Kritano's API gains metric fields.
+- **Validation follows Typeset, not a copy of the schema.** Scout keeps light checks (v1 blocks,
+  includes, size) and passes components through; Typeset's exact errors (`pages[2].blocks[1]
+  (findings): …`) and Typst compile failures come back as a `DocumentError` and go to Claude
+  in the existing fix-and-retry loop. One source of truth, no Go copy of the schema to drift.
+- **Inline formatting** now reaches the PDF: scout no longer strips `**` from block text (only
+  from frontmatter, which prints literally).
+- **Proofs.** `/api/proof` returns base64 PNGs at 40 ppi. After rendering, scout saves them to
+  `proof/` and flags middle pages whose content stops before 45% of the body height. It reports;
+  it doesn't send the report back to Claude.
+- **Typeset fix found on the way:** long figures ("5,948 to 6,800 ms") wrapped at display size.
+  `fit-figure` now measures and shrinks them to one line; the format guide asks for short values.
+
+*Acceptance check:* a fresh `scout review rewrite` of the Myers audits (into a new folder; the
+sent report is untouched) produced the premium layout first time, with no rejections and no
+layout warnings: an at-a-glance page (gauges, severity summary, highlights), numbered sections
+with score stats, findings tables, metrics, the score matrix, next steps and an appendix. 17 pages
+after the figure fix.
 
 ### Phase 5: Polish and proof (94 → 100)
 - [ ] Optical details: hung punctuation in quotes, optical alignment of numerals, refined
