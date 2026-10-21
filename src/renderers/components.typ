@@ -21,6 +21,8 @@
   weight: 600,
   tracking: 0.1em,
   fill: fill,
+  // Tracked capitals wrap at spaces; a hyphenated label reads badly.
+  hyphenate: false,
   upper(body),
 )
 
