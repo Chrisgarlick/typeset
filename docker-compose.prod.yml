@@ -1,6 +1,10 @@
 services:
   db:
-    image: postgres:16-alpine
+    # Matches production: the data volume was created by this image, and other
+    # services on the host reach the database on localhost:55432.
+    image: pgvector/pgvector:pg16
+    ports:
+      - "127.0.0.1:55432:5432"
     restart: unless-stopped
     environment:
       POSTGRES_DB: typeset
