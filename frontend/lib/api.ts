@@ -1,22 +1,7 @@
-// In the browser, use relative paths (Next.js rewrites /api/* to the Rust service).
-// On the server or if NEXT_PUBLIC_API_URL is set, use that directly.
-const API_URL =
-  typeof window !== "undefined"
-    ? ""
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
-
-// Single shared secret. Must match the TYPESET_TOKEN env var on the API.
-// Set NEXT_PUBLIC_API_TOKEN at build time in production.
-const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || "dev-token";
-
+// The browser talks to the server-side proxy at /ui-api, which adds the API
+// token. No secret is ever shipped to the browser.
 async function apiFetch(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
-      ...options.headers,
-    },
-  });
+  const res = await fetch(`/ui-api${path}`, options);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -74,19 +59,19 @@ export interface ClientProfile {
 }
 
 export async function getClients(): Promise<ClientProfile[]> {
-  const res = await apiFetch("/api/clients");
+  const res = await apiFetch("/clients");
   return res.json();
 }
 
 export async function getClient(slug: string): Promise<ClientProfile> {
-  const res = await apiFetch(`/api/clients/${slug}`);
+  const res = await apiFetch(`/clients/${slug}`);
   return res.json();
 }
 
 export async function saveClient(
   profile: Partial<ClientProfile> & { slug: string; name: string }
 ): Promise<ClientProfile> {
-  const res = await apiFetch("/api/clients", {
+  const res = await apiFetch("/clients", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
@@ -95,7 +80,7 @@ export async function saveClient(
 }
 
 export async function deleteClient(slug: string): Promise<void> {
-  await apiFetch(`/api/clients/${slug}`, { method: "DELETE" });
+  await apiFetch(`/clients/${slug}`, { method: "DELETE" });
 }
 
 // --- Render ---
@@ -126,7 +111,7 @@ export interface RenderResponse {
 export async function renderDocument(
   req: RenderRequest
 ): Promise<RenderResponse> {
-  const res = await apiFetch("/api/render", {
+  const res = await apiFetch("/render", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -137,7 +122,7 @@ export async function renderDocument(
 export async function previewDocument(
   req: RenderRequest
 ): Promise<Blob> {
-  const res = await apiFetch("/api/preview", {
+  const res = await apiFetch("/preview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -164,7 +149,7 @@ export async function getHistory(
   offset = 0
 ): Promise<RenderHistoryItem[]> {
   const res = await apiFetch(
-    `/api/history?limit=${limit}&offset=${offset}`
+    `/history?limit=${limit}&offset=${offset}`
   );
   return res.json();
 }

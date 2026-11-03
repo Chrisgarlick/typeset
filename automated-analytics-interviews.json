@@ -1,0 +1,1325 @@
+{
+  "schema": 2,
+  "frontmatter": {
+    "title": "Automated Analytics",
+    "eyebrow": "Interview preparation",
+    "subtitle": "Second and third interviews: technical, then product.",
+    "recipient": "Automated Analytics interviews",
+    "author": "Chris Garlick",
+    "date": "29 October 2026",
+    "document_type": "brief",
+    "client": "chris-garlick-light",
+    "cover": "editorial"
+  },
+  "pages": [
+    {
+      "blocks": [
+        {
+          "type": "contents",
+          "title": "Contents"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Overview",
+          "title": "Two conversations, two different tests",
+          "intro": "You're through the first round. The next two interviews look at different things, so prepare for them differently."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "",
+            "Technical interview",
+            "Product interview"
+          ],
+          "rows": [
+            [
+              "Who",
+              "John and Matthew, two Senior Engineers",
+              "David (Product Manager) and Joseph (Engineer)"
+            ],
+            [
+              "Format",
+              "Conversation about how you build software",
+              "Talking through a realistic problem together"
+            ],
+            [
+              "Covers",
+              "Backend, frontend and your own experience",
+              "How you approach a problem you haven't seen"
+            ],
+            [
+              "Stack",
+              "Laravel, React / Angular, AWS",
+              "Whatever the problem needs"
+            ],
+            [
+              "Not included",
+              "No live coding, no take-home test",
+              "No single right answer, nothing to prepare"
+            ],
+            [
+              "They're looking for",
+              "*How you think*, not perfect answers",
+              "Good questions, clear reasoning, sensible scope"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "What both interviews have in common",
+          "body": "Both say the same thing in different words: **show your thinking**. They want to hear how you weigh options, what you'd ask, and why you'd choose one approach over another. A confident *\"it depends on X, and here's how I'd find out\"* beats a guess dressed up as certainty."
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "Now confirmed",
+              "value": "The stack is **Laravel, React or Angular, and AWS**. The first guide covered the whole advert; this one goes deeper on those three."
+            },
+            {
+              "label": "The product",
+              "value": "AI-driven marketing, recruitment and analysis software: campaign automation and business intelligence for clients."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Technical interview",
+          "title": "How to answer a conversation-style interview",
+          "intro": "With no code to write, your answers *are* the evidence. Give them a shape."
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "A good technical answer",
+              "items": [
+                {
+                  "title": "Restate or clarify",
+                  "detail": "\"Just to check, do you mean for a single server or at scale?\" Shows you don't rush in."
+                },
+                {
+                  "title": "Give the default",
+                  "detail": "What you'd normally do, in one or two sentences."
+                },
+                {
+                  "title": "Name the trade-off",
+                  "detail": "What it costs, and when you'd choose something else."
+                },
+                {
+                  "title": "Ground it in experience",
+                  "detail": "\"On Typeset I...\" or \"Last time I hit this...\" One concrete example beats three general ones."
+                },
+                {
+                  "title": "Stop",
+                  "detail": "Leave room for the follow-up. Senior engineers will dig where they're interested."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Instead of",
+            "Try"
+          ],
+          "rows": [
+            [
+              "\"I'd use Redis.\"",
+              "\"I'd cache it in Redis with a TTL, because the data changes hourly. If it had to be exact, I'd invalidate on write instead.\""
+            ],
+            [
+              "\"I don't know.\"",
+              "\"I haven't used that directly. My guess is X, because Y. I'd check by Z.\""
+            ],
+            [
+              "A ten-minute monologue",
+              "Two minutes, then: \"Do you want me to go deeper on any part?\""
+            ],
+            [
+              "\"We did X.\"",
+              "\"*I* did X.\" They're hiring you, not your last team."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "It's fine not to know",
+          "body": "They've said they want how you think, not perfect answers. If Angular or a particular AWS service is new to you, say so plainly, then reason about it from what you do know. That *is* the test."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Backend",
+          "title": "Laravel: how you structure an application",
+          "intro": "Expect *\"talk us through how you'd build...\"* and *\"where does this logic live?\"*"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Topic",
+            "What to say"
+          ],
+          "rows": [
+            [
+              "Request lifecycle",
+              "public/index.php → kernel → middleware → router → controller → response, back out through middleware."
+            ],
+            [
+              "Service container",
+              "Binds interfaces to implementations; constructor injection; swap a real client for a fake in tests."
+            ],
+            [
+              "Thin controllers",
+              "Validate (Form Request), authorise (Policy), call an action or service, return a resource."
+            ],
+            [
+              "Actions / services",
+              "One class per business operation, e.g. LaunchCampaign. Reusable from controllers, jobs and commands."
+            ],
+            [
+              "Eloquent",
+              "Relationships, scopes, casts. Eager-load with with(); turn on preventLazyLoading() in development."
+            ],
+            [
+              "Queues",
+              "Anything slow or external goes on a queue: sends, imports, report builds, AI calls. Jobs must be idempotent."
+            ],
+            [
+              "Events",
+              "Decouple side effects: CampaignLaunched → notify, log, sync. Queue the slow listeners."
+            ],
+            [
+              "Testing",
+              "Feature tests through HTTP with RefreshDatabase; Queue::fake, Http::fake; unit tests for pure logic."
+            ]
+          ]
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Controller stays thin: validate, authorise, delegate\npublic function store(\n    StoreCampaignRequest $request,\n    LaunchCampaign $launch,\n): CampaignResource {\n    $this->authorize('create', Campaign::class);\n\n    $campaign = $launch(\n        $request->user()->account,\n        $request->validated(),\n    );\n\n    return new CampaignResource($campaign);\n}"
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Say this",
+          "body": "*\"I keep controllers thin and put each business operation in its own action class. That way the same logic runs from an API call, a queued job or an Artisan command, and it's easy to test on its own.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Backend",
+          "title": "Laravel: performance and reliability",
+          "intro": "Analytics and automation mean lots of data and lots of background work. Expect a *\"this page is slow\"* question."
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "\"A dashboard page is slow. What do you do?\"",
+              "items": [
+                {
+                  "title": "Measure first",
+                  "detail": "Telescope, Debugbar or APM: how many queries, how long each, and is it PHP time or database time?"
+                },
+                {
+                  "title": "N+1 queries",
+                  "detail": "Hundreds of near-identical queries: eager-load with with() or withCount()."
+                },
+                {
+                  "title": "Slow queries",
+                  "detail": "EXPLAIN the worst one; add a composite index matching the WHERE and ORDER BY."
+                },
+                {
+                  "title": "Too much data",
+                  "detail": "Select only needed columns; paginate; aggregate in SQL, not in PHP collections."
+                },
+                {
+                  "title": "Pre-compute",
+                  "detail": "Dashboards read daily summary tables built by a scheduled job, not raw events."
+                },
+                {
+                  "title": "Cache",
+                  "detail": "Cache::remember with a TTL for numbers that don't need to be live; tag by account to invalidate."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Background work",
+            "Good practice"
+          ],
+          "rows": [
+            [
+              "Retries",
+              "$tries and $backoff; retry transient failures, fail fast on bad data."
+            ],
+            [
+              "Idempotency",
+              "updateOrCreate, unique keys, or a processed-message table, so a retry can't double-send."
+            ],
+            [
+              "Big jobs",
+              "Split into batches (Bus::batch) or chunk; never load a million rows into memory."
+            ],
+            [
+              "Rate limits",
+              "Throttle calls to third-party APIs with RateLimiter or job middleware."
+            ],
+            [
+              "Visibility",
+              "Horizon for Redis queues, or CloudWatch for SQS; alert on failed jobs and queue age."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Your own example: memory on a small server",
+          "body": "Typeset's production box has under 1 GB of RAM. Large renders were being killed by the kernel (an empty error plus a non-zero exit meant a signal, and dmesg confirmed it). Swap fixed it short term; the proper fixes are fewer concurrent renders and a real timeout. A good story for *\"how do you debug production problems\"*."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Frontend",
+          "title": "React",
+          "intro": "Talk about components, state and data fetching, and the mistakes you know to avoid."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Topic",
+            "What to say"
+          ],
+          "rows": [
+            [
+              "Components",
+              "Small, focused, props in and callbacks out. Composition over deep prop drilling."
+            ],
+            [
+              "State",
+              "Keep it as local as possible; lift it up when shared; context for app-wide things like the user."
+            ],
+            [
+              "Server state",
+              "Data from the API isn't app state: TanStack Query handles caching, refetching and loading states."
+            ],
+            [
+              "Effects",
+              "useEffect is for syncing with outside systems, not for deriving values. Clean up and cancel."
+            ],
+            [
+              "Derived values",
+              "Compute during render; useMemo only when it's measurably expensive."
+            ],
+            [
+              "Rendering",
+              "Re-renders are usually fine; fix real problems with memo, stable callbacks, or splitting state."
+            ],
+            [
+              "Lists",
+              "Stable keys from IDs, never the array index for lists that change."
+            ],
+            [
+              "Forms",
+              "Controlled inputs, or React Hook Form with a schema (Zod) shared with TypeScript types."
+            ],
+            [
+              "TypeScript",
+              "Type props and API responses; unknown for untrusted data, then validate."
+            ]
+          ]
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "content": "// Server state with TanStack Query: caching,\n// loading and error handled for you\nfunction CampaignStats({ id }: { id: number }) {\n  const { data, isPending, error } = useQuery({\n    queryKey: ['campaign-stats', id],\n    queryFn: ({ signal }) =>\n      api.get<Stat[]>(`/campaigns/${id}/stats`,\n                      { signal }),\n    staleTime: 60_000,\n  })\n\n  if (isPending) return <Spinner />\n  if (error) return <ErrorPanel error={error} />\n  if (!data.length) return <Empty />\n  return <StatsChart stats={data} />\n}"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Frontend",
+          "title": "Angular, and how it compares",
+          "intro": "They use React *or* Angular, so some of the codebase is probably Angular. Know the ideas even if you've used it less."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Concept",
+            "Angular",
+            "React equivalent"
+          ],
+          "rows": [
+            [
+              "Building block",
+              "Components with a template, class and styles",
+              "Function components and JSX"
+            ],
+            [
+              "Shared logic",
+              "Services, provided through dependency injection",
+              "Custom hooks, context"
+            ],
+            [
+              "Async data",
+              "RxJS Observables; HttpClient returns them",
+              "Promises, TanStack Query"
+            ],
+            [
+              "Reactivity",
+              "Signals (modern) and change detection",
+              "useState and re-rendering"
+            ],
+            [
+              "Templates",
+              "@if, @for, bindings: [prop], (event), [(ngModel)]",
+              "JSX with plain JavaScript"
+            ],
+            [
+              "Forms",
+              "Reactive forms with validators",
+              "React Hook Form, Formik"
+            ],
+            [
+              "Structure",
+              "Opinionated: routing, HTTP, forms, testing built in",
+              "A library: you choose the pieces"
+            ],
+            [
+              "Language",
+              "TypeScript, always",
+              "TypeScript by choice"
+            ]
+          ]
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "RxJS in one line",
+              "value": "A stream of values over time. switchMap cancels the previous request when a new one starts, which is ideal for search boxes."
+            },
+            {
+              "label": "Unsubscribing",
+              "value": "Use the async pipe or takeUntilDestroyed() so subscriptions don't leak."
+            },
+            {
+              "label": "Change detection",
+              "value": "OnPush plus signals means Angular only re-checks components whose inputs or signals changed."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "content": "// Search box: debounce, skip repeats,\n// cancel stale requests\nresults$ = this.query.valueChanges.pipe(\n  debounceTime(300),\n  distinctUntilChanged(),\n  switchMap(q => this.api.searchCandidates(q)),\n);"
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Say this",
+          "body": "*\"I've worked more with React, but the ideas carry over: components, services instead of hooks, and Observables instead of promises. I'd lean on the team's conventions and get productive quickly.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Full stack",
+          "title": "Joining Laravel to a React or Angular front end",
+          "intro": "The seams between front and back are where real bugs live. Show you've thought about them."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Concern",
+            "Approach"
+          ],
+          "rows": [
+            [
+              "Authentication",
+              "Same domain SPA: Sanctum cookie sessions with CSRF. Mobile or third parties: Sanctum or Passport tokens."
+            ],
+            [
+              "CORS",
+              "Allow only your front-end origins; credentials only where cookies are used."
+            ],
+            [
+              "Response shape",
+              "API Resources for a stable contract; never return raw models with hidden fields leaking."
+            ],
+            [
+              "Validation errors",
+              "Laravel returns 422 with field errors; the front end maps them onto the form."
+            ],
+            [
+              "Types",
+              "Share a contract: OpenAPI generated from Laravel, then TypeScript types generated from that."
+            ],
+            [
+              "Pagination",
+              "Cursor pagination for large or live lists; the front end loads the next page on scroll or click."
+            ],
+            [
+              "Long tasks",
+              "Return 202 with a job ID; the front end polls, or listens on a websocket (Reverb, Pusher)."
+            ],
+            [
+              "Multi-tenancy",
+              "Every query scoped to the client's account, enforced server side, never trusted from the front end."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "A common follow-up: \"How would you build an export of a big report?\"",
+          "body": "Don't build it in the request. Queue a job that streams rows to a CSV in S3, mark the export ready, and notify the user with a short-lived signed URL. The page shows *preparing* and then a download link."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Infrastructure",
+          "title": "AWS for a Laravel application",
+          "intro": "Know which service does what and how they fit together. You don't need to be an ops engineer."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Need",
+            "AWS service",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "Run the app",
+              "EC2, ECS on Fargate, Elastic Beanstalk, or Lambda via Vapor / Bref",
+              "Containers on Fargate: no servers to patch, scales on load"
+            ],
+            [
+              "Database",
+              "RDS or Aurora (MySQL / Postgres)",
+              "Multi-AZ for failover; read replicas for reporting"
+            ],
+            [
+              "Cache, sessions, queues",
+              "ElastiCache (Redis)",
+              "Shared across app instances; never store sessions on disk"
+            ],
+            [
+              "Queues",
+              "SQS, with a dead-letter queue",
+              "Laravel's SQS driver; workers scale on queue depth"
+            ],
+            [
+              "Fan-out",
+              "SNS or EventBridge",
+              "One event, several consumers"
+            ],
+            [
+              "Files",
+              "S3, served via CloudFront",
+              "Uploads and exports; signed URLs for private files"
+            ],
+            [
+              "Email",
+              "SES",
+              "Bounce and complaint handling matters for campaign sending"
+            ],
+            [
+              "Secrets",
+              "Secrets Manager or Parameter Store",
+              "Not in .env files committed anywhere"
+            ],
+            [
+              "Access",
+              "IAM roles, least privilege",
+              "The app's role can only touch its own bucket and queue"
+            ],
+            [
+              "Monitoring",
+              "CloudWatch logs, metrics and alarms",
+              "Alarm on 5xx rate, queue age, database CPU"
+            ]
+          ]
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "\"Walk us through deploying a Laravel app on AWS\"",
+              "items": [
+                {
+                  "title": "Build",
+                  "detail": "CI runs tests, builds one Docker image, pushes it to ECR."
+                },
+                {
+                  "title": "Release",
+                  "detail": "Run migrations (backwards compatible), then roll the new image out to ECS behind a load balancer."
+                },
+                {
+                  "title": "Check",
+                  "detail": "Health checks gate traffic; a failed check rolls back to the previous task definition."
+                },
+                {
+                  "title": "Scale",
+                  "detail": "Web tasks scale on CPU or requests; queue workers scale on SQS queue depth."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "title": "Stateless web servers",
+          "body": "Behind a load balancer any request can hit any server, so sessions, cache and uploads must live in Redis, the database or S3, never on the local disk. A classic follow-up question."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Thinking out loud",
+          "title": "A design question, worked through",
+          "intro": "They may ask you to design something on the spot. Here's the shape to follow, using a likely example."
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "\"Clients want a weekly email summarising how their campaigns performed.\"",
+          "body": "A good fit for their product: scheduled, per client, data heavy, and possibly AI-written."
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "1. Clarify",
+              "items": [
+                {
+                  "title": "Who and how many",
+                  "detail": "How many clients and campaigns? Which metrics? Their timezone or ours?"
+                },
+                {
+                  "title": "What counts as done",
+                  "detail": "Is a plain summary enough at first, or do they want charts and AI commentary?"
+                }
+              ]
+            },
+            {
+              "title": "2. Sketch the flow",
+              "items": [
+                {
+                  "title": "Schedule",
+                  "detail": "A scheduled command each hour finds accounts whose local Monday 9am has arrived."
+                },
+                {
+                  "title": "Fan out",
+                  "detail": "Dispatch one queued job per account, so one slow client doesn't hold up the rest."
+                },
+                {
+                  "title": "Build",
+                  "detail": "Read last week's numbers from the daily summary tables; render the email; send through SES."
+                },
+                {
+                  "title": "Record",
+                  "detail": "Store a sent_reports row (account, week) with a unique key, so a retry never sends twice."
+                }
+              ]
+            },
+            {
+              "title": "3. Talk through what could go wrong",
+              "items": [
+                {
+                  "title": "Late data",
+                  "detail": "Run after the nightly aggregation finishes, or the numbers will be wrong."
+                },
+                {
+                  "title": "Failures",
+                  "detail": "Retries with backoff; failed jobs alerted; a resend button for support."
+                },
+                {
+                  "title": "AI commentary",
+                  "detail": "Pass the numbers in, ask for structured output, never let it invent figures; cache the result."
+                }
+              ]
+            },
+            {
+              "title": "4. Close",
+              "items": [
+                {
+                  "title": "Smallest version",
+                  "detail": "Plain numbers first, AI summary as a follow-up, measured by open rate."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Your own experience",
+          "title": "Stories to have ready",
+          "intro": "*Your own experience* is one of the three things they'll cover. Prepare short, specific stories."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "They might ask",
+            "Story to tell"
+          ],
+          "rows": [
+            [
+              "Something you built that you're proud of",
+              "**Typeset**: an HTTP API that turns Markdown or JSON into branded PDFs. You designed the schema, built the renderer and front end, and run it in production."
+            ],
+            [
+              "A hard production problem",
+              "Renders failing with an empty error on Typeset. You worked out it was the kernel killing the process for memory, fixed it short term, and identified the real fixes."
+            ],
+            [
+              "Learning something new fast",
+              "Typeset is written in Rust, and renders with Typst. Neither was your day job."
+            ],
+            [
+              "How you use AI in your work",
+              "Claude Code daily: planning, refactoring, writing tests, reviewing. You check what it produces; it speeds you up rather than replacing judgement."
+            ],
+            [
+              "Your Laravel experience",
+              "Have two real apps in mind: the problem, how you structured it, one thing you'd do differently."
+            ],
+            [
+              "A disagreement in code review",
+              "A time you changed your mind, or changed someone else's, with evidence rather than opinion."
+            ],
+            [
+              "A trade-off you made",
+              "Shipping a simpler version first, and what you deliberately left out."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Typeset in one breath",
+          "body": "*\"It's an API I built that turns Markdown or structured JSON into properly typeset PDFs. It's Rust with Typst for the layout, Postgres and Docker, running on a small DigitalOcean server. I use it for real documents, including the one I prepared for this interview.\"*"
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Be honest about scale",
+          "body": "If they ask about traffic or team size on your projects, give the real numbers. Then talk about what you'd change at a larger scale. That shows the thinking they're after."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Technical interview",
+          "title": "Likely questions, with the gist of an answer"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Question",
+            "The gist"
+          ],
+          "rows": [
+            [
+              "How do you structure a Laravel app as it grows?",
+              "Thin controllers, action classes, Form Requests, Policies, API Resources; domain folders once it's big."
+            ],
+            [
+              "How do you find and fix N+1 queries?",
+              "preventLazyLoading in dev, Debugbar or Telescope to spot them, with() and withCount() to fix."
+            ],
+            [
+              "When do you reach for a queue?",
+              "Anything slow, external or retryable. Keep the request fast; make jobs idempotent."
+            ],
+            [
+              "How do you test a Laravel app?",
+              "Mostly feature tests over HTTP; fakes for queues, mail and HTTP; unit tests for tricky logic."
+            ],
+            [
+              "useEffect: what goes wrong?",
+              "Missing dependencies, deriving state in effects, no cleanup, race conditions on fetches."
+            ],
+            [
+              "How is Angular different from React?",
+              "Framework vs library; DI and services; RxJS; templates vs JSX; signals."
+            ],
+            [
+              "How would you handle a search box?",
+              "Debounce, cancel stale requests (AbortController or switchMap), show loading and empty states."
+            ],
+            [
+              "How do you secure an API for many clients?",
+              "Auth, then authorisation per record (policies), tenant scoping, validation, rate limits."
+            ],
+            [
+              "How would you deploy and scale on AWS?",
+              "Docker image, ECS Fargate behind a load balancer, RDS, ElastiCache, SQS workers scaled on depth."
+            ],
+            [
+              "How do you deploy without downtime?",
+              "Backwards-compatible migrations first, rolling deploy, health checks, quick rollback."
+            ],
+            [
+              "What makes code maintainable?",
+              "Clear names, small units, tests, consistent conventions, and boring choices where possible."
+            ],
+            [
+              "How do you review someone's PR?",
+              "Behaviour and tests first, then design, then style; ask questions rather than issue orders."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Technical interview",
+          "title": "Questions to ask John and Matthew",
+          "intro": "Engineers enjoy talking about their codebase. Pick three or four."
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Is the front end React, Angular or both? Is there a plan to settle on one?",
+            "How is the Laravel codebase organised: one app, or several services?",
+            "What runs on AWS today: containers, Vapor, EC2? What would you change if you started again?",
+            "How do you handle the heavy background work: queues, scheduled jobs, data pipelines?",
+            "What does testing and code review look like? How often do you deploy?",
+            "Where does AI sit in the code: calls to model APIs, your own models, or both?",
+            "What's the part of the system you'd most like to rewrite, and why?",
+            "What does a new engineer usually find hardest in their first month?"
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "Closing line for the technical interview",
+          "body": "*\"I enjoyed that. I'm strongest on the Laravel side and comfortable across the stack, and I like the mix of data-heavy backend work and client-facing features you've described.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "What David and Joseph are looking for",
+          "intro": "A Product Manager and an Engineer, one realistic problem, and a conversation. It's a simulation of working with them."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "They're testing",
+            "What it looks like"
+          ],
+          "rows": [
+            [
+              "Curiosity",
+              "You ask about the user and the problem before suggesting a solution."
+            ],
+            [
+              "Product sense",
+              "You think about who it's for, why it matters, and how you'd know it worked."
+            ],
+            [
+              "Pragmatism",
+              "You suggest a small first version, not the perfect system."
+            ],
+            [
+              "Technical judgement",
+              "You can say what's easy, what's hard, and what's risky to build."
+            ],
+            [
+              "Collaboration",
+              "You build on their ideas, take hints, and change your mind when they give new information."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Why Joseph is there",
+          "body": "An engineer in a product interview is watching for whether you can turn a fuzzy problem into something buildable, and whether you'd be good to work with. Bring the engineering in, but don't jump straight to the database schema."
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "title": "The most common mistake",
+          "body": "Hearing the problem and immediately designing a solution. **Asking questions is encouraged**, so ask them first. The problem as stated is often not the real problem."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "A shape for working through any problem",
+          "intro": "Not a script to recite. A checklist in your head so you don't skip a step."
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "Understand",
+              "items": [
+                {
+                  "title": "The user",
+                  "detail": "Who has this problem? A client's marketing manager, a recruiter, an internal account manager?"
+                },
+                {
+                  "title": "The problem",
+                  "detail": "What are they trying to get done? What happens today, and what's painful about it?"
+                },
+                {
+                  "title": "The evidence",
+                  "detail": "How do we know? Support tickets, churn, sales calls, usage data?"
+                },
+                {
+                  "title": "Why now",
+                  "detail": "What's changed? A big client asking, a competitor, a new capability like AI?"
+                }
+              ]
+            },
+            {
+              "title": "Decide what good looks like",
+              "items": [
+                {
+                  "title": "Outcome",
+                  "detail": "What changes for the user and the business if we solve it?"
+                },
+                {
+                  "title": "Measure",
+                  "detail": "One or two metrics: adoption, time saved, retention, fewer tickets."
+                }
+              ]
+            },
+            {
+              "title": "Explore options",
+              "items": [
+                {
+                  "title": "Several ways",
+                  "detail": "Two or three approaches, including a non-software one if it fits."
+                },
+                {
+                  "title": "Trade-offs",
+                  "detail": "Value against effort and risk for each."
+                }
+              ]
+            },
+            {
+              "title": "Choose a first step",
+              "items": [
+                {
+                  "title": "Smallest useful version",
+                  "detail": "What can we ship in a week or two that tests the idea with real users?"
+                },
+                {
+                  "title": "Risks",
+                  "detail": "What could go wrong: data quality, privacy, cost, performance, trust in AI output."
+                },
+                {
+                  "title": "Next",
+                  "detail": "What we'd learn, and what we'd build next if it works."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Say this",
+          "body": "*\"Before I suggest anything, can I ask a few questions about who's running into this and what they do today?\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "Questions worth asking about any problem",
+          "intro": "Have these ready. You won't use them all; pick the ones that unlock the problem."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "About",
+            "Questions"
+          ],
+          "rows": [
+            [
+              "The user",
+              "Who exactly? How technical are they? How often do they hit this?"
+            ],
+            [
+              "Today",
+              "How do they handle it now? A workaround, a spreadsheet, a support ticket?"
+            ],
+            [
+              "Size",
+              "How many clients does it affect? Is it one loud client or a pattern?"
+            ],
+            [
+              "Value",
+              "Does it affect revenue, retention or support load? Is anyone paying for it?"
+            ],
+            [
+              "Success",
+              "If we nailed this, what would we see in three months?"
+            ],
+            [
+              "Data",
+              "What data do we already have? Is it accurate and timely enough to rely on?"
+            ],
+            [
+              "Constraints",
+              "Deadline? Team size? Anything we can't change, like a third-party API?"
+            ],
+            [
+              "Risk",
+              "Personal data involved? Anything clients would be upset to see go wrong?"
+            ],
+            [
+              "Scope",
+              "What's explicitly *not* part of this?"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Listen to the answers",
+          "body": "The answers are hints. If David says *\"it's mostly our three biggest clients\"*, that changes the solution. Say so out loud: *\"OK, so this might start as something we do for those three, before building it into the product.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "A worked example",
+          "intro": "A problem in their world, talked through the way you'd do it in the room."
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "\"Clients say they don't know which of their campaigns are actually working.\"",
+          "body": "Said by David as the opening of the exercise. Below is one way the conversation could go."
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "Ask",
+              "value": "Which clients: marketing or recruitment? Do they look at the dashboard now? What do they do with the answer, pause campaigns, move budget? What does *working* mean to them: clicks, applications, hires, sales?"
+            },
+            {
+              "label": "Suppose",
+              "value": "Recruitment clients, mostly. They see clicks and applications but not which campaigns led to hires. Account managers spend hours building this by hand in spreadsheets."
+            },
+            {
+              "label": "Reframe",
+              "value": "The real problem isn't *more data*. It's connecting a campaign to the outcome the client cares about, and saving the account managers' time."
+            },
+            {
+              "label": "Options",
+              "value": "A cost-per-hire report by campaign, if hire data exists. Or pull hires from their ATS through an integration. Or an AI summary that highlights the best and worst campaigns each week."
+            },
+            {
+              "label": "First step",
+              "value": "Start with the account managers' spreadsheet: build that report for a handful of clients using data we already have. Measure time saved and whether clients act on it."
+            },
+            {
+              "label": "Risks",
+              "value": "Hire data may be missing or late; attribution is fuzzy when a candidate saw several campaigns; AI summaries must only state real figures."
+            },
+            {
+              "label": "Next",
+              "value": "If clients use it, add the ATS integration to make hire data automatic, then the AI summary on top."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Notice the pattern",
+          "body": "Ask, then restate the problem in your own words, then offer options with trade-offs, then pick a small first step and say how you'd measure it. Engineers in the room like hearing *\"using data we already have\"*."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "Scenarios to practise",
+          "intro": "Talk each one through out loud for five minutes. These are the kinds of problem they could bring."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Scenario",
+            "Angles worth raising"
+          ],
+          "rows": [
+            [
+              "Clients want AI to write their campaign copy",
+              "Brand voice, approval before sending, measuring if AI copy performs better, cost per generation."
+            ],
+            [
+              "Recruiters get too many applicants to review",
+              "Ranking or summarising candidates; bias and fairness; the human makes the decision; GDPR."
+            ],
+            [
+              "A big client is threatening to leave",
+              "Find out why first; one client's fix vs a product change; don't build a one-off without a plan."
+            ],
+            [
+              "Dashboards are too slow for large clients",
+              "Pre-aggregated tables, caching, loading in stages; which numbers really need to be live?"
+            ],
+            [
+              "Support gets lots of *\"why is my number different?\"* tickets",
+              "Timezones, late data, definitions; show *last updated*; explain metrics in the UI."
+            ],
+            [
+              "Clients want to connect their own CRM",
+              "Which CRMs most clients use; start with one; webhooks vs polling; what breaks when their API changes."
+            ],
+            [
+              "Campaign emails land in spam",
+              "Domain authentication (SPF, DKIM, DMARC), sending reputation, bounce handling, warm-up."
+            ],
+            [
+              "We want clients to log in more often",
+              "Why don't they now? Useful alerts and weekly summaries can beat a nicer dashboard."
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Ways to prioritise, if they ask"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Method",
+            "In a sentence"
+          ],
+          "rows": [
+            [
+              "Impact vs effort",
+              "Do the high-impact, low-effort things first; question the high-effort ones."
+            ],
+            [
+              "RICE",
+              "Reach × Impact × Confidence ÷ Effort: a score to compare ideas fairly."
+            ],
+            [
+              "MoSCoW",
+              "Must, Should, Could, Won't: useful for cutting scope on a deadline."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "Building AI features responsibly",
+          "intro": "They're an AI company. Expect AI to come up in the problem, and have a view."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Question to ask",
+            "Why it matters"
+          ],
+          "rows": [
+            [
+              "Does it need to be AI?",
+              "Sometimes a rule, a filter or a good default does the job more cheaply and reliably."
+            ],
+            [
+              "What happens when it's wrong?",
+              "A bad subject line is fine; a wrong figure in a client report isn't. Match checks to the risk."
+            ],
+            [
+              "Is a human in the loop?",
+              "Suggestions a user approves are safer than actions taken automatically."
+            ],
+            [
+              "How do we measure quality?",
+              "A set of real examples to test against, plus user feedback such as thumbs up and down."
+            ],
+            [
+              "What does it cost?",
+              "Cost per call × volume. Cache results, use smaller models where they're good enough."
+            ],
+            [
+              "How fast must it be?",
+              "Slow generation belongs in a queue, with the result shown when ready."
+            ],
+            [
+              "Whose data goes in?",
+              "Personal data, consent, retention, and what the model provider stores."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Say this",
+          "body": "*\"I'd use AI where it saves people real time and where a mistake is cheap or easy to catch. For anything with numbers in, I'd have the system calculate them and let the AI only explain them.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Product interview",
+          "title": "Questions to ask David and Joseph"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "How do you decide what gets built next? Where do ideas come from: clients, data, sales?",
+            "How much do engineers shape the product, versus building to a spec?",
+            "How do you know if a feature worked after it ships?",
+            "Who are your main users day to day: clients' marketing teams, recruiters, your own account managers?",
+            "What's the biggest product problem you're working on right now?",
+            "How do product and engineering work together week to week?",
+            "Where do you see AI taking the product over the next year?"
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "Closing line for the product interview",
+          "body": "*\"I liked working through that with you. I enjoy the part of engineering where you work out what's really needed before building it, and it sounds like that's how you work here.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Before each interview",
+          "title": "Preparation checklist"
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "Technical interview",
+              "items": [
+                {
+                  "title": "Rehearse three stories out loud",
+                  "detail": "Something you built (Typeset), a hard production problem, a technology you learnt fast."
+                },
+                {
+                  "title": "Refresh Angular basics",
+                  "detail": "Components, services, DI, RxJS and switchMap, signals. Enough to talk sensibly."
+                },
+                {
+                  "title": "Draw the AWS picture",
+                  "detail": "From memory: load balancer, ECS, RDS, ElastiCache, SQS, S3, CloudWatch."
+                },
+                {
+                  "title": "Practise the design question",
+                  "detail": "The weekly report email, out loud, in five minutes."
+                }
+              ]
+            },
+            {
+              "title": "Product interview",
+              "items": [
+                {
+                  "title": "Use the product",
+                  "detail": "Look at their site and any demo. Who are the users? What would annoy them?"
+                },
+                {
+                  "title": "Practise two scenarios",
+                  "detail": "Out loud: ask, reframe, options, first step, measure."
+                },
+                {
+                  "title": "Have paper ready",
+                  "detail": "Note their answers as you go; refer back to them."
+                }
+              ]
+            },
+            {
+              "title": "Both days",
+              "items": [
+                {
+                  "title": "Check your setup",
+                  "detail": "Camera, sound, quiet room. No coding, but you may want to sketch."
+                },
+                {
+                  "title": "Know the names",
+                  "detail": "John and Matthew; then David and Joseph. Use them."
+                },
+                {
+                  "title": "Questions ready",
+                  "detail": "Three or four for each interview, from this guide."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

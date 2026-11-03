@@ -7,10 +7,8 @@ RUN npm install
 
 COPY . .
 
-# Build-time secret — baked into the JS bundle. Injected via build-args in CI.
-ARG NEXT_PUBLIC_API_TOKEN
-ENV NEXT_PUBLIC_API_TOKEN=$NEXT_PUBLIC_API_TOKEN
-ENV NEXT_PUBLIC_API_URL=http://typeset:3200
+# No secrets at build time: TYPESET_TOKEN and TYPESET_API_URL are read by the
+# /ui-api proxy at runtime (see docker-compose files).
 RUN npm run build
 
 # Runtime

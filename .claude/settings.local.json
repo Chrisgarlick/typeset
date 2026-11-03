@@ -6,7 +6,8 @@
       "Bash(python3 build_basekit_json.py)",
       "Bash(python3 -c \"import json; d=json.load\\(open\\('php-basekit.json'\\)\\); print\\('valid JSON,', len\\(d['pages']\\), 'pages'\\); print\\('size:', __import__\\('os'\\).path.getsize\\('php-basekit.json'\\), 'bytes'\\)\")",
       "Bash(./render-json.sh *)",
-      "Bash(python3 build_myjobquote_json.py)"
+      "Bash(python3 build_myjobquote_json.py)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(f\\\\\"{c.get\\('slug'\\)} — {c.get\\('name'\\)}\\\\\" for c in d\\)\\)\")"
     ]
   }
 }

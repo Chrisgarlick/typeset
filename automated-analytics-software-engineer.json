@@ -1,0 +1,1126 @@
+{
+  "schema": 2,
+  "frontmatter": {
+    "title": "Automated Analytics",
+    "eyebrow": "Interview preparation",
+    "subtitle": "Software Engineer, Full Stack. PHP, TypeScript, data, messaging and cloud.",
+    "recipient": "Automated Analytics interview",
+    "author": "Chris Garlick",
+    "date": "22 October 2026",
+    "document_type": "brief",
+    "client": "chris-garlick-light",
+    "cover": "editorial"
+  },
+  "pages": [
+    {
+      "blocks": [
+        {
+          "type": "contents",
+          "title": "Contents"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "The role",
+          "title": "What they're hiring for",
+          "intro": "A remote full-stack engineer working a prioritised queue of tickets on an AI-driven marketing, recruitment and business intelligence platform."
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "Title",
+              "value": "Software Engineer, Full Stack. Remote"
+            },
+            {
+              "label": "The company",
+              "value": "AI combined with marketing, recruitment and analysis software: clients automate sales and recruitment campaigns and get business intelligence on their performance"
+            },
+            {
+              "label": "How work arrives",
+              "value": "Tickets allocated by priority and resolution time: **incidents, problems, projects or changes**"
+            },
+            {
+              "label": "Reports to",
+              "value": "The Head of Customer Delivery, with all allocated work, and the Chief of Product"
+            },
+            {
+              "label": "Languages",
+              "value": "Expert in PHP and/or TypeScript / JavaScript"
+            },
+            {
+              "label": "Frameworks",
+              "value": "Laravel (or CakePHP, Yii, CodeIgniter); React, Angular or Vue; Node (Express, NestJS)"
+            },
+            {
+              "label": "Data",
+              "value": "MySQL, Postgres, MS SQL, NoSQL (Mongo, DynamoDB, Firestore), Redis / Memcached"
+            },
+            {
+              "label": "Messaging",
+              "value": "SQS, SNS, Pub/Sub, RabbitMQ, Kafka; Protocol Buffers and MessagePack"
+            },
+            {
+              "label": "Ops",
+              "value": "CI/CD, infrastructure automation, AWS or Google Cloud, serverless and containers"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Read between the lines",
+          "body": "**Incidents, problems and changes** are ITIL service-management terms, and you report to **Customer Delivery**. This is a client-facing engineering role: fixing what's broken for customers quickly and calmly matters as much as building new features. The long list of technologies says *adaptable*: they want someone who picks things up fast, not an expert in all of them."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "The role, mapped",
+          "title": "What they want, what to show",
+          "intro": "Every line in the advert, with the evidence to bring. Be honest about what you've used and what you've read about."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "They want",
+            "What to show"
+          ],
+          "rows": [
+            [
+              "Priority-based ticket work",
+              "How you triage a queue and keep stakeholders informed."
+            ],
+            [
+              "Problem-solving",
+              "A hard bug or design problem you broke down and solved."
+            ],
+            [
+              "Communication",
+              "Explaining a technical issue to a client or non-technical colleague."
+            ],
+            [
+              "Expert PHP / TypeScript",
+              "Laravel apps you've built; typed TypeScript on the front end."
+            ],
+            [
+              "Modern front end",
+              "A SPA you built with components and async data loading."
+            ],
+            [
+              "Databases and caching",
+              "Schema design, a query you sped up, where you used Redis."
+            ],
+            [
+              "Message buses",
+              "Laravel queues, or any async job or event system you've run."
+            ],
+            [
+              "REST APIs and security",
+              "An authenticated API you designed: tokens, validation, rate limits."
+            ],
+            [
+              "CI/CD and cloud",
+              "A pipeline you built; something you deployed to AWS or similar."
+            ],
+            [
+              "Git in a fast team",
+              "Your branching, review and conflict-handling habits."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Your strongest stories",
+          "body": "**PHP / Laravel**: years of it, which covers the core of the stack. **Typeset**: an API you built and run in production, with a front end, deploys and real operational problems (memory limits on a small server). **Claude Code**: you use AI tools daily, which suits a company built on AI."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "How the work arrives",
+          "title": "Incidents, problems, changes and projects",
+          "intro": "The advert uses ITIL language. Knowing the difference shows you understand service delivery."
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "Why it matters",
+          "body": "**Allocating on a priority based resolution time tickets that need to be completed. These may be: incidents, problems, projects or changes.** Expect a question on how you'd prioritise."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Type",
+            "What it is",
+            "Your goal"
+          ],
+          "rows": [
+            [
+              "Incident",
+              "Something is broken or degraded for a client now",
+              "Restore service fast; a workaround counts"
+            ],
+            [
+              "Problem",
+              "The underlying cause of one or more incidents",
+              "Find and fix the root cause so it doesn't recur"
+            ],
+            [
+              "Change",
+              "A planned change to a live system",
+              "Deliver it safely: tested, reviewed, with a rollback"
+            ],
+            [
+              "Project",
+              "A larger piece of new work",
+              "Break it into deliverable pieces; report progress"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Priority = impact × urgency"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "",
+            "High urgency",
+            "Low urgency"
+          ],
+          "rows": [
+            [
+              "**High impact** (many clients, revenue, data)",
+              "P1: drop everything",
+              "P2: today"
+            ],
+            [
+              "**Low impact** (one user, a workaround exists)",
+              "P3: this week",
+              "P4: when there's time"
+            ]
+          ]
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "Working the queue",
+              "items": [
+                {
+                  "title": "Triage first",
+                  "detail": "Check new tickets for P1s before carrying on with anything else."
+                },
+                {
+                  "title": "Acknowledge",
+                  "detail": "Tell the reporter you have it and when they'll hear next, within the SLA."
+                },
+                {
+                  "title": "Communicate",
+                  "detail": "Update the ticket as you go. Silence is what upsets clients, not the bug."
+                },
+                {
+                  "title": "Close properly",
+                  "detail": "Confirm the fix with the reporter; link incidents to the problem behind them."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Say this",
+          "body": "*\"I'd restore service first and investigate second. Once the client is unblocked, I'd raise a problem ticket for the root cause so we fix it once rather than handling the same incident again.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Your duties",
+          "title": "The five skills they list first",
+          "intro": "The advert lists these as *duties*, before any technology. Have one short story for each."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Skill",
+            "What they mean",
+            "Story to tell"
+          ],
+          "rows": [
+            [
+              "Problem-solving",
+              "Break a complex problem down; find a new solution",
+              "A bug you couldn't reproduce at first, and how you narrowed it down"
+            ],
+            [
+              "Communication",
+              "Explain technical ideas to technical and non-technical people",
+              "Explaining an outage or a trade-off to a client in plain words"
+            ],
+            [
+              "Collaboration",
+              "Work well in a team",
+              "Code review you gave or received that improved the result"
+            ],
+            [
+              "Adaptability",
+              "Learn new technology fast; handle changing requirements",
+              "A technology you picked up for a project (Typeset is in Rust)"
+            ],
+            [
+              "Time management",
+              "Juggle priorities and meet deadlines",
+              "A week with an urgent fix landing on top of planned work"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Structure every story the same way",
+          "body": "**Situation** (one sentence), **task** (what you had to do), **action** (what *you* did, the longest part), **result** (what changed, with a number if you can). Two minutes, no more."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Explaining something technical to a non-technical person"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Start with what it means for them: *\"Reports were showing yesterday's numbers.\"*",
+            "Then the cause in one plain sentence: *\"The job that refreshes them got stuck.\"*",
+            "Then what happens next and when: *\"It's fixed, and we've added an alert so we'll know first next time.\"*",
+            "Leave out the jargon unless they ask for it."
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Languages and frameworks",
+          "title": "PHP and Laravel",
+          "intro": "Your strongest ground. Be ready to go deep."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Topic",
+            "What to say"
+          ],
+          "rows": [
+            [
+              "PHP 8",
+              "Typed properties, constructor promotion, enums, match, readonly, named arguments, attributes."
+            ],
+            [
+              "Eloquent",
+              "Relationships; eager-load with with() to avoid N+1; scopes; casts; chunk() for big sets."
+            ],
+            [
+              "Queues and jobs",
+              "Push slow work (emails, exports, API calls) onto queues; retries, backoff, failed jobs, Horizon on Redis."
+            ],
+            [
+              "Events",
+              "Events and listeners to decouple; queue the listeners that are slow."
+            ],
+            [
+              "APIs",
+              "API resources for output, Form Requests for validation, Sanctum for tokens, rate limiting middleware."
+            ],
+            [
+              "Testing",
+              "Feature tests with RefreshDatabase; fakes for Queue, Mail, Http; Pest or PHPUnit."
+            ],
+            [
+              "Other frameworks",
+              "CakePHP, Yii and CodeIgniter share the same MVC ideas: routes, controllers, models, views."
+            ]
+          ]
+        },
+        {
+          "type": "code",
+          "language": "php",
+          "content": "// Pull campaign stats from a third-party API, safely\nfinal class SyncCampaignStats implements ShouldQueue\n{\n    use Dispatchable, InteractsWithQueue, Queueable;\n\n    public int $tries = 5;\n    public array $backoff = [10, 60, 300];\n\n    public function __construct(\n        public readonly Campaign $campaign,\n    ) {}\n\n    public function handle(AdsClient $ads): void\n    {\n        $stats = $ads->statsFor($this->campaign->external_id);\n\n        // Idempotent: a second run updates the same row\n        CampaignStat::updateOrCreate(\n            ['campaign_id' => $this->campaign->id,\n             'date' => $stats->date],\n            ['impressions' => $stats->impressions,\n             'clicks' => $stats->clicks],\n        );\n    }\n}"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Languages and frameworks",
+          "title": "TypeScript and asynchronous UI",
+          "intro": "The other half of *expert in PHP or TypeScript*, and the *asynchronous UI development patterns* they list."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Topic",
+            "What to say"
+          ],
+          "rows": [
+            [
+              "Types",
+              "Interfaces vs type aliases; unions and narrowing; generics; strict mode on."
+            ],
+            [
+              "Utility types",
+              "Partial, Pick, Omit, Record; unknown instead of any for untrusted data."
+            ],
+            [
+              "Promises",
+              "async / await; Promise.all for parallel work, allSettled when some may fail."
+            ],
+            [
+              "Event loop",
+              "One thread; awaiting yields so the UI stays responsive."
+            ],
+            [
+              "Race conditions",
+              "A slow old request overwriting a newer one: cancel with AbortController."
+            ],
+            [
+              "Debounce",
+              "Wait until typing stops before searching, so you don't fire a request per key."
+            ],
+            [
+              "UI states",
+              "Every async view has four: loading, error, empty and success."
+            ],
+            [
+              "Optimistic updates",
+              "Show the change at once, roll back if the server rejects it."
+            ]
+          ]
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "content": "type Result<T> =\n  | { ok: true; data: T }\n  | { ok: false; error: string };\n\nlet ctrl: AbortController | null = null;\n\nexport async function search(\n  q: string,\n): Promise<Result<Candidate[]>> {\n  ctrl?.abort();          // cancel the last search\n  ctrl = new AbortController();\n  const url = `/api/candidates?q=${encodeURIComponent(q)}`;\n  try {\n    const res = await fetch(url, { signal: ctrl.signal });\n    if (!res.ok) {\n      return { ok: false, error: `HTTP ${res.status}` };\n    }\n    return { ok: true, data: await res.json() };\n  } catch (e) {\n    if (e instanceof DOMException\n        && e.name === 'AbortError') {\n      return { ok: false, error: 'cancelled' };\n    }\n    throw e;\n  }\n}"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Modern application development",
+          "title": "SPA, PWA, components, MVP and MVVM",
+          "intro": "They want a *desire to stay current*. Be able to define each term and say when you'd use it."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Term",
+            "What it is",
+            "When to use it"
+          ],
+          "rows": [
+            [
+              "SPA",
+              "One page that loads once; JavaScript renders views and fetches data",
+              "App-like dashboards, like a BI or campaign tool"
+            ],
+            [
+              "PWA",
+              "A web app with a manifest and a service worker: installable, works offline, can push notifications",
+              "Users on mobile or patchy connections; no app store needed"
+            ],
+            [
+              "Components",
+              "UI built from small, reusable pieces with props in and events out",
+              "Always; it's how React, Vue and Angular work"
+            ],
+            [
+              "MVP",
+              "Model, View, Presenter: a passive view; the presenter handles logic and updates the view",
+              "Testable UI logic with a thin view"
+            ],
+            [
+              "MVVM",
+              "Model, View, ViewModel: the view binds to the view model's state and updates automatically",
+              "Data-binding frameworks: Vue and Angular are close to MVVM"
+            ]
+          ]
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "SPA trade-offs",
+              "value": "Fast after the first load, but a slower first paint and harder SEO; server rendering (Nuxt, Next) or Inertia helps."
+            },
+            {
+              "label": "Service worker caching",
+              "value": "Cache first for static assets; network first for API data so it's never stale."
+            },
+            {
+              "label": "State",
+              "value": "Keep state local until it's shared; then a store (Pinia, Redux, Zustand). Server data in a query cache (TanStack Query)."
+            },
+            {
+              "label": "Laravel + SPA",
+              "value": "Inertia.js gives a SPA feel with Laravel routing and no separate API."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "content": "// Vue 3: the component is the view model;\n// the template binds to its state.\n<script setup lang=\"ts\">\nimport { ref, computed, onMounted } from 'vue'\n\nconst props = defineProps<{ campaignId: number }>()\nconst stats = ref<Stat[]>([])\nconst loading = ref(true)\nconst ctr = computed(() => {\n  const sum = (k: 'impressions' | 'clicks') =>\n    stats.value.reduce((n, s) => n + s[k], 0)\n  const imps = sum('impressions')\n  const clicks = sum('clicks')\n  return imps ? (clicks / imps) * 100 : 0\n})\n\nonMounted(async () => {\n  stats.value = await api.stats(props.campaignId)\n  loading.value = false\n})\n</script>"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Data",
+          "title": "SQL, NoSQL and caching",
+          "intro": "They list almost every kind of database. Show you know which to choose and why."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Store",
+            "Strength",
+            "Watch out for"
+          ],
+          "rows": [
+            [
+              "MySQL / Postgres",
+              "Relational data, joins, transactions, reporting",
+              "Indexes, slow queries on big tables"
+            ],
+            [
+              "MS SQL",
+              "The same ideas in the Microsoft world; T-SQL",
+              "Syntax differences: TOP, not LIMIT"
+            ],
+            [
+              "MongoDB",
+              "Flexible documents; nested data read together",
+              "No joins by default; design for your queries"
+            ],
+            [
+              "DynamoDB",
+              "Huge scale, single-digit millisecond reads by key",
+              "Design partition keys around access patterns up front"
+            ],
+            [
+              "Firestore",
+              "Real-time sync to web and mobile clients",
+              "Query limits; cost per read"
+            ],
+            [
+              "Redis",
+              "Cache, queues, sessions, counters, rate limits, pub/sub",
+              "It's in memory: set TTLs, plan for eviction"
+            ],
+            [
+              "Memcached",
+              "A simple, fast key-value cache",
+              "No persistence and no data structures"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Caching patterns"
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "Cache-aside",
+              "value": "Read the cache; on a miss, read the database and store the result with a TTL. Laravel's Cache::remember does this."
+            },
+            {
+              "label": "Invalidation",
+              "value": "Delete or update the key when the data changes; use tags or versioned keys for groups."
+            },
+            {
+              "label": "Stampede",
+              "value": "Many requests miss at once and all hit the database; use a lock so only one rebuilds the value."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "sql",
+          "content": "-- Click-through rate by campaign, last 7 days\nSELECT c.name,\n       SUM(s.impressions) AS impressions,\n       SUM(s.clicks)      AS clicks,\n       ROUND(100 * SUM(s.clicks)\n             / NULLIF(SUM(s.impressions), 0), 2) AS ctr\nFROM campaigns c\nJOIN campaign_stats s ON s.campaign_id = c.id\nWHERE s.date >= CURRENT_DATE - INTERVAL 7 DAY\nGROUP BY c.id, c.name\nORDER BY ctr DESC;"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Data streaming",
+          "title": "Message buses and queues",
+          "intro": "SQS, SNS, Pub/Sub, RabbitMQ and Kafka. Know the differences and the rules that apply to all of them."
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "Why it matters",
+          "body": "An automation and analytics platform runs on background work: campaign sends, data imports, report builds. Messaging is how that work is spread out and kept reliable."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Tool",
+            "Model",
+            "Use it for"
+          ],
+          "rows": [
+            [
+              "SQS",
+              "A queue: each message is handled by one consumer",
+              "Background jobs on AWS; Laravel's SQS driver"
+            ],
+            [
+              "SNS",
+              "Publish / subscribe: one message fans out to many subscribers",
+              "SNS → several SQS queues, each doing its own job"
+            ],
+            [
+              "Google Pub/Sub",
+              "Pub/sub with push or pull subscriptions",
+              "The same on Google Cloud"
+            ],
+            [
+              "RabbitMQ",
+              "A broker with exchanges routing to queues",
+              "Flexible routing, priorities, work queues"
+            ],
+            [
+              "Kafka",
+              "A durable, ordered log, split into partitions; consumers replay it",
+              "High-volume event streams and analytics pipelines"
+            ]
+          ]
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "At-least-once",
+              "value": "Most systems may deliver a message twice, so consumers must be **idempotent**: processing twice has the same result as once."
+            },
+            {
+              "label": "Dead-letter queue",
+              "value": "Messages that keep failing go aside for inspection instead of blocking the queue."
+            },
+            {
+              "label": "Ordering",
+              "value": "SQS standard queues don't guarantee order; SQS FIFO and Kafka (within a partition) do."
+            },
+            {
+              "label": "Visibility timeout",
+              "value": "In SQS, a message hides while being processed; if the worker dies, it reappears."
+            },
+            {
+              "label": "Backpressure",
+              "value": "Watch queue depth and message age; scale workers on them."
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Protocol Buffers and MessagePack"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Format",
+            "What it is",
+            "Why use it"
+          ],
+          "rows": [
+            [
+              "JSON",
+              "Text, self-describing",
+              "Readable, universal; but larger and slower to parse"
+            ],
+            [
+              "MessagePack",
+              "Binary JSON: same data model, no schema",
+              "Smaller and faster, drop-in for JSON"
+            ],
+            [
+              "Protocol Buffers",
+              "Binary with a schema in .proto files; code generated per language",
+              "Compact, typed, versioned; used by gRPC"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Protobuf schema evolution",
+          "body": "Never reuse or renumber a field tag; add new fields as optional; mark removed ones `reserved`. That keeps old and new services able to read each other's messages."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "APIs",
+          "title": "REST, GraphQL and API security",
+          "intro": "Designing and building RESTful APIs, loose familiarity with GraphQL, and API security best practice."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "REST principle",
+            "In practice"
+          ],
+          "rows": [
+            [
+              "Resources and verbs",
+              "GET /campaigns, POST /campaigns, PATCH /campaigns/42, DELETE /campaigns/42"
+            ],
+            [
+              "Status codes",
+              "200, 201 Created, 204, 400, 401 vs 403, 404, 409, 422 validation, 429, 500"
+            ],
+            [
+              "Pagination",
+              "Cursor-based for large or changing lists; limit the page size"
+            ],
+            [
+              "Versioning",
+              "/v1/ in the path or a header; never break existing clients"
+            ],
+            [
+              "Idempotency",
+              "PUT and DELETE are idempotent; an Idempotency-Key header makes POST safe to retry"
+            ],
+            [
+              "Consistency",
+              "One error format, one date format (ISO 8601), consistent naming"
+            ]
+          ]
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "GraphQL",
+              "value": "One endpoint; the client asks for exactly the fields it needs. Good for complex front ends; harder to cache. Watch for N+1 queries (use DataLoader) and limit query depth."
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "API security"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Risk",
+            "Defence"
+          ],
+          "rows": [
+            [
+              "Broken object-level authorisation",
+              "The top API risk: check the user may see *this* record, not just that they're logged in. Laravel policies."
+            ],
+            [
+              "Broken authentication",
+              "Short-lived tokens, OAuth 2 for third parties, hashed API keys, HTTPS only."
+            ],
+            [
+              "Mass assignment",
+              "Validate and whitelist fields; $fillable in Laravel."
+            ],
+            [
+              "Injection",
+              "Parameterised queries; validate all input."
+            ],
+            [
+              "Abuse",
+              "Rate limiting per user and per key; size limits on requests."
+            ],
+            [
+              "Data exposure",
+              "Return only the fields needed (API resources); never leak stack traces."
+            ],
+            [
+              "Multi-tenancy",
+              "Every query scoped to the client's account; test that one client can't see another's data."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "DevOps",
+          "title": "CI/CD, infrastructure as code and cloud native",
+          "intro": "*Familiarity* and *understanding* are the words they use: you don't need to be an ops engineer."
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "A good pipeline",
+              "items": [
+                {
+                  "title": "On every push",
+                  "detail": "Install (cached), lint, static analysis (PHPStan, tsc), unit and feature tests."
+                },
+                {
+                  "title": "On merge",
+                  "detail": "Build once: a Docker image or bundle. Deploy it to staging and run smoke tests."
+                },
+                {
+                  "title": "To production",
+                  "detail": "Promote the same artefact; migrations first; health check; easy rollback."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Infrastructure tool",
+            "What it is"
+          ],
+          "rows": [
+            [
+              "Terraform",
+              "Declares infrastructure in code for any cloud; plan, then apply"
+            ],
+            [
+              "CloudFormation / CDK",
+              "AWS's own; CDK lets you write it in TypeScript"
+            ],
+            [
+              "Ansible",
+              "Configures servers by running tasks over SSH"
+            ],
+            [
+              "Docker",
+              "Packages the app and its dependencies so it runs the same everywhere"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Cloud native"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Service",
+            "What it runs",
+            "Good for"
+          ],
+          "rows": [
+            [
+              "AWS Lambda / Cloud Functions",
+              "A function per event; pay per run",
+              "Webhooks, file processing, scheduled jobs, queue consumers"
+            ],
+            [
+              "AWS App Runner / Cloud Run",
+              "A container, scaled automatically, even to zero",
+              "Web apps and APIs without managing servers"
+            ],
+            [
+              "App Engine",
+              "Your code on Google's managed platform",
+              "Simple web apps"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "title": "Serverless trade-offs",
+          "body": "Cold starts, time limits (15 minutes on Lambda), and database connections (use RDS Proxy). For PHP on Lambda, **Bref** is the usual route; Laravel Vapor is built on it."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Version control",
+          "title": "Git in a fast-moving team",
+          "intro": "They ask for *expertise*. Show habits, not just commands."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Practice",
+            "Why"
+          ],
+          "rows": [
+            [
+              "Short-lived branches",
+              "Merge within a day or two; fewer, smaller conflicts."
+            ],
+            [
+              "Trunk-based or GitHub flow",
+              "main is always deployable; feature flags for unfinished work."
+            ],
+            [
+              "Small PRs",
+              "Faster, better reviews; easier to revert."
+            ],
+            [
+              "Good commit messages",
+              "Say *why*; the diff already says what."
+            ],
+            [
+              "Rebase your branch, don't rewrite shared history",
+              "Rebase onto main before merging; never force-push a shared branch."
+            ],
+            [
+              "Revert, don't reset, in production",
+              "git revert makes a new commit that undoes a bad one, safely."
+            ]
+          ]
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "content": "git switch -c fix/ctr-divide-by-zero\ngit fetch origin && git rebase origin/main  # stay current\ngit add -p                    # stage only what belongs\ngit commit -m \"Don't divide by zero with no impressions\"\ngit push --force-with-lease   # safe after a rebase\n\n# Find the commit that broke it\ngit bisect start <bad> <good>\n# Undo a bad commit that's already in main\ngit revert <sha>\n# When did this code change?\ngit log -S \"ctr\" --oneline"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "The product",
+          "title": "AI, automation and analytics",
+          "intro": "Show interest in what they actually build: campaign automation and business intelligence for sales and recruitment."
+        },
+        {
+          "type": "facts",
+          "items": [
+            {
+              "label": "Campaign automation",
+              "value": "Scheduled and triggered sends across channels, at volume: queues, retries, rate limits from providers, and unsubscribes respected."
+            },
+            {
+              "label": "Integrations",
+              "value": "Ad platforms, CRMs, job boards and ATS systems: OAuth, webhooks, API limits, and data that arrives late or twice."
+            },
+            {
+              "label": "Analytics pipeline",
+              "value": "Events collected, cleaned and aggregated into daily tables, so dashboards read summaries, not raw events."
+            },
+            {
+              "label": "Accuracy",
+              "value": "\"Accurate and fast\" is their promise: timezones, duplicates and late data are where numbers go wrong."
+            },
+            {
+              "label": "AI features",
+              "value": "Likely scoring, summarising or generating content: structured output, cost and latency, and checking quality."
+            },
+            {
+              "label": "Data protection",
+              "value": "Candidate and customer data is personal data under UK GDPR: access control, retention and consent."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "A good question to ask yourself before the interview",
+          "body": "Look at their website and pick one feature. How would you build it? What would break at 10× the volume? Being able to say that in the interview shows real interest."
+        },
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "Say this",
+          "body": "*\"What I like about this role is the mix: client-facing tickets where you see the impact straight away, plus the data and automation side, which is where AI is most useful.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Preparation",
+          "title": "Questions they're likely to ask"
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "Technical"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Three tickets arrive at once: an outage for one client, a bug for many, and a change due today. What order, and why?",
+            "What's the difference between an incident and a problem?",
+            "How would you stop a Laravel page making hundreds of database queries?",
+            "Explain how you'd handle a search box that fires a request on every keystroke.",
+            "What's the difference between a SPA and a PWA? Between MVP and MVVM?",
+            "When would you choose DynamoDB or Mongo over MySQL?",
+            "SQS and Kafka: what's the difference, and when would you use each?",
+            "A message might be delivered twice. How do you make that safe?",
+            "How would you secure a REST API used by many client companies?",
+            "Describe a CI/CD pipeline you'd set up for a Laravel and Vue app.",
+            "How do you undo a bad commit that's already in main?"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "About you"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Tell me about a complex problem you solved.",
+            "Explain something technical you worked on as if I weren't a developer.",
+            "Tell me about a technology you had to learn quickly.",
+            "How do you manage competing priorities and deadlines?",
+            "Why Automated Analytics?"
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Preparation",
+          "title": "Questions to ask them",
+          "intro": "Pick three or four that fit the conversation."
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The work"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "What's the split between incidents and changes versus project work, week to week?",
+            "How are priorities and resolution times set, and who decides when they conflict?",
+            "How does working with both Customer Delivery and the Chief of Product work in practice?"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The technology"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "What does the stack look like today: which of the technologies in the advert are in use?",
+            "Where does AI sit in the product, and what's next for it?",
+            "What does the path from commit to production look like? How often do you deploy?",
+            "What's the biggest technical challenge the platform has right now?"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 3,
+          "text": "The team"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "How big is the engineering team, and how do you work together remotely?",
+            "What would success look like in the first three and six months?",
+            "How do you support people learning new technologies?"
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "brand",
+          "title": "Closing line",
+          "body": "*\"I'm a strong PHP and Laravel developer who's comfortable across the stack and picks up new tools quickly. I like owning a ticket from the client's report to the fix in production, and keeping people informed along the way. I think I'd fit well here.\"*"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Before the interview",
+          "title": "Preparation checklist"
+        },
+        {
+          "type": "steps",
+          "groups": [
+            {
+              "title": "The night before",
+              "items": [
+                {
+                  "title": "Look them up",
+                  "detail": "Automated Analytics' product, clients and recent news; who's interviewing you."
+                },
+                {
+                  "title": "Rehearse five stories out loud",
+                  "detail": "One for each skill they list: problem-solving, communication, collaboration, adaptability, time management."
+                },
+                {
+                  "title": "Know your gaps",
+                  "detail": "Which listed technologies you've used, and which you've only read about. Say so honestly, then say how you'd learn."
+                },
+                {
+                  "title": "Practise the definitions",
+                  "detail": "Incident vs problem, SPA vs PWA, MVP vs MVVM, SQS vs Kafka, out loud."
+                }
+              ]
+            },
+            {
+              "title": "On the day",
+              "items": [
+                {
+                  "title": "Re-read the advert",
+                  "detail": "Its words are your vocabulary: *priority, resolution time, incidents, problems, changes*."
+                },
+                {
+                  "title": "Check your setup",
+                  "detail": "Camera, sound, a working editor and terminal in case of a live exercise."
+                },
+                {
+                  "title": "Have this guide open",
+                  "detail": "Plus your questions for them, and a glass of water."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

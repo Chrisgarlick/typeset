@@ -13,7 +13,7 @@ services:
     image: ghcr.io/chrisgarlick/typeset/api:latest
     restart: unless-stopped
     ports:
-      - "3200:3200"
+      - "127.0.0.1:3200:3200"
     environment:
       PORT: 3200
       HOST: 0.0.0.0
@@ -30,10 +30,10 @@ services:
     image: ghcr.io/chrisgarlick/typeset/frontend:latest
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://typeset:3200
-      NEXT_PUBLIC_API_TOKEN: ${TYPESET_TOKEN}
+      TYPESET_API_URL: http://typeset:3200
+      TYPESET_TOKEN: ${TYPESET_TOKEN}
     depends_on:
       - typeset
 
