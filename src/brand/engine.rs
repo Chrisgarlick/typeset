@@ -12,6 +12,10 @@ pub struct BrandedDocument {
     pub images: std::collections::HashMap<String, super::assets::Asset>,
     /// Print output: CMYK colours and a bleed round every page.
     pub print: bool,
+    /// Library fonts from Clients (`fonts/<name>.ttf` in the compile root),
+    /// and the family names they provide, which pass through as written.
+    pub fonts: Vec<super::assets::Asset>,
+    pub font_families: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +55,8 @@ impl BrandedDocument {
             logos: Default::default(),
             images: Default::default(),
             print: false,
+            fonts: vec![],
+            font_families: vec![],
         })
     }
 }

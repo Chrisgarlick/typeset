@@ -2,33 +2,49 @@ use axum::{
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
 };
 
+use crate::error::AppError;
 use crate::state::AppState;
 
-/// Authentication middleware — compares the Bearer token to the configured
-/// shared secret. Single-tenant model: any caller with the secret has full
-/// access; no users, no per-key scoping.
-pub async fn auth_middleware(
-    State(state): State<AppState>,
-    request: Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    let presented = request
-        .headers()
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "));
+/// Who is calling, put in the request's extensions by `auth_middleware`.
+#[derive(Clone, Debug)]
+pub enum Caller {
+    /// The old shared secret (`TYPESET_TOKEN`): every client.
+    Legacy,
+    /// A `ck_` caller key from Clients, possibly limited to some clients.
+    Key(crate::clients::Caller),
+}
 
-    let expected = state.config.api_token.as_str();
-
-    match presented {
-        Some(token) if constant_time_eq(token.as_bytes(), expected.as_bytes()) => {
-            Ok(next.run(request).await)
+impl Caller {
+    /// Whether this caller may use a client's brand.
+    pub fn may(&self, slug: &str) -> bool {
+        match self {
+            Caller::Legacy => true,
+            Caller::Key(c) => c.may(slug),
         }
-        _ => Err(StatusCode::UNAUTHORIZED),
     }
+}
+
+/// Authentication: `Authorization: Bearer ck_…`, a caller key checked with
+/// Clients (cached 60s, so a revoked key stops working within a minute), or,
+/// while it's still set, the old shared `TYPESET_TOKEN`.
+pub async fn auth_middleware(State(state): State<AppState>, mut request: Request, next: Next) -> Response {
+    let header = request.headers().get("authorization").and_then(|v| v.to_str().ok()).map(str::to_string);
+    let presented = header.as_deref().and_then(|s| s.strip_prefix("Bearer ")).map(str::trim);
+
+    let caller = match (presented, &state.config.api_token, &state.brands) {
+        (Some(token), Some(expected), _) if constant_time_eq(token.as_bytes(), expected.as_bytes()) => Caller::Legacy,
+        (Some(token), _, Some(brands)) if token.starts_with("ck_") => match brands.authenticate(header.as_deref()).await {
+            Ok(c) => Caller::Key(c),
+            Err(crate::clients::Error::Unauthorized) => return StatusCode::UNAUTHORIZED.into_response(),
+            Err(e) => return AppError::from(e).into_response(),
+        },
+        _ => return StatusCode::UNAUTHORIZED.into_response(),
+    };
+    request.extensions_mut().insert(caller);
+    next.run(request).await
 }
 
 /// Constant-time byte comparison to avoid timing leaks on the secret.

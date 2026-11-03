@@ -15,12 +15,12 @@ export default function Home() {
           >
             New Document
           </Link>
-          <Link
-            href="/profiles"
+          <a
+            href="https://clients.kritano.com"
             className="text-sm text-muted hover:text-foreground transition-colors"
           >
-            Brand Profiles
-          </Link>
+            Brands ↗
+          </a>
           <Link
             href="/history"
             className="text-sm text-muted hover:text-foreground transition-colors"
@@ -46,12 +46,12 @@ export default function Home() {
             >
               Open Editor
             </Link>
-            <Link
-              href="/profiles"
+            <a
+              href="https://clients.kritano.com"
               className="rounded-md border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-surface transition-colors"
             >
-              Manage Brands
-            </Link>
+              Manage brands in Clients
+            </a>
           </div>
         </div>
       </main>

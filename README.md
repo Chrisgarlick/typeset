@@ -158,7 +158,8 @@ client: acme
 | `author` | string | "BY" |
 | `date` | string | "DATE" (free-form) |
 | `document_type` | string | Categorisation only (used for logging) |
-| `client` | string | Client profile slug for branding |
+| `client` | string | The client's slug in Clients: its brand styles the document |
+| `mode` | string | A palette from the brand's `modes`, e.g. `dark` |
 | `eyebrow` | string | A short label above the cover title |
 | `reference` | string | A document reference on the cover |
 | `cover` | string | Cover style: `editorial`, `band` or `dark` |
@@ -222,7 +223,7 @@ date: <YYYY-MM-DD or free-form>
 
 # API in one paragraph
 
-`POST /api/render` with `Authorization: Bearer $TYPESET_TOKEN` (single shared secret, set via env var on the server) and a JSON body of `{ "content": "<markdown>", "document_type": "proposal|report|brief|sop|invoice|general", "format": "pdf|docx", "client": "<optional-slug>" }`. Response is the raw PDF or DOCX bytes. Render endpoints are rate-limited to **10 req/min per IP** (configurable via `TYPESET_RATE_LIMIT_PER_MIN`). See [`API.md`](./API.md) for the full surface.
+`POST /api/render` with `Authorization: Bearer ck_…` (a caller key from Clients; the old shared `TYPESET_TOKEN` still works while it's set on the server) and a JSON body of `{ "content": "<markdown>", "document_type": "proposal|report|brief|sop|invoice|general", "format": "pdf|docx", "client": "<optional-slug>", "brand_version": <optional> }`. Brands, fonts and logos come from the client's published brand in Clients (https://clients.kritano.com); Typeset no longer stores them. Response is the raw PDF or DOCX bytes. Render endpoints are rate-limited to **10 req/min per IP** (configurable via `TYPESET_RATE_LIMIT_PER_MIN`). See [`API.md`](./API.md) for the full surface.
 
 ---
 

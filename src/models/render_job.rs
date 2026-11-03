@@ -2,8 +2,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct RenderRequest {
-    /// Client profile slug — uses default profile if None
+    /// The client's slug in Clients: its published brand styles the document.
+    /// Without one, Typeset's default look (or the frontmatter's `client`).
     pub client: Option<String>,
+    /// A published brand version to pin to; the latest when omitted.
+    #[serde(default)]
+    pub brand_version: Option<i64>,
     pub document_type: DocumentType,
     pub format: RenderFormat,
     /// Source content — interpreted according to `input_format` (default markdown).
@@ -103,4 +107,9 @@ pub struct RenderHistoryRow {
     pub render_ms: Option<i32>,
     pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    /// The Clients id and published brand version (renders since Phase 4).
+    #[sqlx(default)]
+    pub client_id: Option<String>,
+    #[sqlx(default)]
+    pub brand_version: Option<i32>,
 }

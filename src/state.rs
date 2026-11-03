@@ -8,6 +8,8 @@ use crate::rate_limit::RateLimiter;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
+    /// Brands and keys from Clients; `None` when `CLIENTS_URL` isn't set.
+    pub brands: Option<Arc<crate::clients::BrandClient>>,
     pub config: Arc<Config>,
     pub render_semaphore: Arc<Semaphore>,
     pub rate_limiter: RateLimiter,

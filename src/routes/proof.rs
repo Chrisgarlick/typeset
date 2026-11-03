@@ -1,7 +1,7 @@
-use axum::{extract::State, Json};
+use axum::{extract::State, Extension, Json};
 
 use crate::error::AppError;
-use crate::models::client_profile::ClientProfile;
+use crate::routes::auth::Caller;
 use crate::models::render_job::RenderRequest;
 use crate::state::AppState;
 
@@ -10,6 +10,7 @@ use crate::state::AppState;
 /// `{ "pages": n, "ppi": 40, "images": ["<base64 PNG>", ...] }`.
 pub async fn handle_proof(
     State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
     Json(req): Json<RenderRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let _permit = state
@@ -18,21 +19,7 @@ pub async fn handle_proof(
         .await
         .map_err(|_| AppError::RenderError("Render capacity exceeded".to_string()))?;
 
-    let profile = match &req.client {
-        Some(slug) => state
-            .db
-            .get_client_profile(slug)
-            .await
-            .map_err(|_| AppError::NotFound(format!("Client profile '{slug}' not found")))?,
-        None => ClientProfile::default_profile(),
-    };
-    let doc = crate::parser::parse(&req.input_format, &req.content)
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
-    let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
-        .map_err(|e| AppError::RenderError(e.to_string()))?;
-    branded.logos = crate::brand::assets::fetch_logos(&branded.profile).await;
-    branded.images = crate::brand::assets::fetch_images(&branded.doc.nodes).await;
-    branded.print = req.print;
+    let (branded, _) = crate::brand::source::branded(&state, &caller, &req).await?;
 
     const PPI: u32 = 40;
     let pages = crate::renderers::typst::render_proof(&branded, PPI)

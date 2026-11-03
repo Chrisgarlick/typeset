@@ -1,8 +1,10 @@
 mod brand;
+mod clients;
 mod config;
 mod encoding;
 mod db;
 mod error;
+mod events;
 mod models;
 mod parser;
 mod rate_limit;
@@ -40,7 +42,10 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = Config::from_env()?;
-    tracing::info!("Starting Typeset on {}:{}", config.host, config.port);
+    let export = std::env::args().nth(1).filter(|a| a == "export-brands").map(|_| std::env::args().nth(2).unwrap_or_else(|| "brands".into()));
+    if export.is_none() {
+        tracing::info!("Starting Typeset on {}:{}", config.host, config.port);
+    }
 
     let pool = PgPoolOptions::new()
         .max_connections(10)
@@ -52,12 +57,35 @@ async fn main() -> anyhow::Result<()> {
     sqlx::migrate!("./migrations").run(&pool).await?;
     tracing::info!("Migrations complete");
 
+    if let Some(dir) = export {
+        return export_brands(&Database::new(pool), &dir).await;
+    }
+
+    let brands = config.clients_url.as_ref().map(|url| {
+        Arc::new(clients::BrandClient::new(clients::Config {
+            base: url.clone(),
+            service_key: config.clients_key.clone(),
+            cache_dir: config.clients_cache.clone().into(),
+            asset_cache_bytes: 256 * 1024 * 1024,
+        }))
+    });
+    match &brands {
+        Some(_) => tracing::info!("Brands and keys from Clients at {}", config.clients_url.as_deref().unwrap_or("")),
+        None => tracing::warn!("CLIENTS_URL isn't set: only the default look, and only TYPESET_TOKEN"),
+    }
+    if config.api_token.is_some() {
+        tracing::warn!("TYPESET_TOKEN is still accepted; unset it once every caller uses a Clients key");
+    }
+
     let state = AppState {
         db: Database::new(pool),
+        brands,
         render_semaphore: Arc::new(Semaphore::new(config.max_render_concurrency)),
         rate_limiter: rate_limit::RateLimiter::new(config.rate_limit_per_min),
         config: Arc::new(config.clone()),
     };
+
+    tokio::spawn(events::run(state.clone()));
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -111,6 +139,24 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 
+    Ok(())
+}
+
+/// `typeset export-brands [dir]`: each old client profile as brand YAML for
+/// Clients, with its logos downloaded beside it (plan P4.1).
+async fn export_brands(db: &Database, dir: &str) -> anyhow::Result<()> {
+    std::fs::create_dir_all(dir)?;
+    let profiles = db.list_client_profiles().await?;
+    for p in &profiles {
+        let base = std::path::Path::new(dir).join(&p.slug);
+        std::fs::write(base.with_extension("yaml"), brand::source::brand_yaml(p))?;
+        let logos = brand::assets::fetch_logos(p).await;
+        for logo in [logos.light, logos.dark].into_iter().flatten() {
+            std::fs::write(std::path::Path::new(dir).join(format!("{}-{}", p.slug, logo.name)), &logo.bytes)?;
+        }
+        println!("{}: {}.yaml", p.name, base.display());
+    }
+    println!("{} profile(s) exported to {dir}", profiles.len());
     Ok(())
 }
 

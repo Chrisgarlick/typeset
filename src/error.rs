@@ -13,11 +13,17 @@ pub enum AppError {
     #[error("Unauthorized")]
     Unauthorized,
 
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
+    #[error("Gone: {0}")]
+    Gone(String),
+
+    #[error("Unavailable: {0}")]
+    Unavailable(String),
+
     #[error("Render error: {0}")]
     RenderError(String),
-
-    #[error("Storage error: {0}")]
-    StorageError(String),
 
     #[error("Database error: {0}")]
     DatabaseError(#[from] sqlx::Error),
@@ -32,8 +38,10 @@ impl IntoResponse for AppError {
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
+            AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg.clone()),
+            AppError::Gone(msg) => (StatusCode::GONE, msg.clone()),
+            AppError::Unavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg.clone()),
             AppError::RenderError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
-            AppError::StorageError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
             AppError::DatabaseError(e) => {
                 tracing::error!("Database error: {e}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string())
@@ -50,5 +58,18 @@ impl IntoResponse for AppError {
         }));
 
         (status, body).into_response()
+    }
+}
+
+impl From<crate::clients::Error> for AppError {
+    fn from(e: crate::clients::Error) -> Self {
+        use crate::clients::Error as E;
+        match e {
+            E::Unauthorized => AppError::Unauthorized,
+            E::Forbidden(m) => AppError::Forbidden(m),
+            E::NotFound(m) => AppError::NotFound(m),
+            E::Unavailable(m) => AppError::Unavailable(m),
+            E::Other(m) => AppError::Internal(anyhow::anyhow!("Clients: {m}")),
+        }
     }
 }

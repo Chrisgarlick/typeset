@@ -26,7 +26,9 @@ export function Nav() {
       </Link>
       <div className="flex items-center gap-5">
         {link("/editor", "Editor")}
-        {link("/profiles", "Brands")}
+        <a href="https://clients.kritano.com" className="text-sm text-muted hover:text-foreground transition-colors">
+          Brands ↗
+        </a>
         {link("/history", "History")}
       </div>
     </nav>

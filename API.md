@@ -10,18 +10,17 @@ Typeset turns markdown (with optional YAML frontmatter) into branded PDF or DOCX
 
 ## Authentication
 
-Single shared secret. Send it on every authenticated request:
+Every authenticated request sends a **caller key from Clients** (https://clients.kritano.com):
 
 ```
-Authorization: Bearer <TYPESET_TOKEN>
+Authorization: Bearer ck_…
 ```
 
-`<TYPESET_TOKEN>` is whatever string was set as the `TYPESET_TOKEN` environment variable on the server. Any caller with the token has full read/write access — there is no per-user account model.
+Keys are created and revoked in Clients (`clients-admin keys create <name> --kind caller [--clients a,b]`). A key limited to some clients can only render with those clients' brands (`403` otherwise). Typeset checks a key with Clients and remembers the answer for 60 seconds, so a revoked key stops working within a minute.
 
-Treat the token like a password:
-- Never commit it to git
-- Don't expose it in client-side JavaScript that ships to untrusted browsers (the frontend bundle that ships to *your* browser is fine, since you trust it)
-- Rotate by changing `TYPESET_TOKEN` on the server and updating any callers
+**Transition:** while `TYPESET_TOKEN` is set on the server, the old shared secret is still accepted (with access to every client). Unset it once every caller has a Clients key.
+
+Treat keys like passwords: never commit them, never ship them to browsers you don't trust, and revoke and replace one in Clients if it leaks.
 
 ---
 
@@ -69,7 +68,8 @@ The main endpoint. Returns the rendered file as a download (`Content-Disposition
   "content": "string — full markdown, with YAML frontmatter at the top",
   "document_type": "proposal | report | brief | sop | invoice | general",
   "format": "pdf | docx | both",
-  "client": "optional client profile slug",
+  "client": "optional: the client's slug in Clients",
+  "brand_version": "optional: a published brand version (default: the latest)",
   "input_format": "markdown | json (default markdown)",
   "print": "optional boolean (default false)",
   "overrides": {
@@ -86,7 +86,8 @@ Field notes:
 - `content` — the entire markdown document as one string. YAML frontmatter goes **inside** this string, between `---` fences at the top (see example below).
 - `document_type` — currently used for logging/categorisation. Must be one of the values listed.
 - `format` — `"pdf"`, `"docx"`, or `"both"`. (`"both"` currently returns the PDF only.)
-- `client` — optional. If omitted, the built-in default profile is used. If supplied, the slug must exist under your API key's user ID.
+- `client` — optional. The client's slug in Clients; its published brand (palette, fonts, logos, print settings) styles the document. If omitted, the frontmatter's `client`, else Typeset's default look. An unknown client is `404`; a client the key may not use is `403`.
+- `brand_version` — optional. Pin to a published brand version (for re-rendering an old document exactly); the latest when omitted.
 - `input_format` — `"markdown"` (the default) or `"json"`, a structured document; see [JSON documents](#json-documents).
 - `print` — `true` for professional printing: every colour in CMYK and a 3mm bleed on each edge of every page (an A4 document comes out 216 × 303mm, to be trimmed to A4). Full-page fills, such as the cover, run into the bleed. Leave it off for screen and office printing.
 
@@ -211,10 +212,11 @@ client: acme
 | `date` | string | Free-form date string |
 | `author` | string | Author name |
 | `document_type` | string | Same enum as the API field |
-| `client` | string | Client profile slug |
+| `client` | string | The client's slug in Clients (the request's `client` wins) |
+| `mode` | string | A palette from the brand's `modes`, e.g. `dark` (`light` is the base palette) |
 | `eyebrow` | string | A short label above the cover title, e.g. "Website review" |
 | `reference` | string | A document reference, shown on the cover |
-| `cover` | string | Cover style: `editorial`, `band` or `dark`. Defaults to the profile's `cover_template` |
+| `cover` | string | Cover style: `editorial`, `band` or `dark`. Defaults to the brand's `print.cover` |
 
 Any other YAML keys are silently ignored. The parser is intentionally simple — single-line `key: value` pairs only. **No nested structures, no arrays, no multi-line strings.** Strip outer quotes (`"` or `'`) are tolerated.
 
@@ -296,102 +298,30 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 
 ---
 
-## Client profiles
+## Clients and brands
 
-A client profile is a saved bundle of branding (colours, fonts, margins, logo, header/footer, cover, watermark). Reference one in a render request via the `client` field.
+Brands are managed in **Clients** (https://clients.kritano.com), not in Typeset. Typeset reads a client's published brand when it renders and maps it onto its themes:
+
+| Brand | Typeset |
+|-------|---------|
+| `palette` (`paper`, `ink`, `ink-muted`, `heading`, `accent`, `surface`, `rule`, `accent-soft`, `inverse`, `on-inverse`) | The theme's colours (cover from `inverse`/`on-inverse`); a frontmatter `mode` picks one of `modes` |
+| `type.heading` / `body` / `mono` | Heading, body and code fonts. Library fonts (`lib:…`) are used as uploaded; bundled names (Inter, Inter Tight, JetBrains Mono) as before |
+| `type.body.leading` | Line height |
+| `logos.primary` / `on-dark` | The logo on light pages / dark covers |
+| `wordmark` | The running head when there's no logo |
+| `print` (`page`, `margins`, `cover`, `header`, `footer`, `watermark`, `size`) | Page, margins, cover style, header/footer, sizes |
 
 ### GET /api/clients
 
-Returns an array of your profiles.
-
-```bash
-curl -H "Authorization: Bearer $TYPESET_TOKEN" \
-  https://typeset.chrisgarlick.com/api/clients
-```
-
-### POST /api/clients
-
-Profiles are checked before saving, and a `400` lists every problem: colours must be `#RRGGBB`; text, headings and muted text need 4.5:1 contrast with the background (accent 3:1, cover text 4.5:1 with the cover); fonts must be Inter, Inter Tight, JetBrains Mono or a known alias (Helvetica, Arial, Courier and similar); logos must be HTTPS; `cover_template` must be a known style.
-
-Create or upsert a profile. The only required fields are `slug` and `name` — every other field has a sensible default.
-
-```bash
-curl -X POST https://typeset.chrisgarlick.com/api/clients \
-  -H "Authorization: Bearer $TYPESET_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "slug": "acme",
-    "name": "Acme Corp",
-    "colour_primary": "#FF6600",
-    "colour_accent": "#003366",
-    "font_heading": "Helvetica",
-    "font_body": "Helvetica",
-    "page_size": "A4",
-    "cover_enabled": true,
-    "cover_template": "minimal",
-    "logo_light_url": "https://example.com/acme-logo.png",
-    "watermark_text": "CONFIDENTIAL"
-  }'
-```
-
-Optional fields (defaults shown):
-
-| Field | Default |
-|-------|---------|
-| `colour_primary` | `#000000` |
-| `colour_secondary` | `#333333` |
-| `colour_accent` | `#0066CC` |
-| `colour_text` | `#1A1A1A` |
-| `colour_background` | `#FFFFFF` |
-| `colour_table_header` | `#F5F5F5` |
-| `colour_table_border` | `#E0E0E0` |
-| `colour_callout_bg` | `#F8F9FA` |
-| `font_heading` | `Inter Tight` |
-| `font_body` | `Inter` |
-| `font_mono` | `JetBrains Mono` |
-| `font_size_base` | `10.5` |
-| `font_size_h1` | `30.0` |
-| `font_size_h2` | `20.0` |
-| `font_size_h3` | `14.0` |
-| `line_height` | `1.55` (baseline to baseline, as in CSS) |
-| `page_size` | `A4` |
-| `margin_top` / `bottom` / `left` / `right` | `22.0` (mm). The left margin also holds a margin column a quarter of the text width wide, for section numbers; tables and column layouts extend across it. |
-| `paragraph_spacing` | `8.0` |
-| `section_spacing` | `16.0` |
-| `logo_light_url` / `logo_dark_url` | `null` |
-| `logo_width` | `40.0` |
-| `logo_position` | `left` |
-| `cover_enabled` | `false` |
-| `cover_template` | `minimal` |
-| `cover_bg_colour` | `#000000` |
-| `cover_text_colour` | `#FFFFFF` |
-| `header_enabled` | `true` |
-| `header_template` | `logo-left` |
-| `header_border` | `true` |
-| `footer_enabled` | `true` |
-| `footer_template` | `page-numbers` |
-| `footer_border` | `true` |
-| `watermark_text` | `null` |
-| `watermark_opacity` | `0.08` |
-| `wordmark` | `null`. A brand name set in the heading font, used on covers and in the running head when there's no logo image |
-
-Logos: `logo_light_url` is the logo for light backgrounds (pages, the editorial and band covers' paper areas); `logo_dark_url` for dark ones (the dark cover, the band). They're fetched at render over HTTPS (PNG, JPEG, WebP or SVG, up to 2 MB, cached for an hour). If a logo can't be fetched, the document renders with the wordmark instead.
-
-`cover_template`: `editorial` (paper, brand mark, strong type), `band` (an accent band across the top) or `dark` (a dark full page). Older values (`minimal`, `bold`, `plain`) give the dark cover.
+The clients this key may use: `[{ "slug": "kritano", "name": "Kritano", "brand_version": 2 }]`.
 
 ### GET /api/clients/:slug
 
-Returns one profile. `404` if not found for this user.
+One client's brand as Typeset will use it (`?mode=dark` for a mode): colours, fonts, which logos it has, and the brand version.
 
-### DELETE /api/clients/:slug
+### POST /api/clients, DELETE /api/clients/:slug
 
-```bash
-curl -X DELETE \
-  -H "Authorization: Bearer $TYPESET_TOKEN" \
-  https://typeset.chrisgarlick.com/api/clients/acme
-```
-
-Returns `{ "deleted": true }`.
+`410 Gone`: edit brands in Clients.
 
 ---
 
@@ -417,22 +347,18 @@ curl -H "Authorization: Bearer $TYPESET_TOKEN" \
 
 ## Complete end-to-end example
 
-### 1. Get the shared token
+### 1. Get a caller key
 
-The server admin sets `TYPESET_TOKEN` in the production env. Use the same value as `Authorization: Bearer <token>` on every request. Export it locally so the examples below work:
-
-```bash
-export TYPESET_TOKEN="<your-shared-secret>"
-```
-
-### 2. (Optional) Create a client profile
+Create one in Clients (on the Kritano droplet) and export it locally so the examples below work:
 
 ```bash
-curl -X POST https://typeset.chrisgarlick.com/api/clients \
-  -H "Authorization: Bearer $TYPESET_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"slug":"acme","name":"Acme Corp","colour_primary":"#FF6600"}'
+clients-admin keys create my-app --kind caller --clients acme   # prints ck_…
+export TYPESET_TOKEN="ck_…"
 ```
+
+### 2. Make sure the client has a published brand
+
+In https://clients.kritano.com: create the client (`acme`), upload its fonts and logos, paste the brand, Validate, Publish.
 
 ### 3. Build the markdown + YAML
 
@@ -504,7 +430,10 @@ All errors return JSON:
 |--------|---------|
 | `400` | Bad request — malformed JSON or invalid enum value |
 | `401` | Missing or malformed `Authorization` header |
-| `404` | Client profile slug not found for this user |
+| `403` | The key can't use this client (limited to others in Clients) |
+| `404` | No such client in Clients, or no such brand version |
+| `410` | `POST`/`DELETE /api/clients`: brands are edited in Clients now |
+| `503` | Clients can't be reached and the brand isn't cached, or Typeset isn't connected to Clients |
 | `500` | Render error, DB error, or capacity exceeded |
 
 ---

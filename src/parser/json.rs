@@ -190,6 +190,8 @@ struct JsonFrontmatter {
     reference: Option<String>,
     #[serde(default)]
     cover: Option<String>,
+    #[serde(default)]
+    mode: Option<String>,
 }
 
 impl From<JsonFrontmatter> for Frontmatter {
@@ -205,6 +207,7 @@ impl From<JsonFrontmatter> for Frontmatter {
             eyebrow: f.eyebrow,
             reference: f.reference,
             cover: f.cover,
+            mode: f.mode,
         }
     }
 }

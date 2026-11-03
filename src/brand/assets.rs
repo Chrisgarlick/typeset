@@ -159,7 +159,7 @@ async fn fetch(url: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
 
 /// The file extension Typst needs, from the content type or, failing that,
 /// the file's first bytes.
-fn image_extension(content_type: &str, bytes: &[u8]) -> Option<&'static str> {
+pub(crate) fn image_extension(content_type: &str, bytes: &[u8]) -> Option<&'static str> {
     let by_type = match content_type.split(';').next().unwrap_or("").trim() {
         "image/svg+xml" => Some("svg"),
         "image/png" => Some("png"),

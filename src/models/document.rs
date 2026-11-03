@@ -105,4 +105,6 @@ pub struct Frontmatter {
     pub reference: Option<String>,
     /// Cover style: `editorial`, `band` or `dark`. Defaults to the profile's.
     pub cover: Option<String>,
+    /// A palette from the brand's `modes` in Clients, e.g. `dark`.
+    pub mode: Option<String>,
 }

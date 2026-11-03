@@ -2,17 +2,18 @@ use axum::{
     extract::State,
     http::{header, StatusCode},
     response::IntoResponse,
-    Json,
+    Extension, Json,
 };
 
 use crate::error::AppError;
-use crate::models::client_profile::ClientProfile;
+use crate::routes::auth::Caller;
 use crate::models::render_job::RenderRequest;
 use crate::state::AppState;
 
 /// Preview endpoint — renders and returns bytes inline (browser-displayable).
 pub async fn handle_preview(
     State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
     Json(req): Json<RenderRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let _permit = state
@@ -21,42 +22,7 @@ pub async fn handle_preview(
         .await
         .map_err(|_| AppError::RenderError("Render capacity exceeded".to_string()))?;
 
-    let profile = match &req.client {
-        Some(slug) => state
-            .db
-            .get_client_profile(slug)
-            .await
-            .map_err(|_| AppError::NotFound(format!("Client profile '{slug}' not found")))?,
-        None => ClientProfile::default_profile(),
-    };
-
-    let mut doc = crate::parser::parse(&req.input_format, &req.content)
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
-
-    if let Some(overrides) = &req.overrides {
-        let fm = doc.frontmatter.get_or_insert_with(Default::default);
-        if let Some(t) = &overrides.title {
-            fm.title = Some(t.clone());
-        }
-        if let Some(s) = &overrides.subtitle {
-            fm.subtitle = Some(s.clone());
-        }
-        if let Some(r) = &overrides.recipient {
-            fm.recipient = Some(r.clone());
-        }
-        if let Some(d) = &overrides.date {
-            fm.date = Some(d.clone());
-        }
-        if let Some(a) = &overrides.author {
-            fm.author = Some(a.clone());
-        }
-    }
-
-    let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
-        .map_err(|e| AppError::RenderError(e.to_string()))?;
-    branded.logos = crate::brand::assets::fetch_logos(&branded.profile).await;
-    branded.images = crate::brand::assets::fetch_images(&branded.doc.nodes).await;
-    branded.print = req.print;
+    let (branded, _) = crate::brand::source::branded(&state, &caller, &req).await?;
 
     let (bytes, content_type, filename) = match req.format {
         crate::models::render_job::RenderFormat::Pdf

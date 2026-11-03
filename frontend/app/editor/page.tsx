@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Nav } from "@/components/nav";
-import { previewDocument, getClients, type ClientProfile } from "@/lib/api";
+import { previewDocument, getClients, type Client } from "@/lib/api";
 
 const DEFAULT_MD = `---
 title: Project Proposal
@@ -33,7 +33,7 @@ Write your document here using **Markdown**. The brand profile you select will b
 
 export default function EditorPage() {
   const [markdown, setMarkdown] = useState(DEFAULT_MD);
-  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [docType, setDocType] = useState("general");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

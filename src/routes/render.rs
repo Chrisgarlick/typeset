@@ -2,18 +2,19 @@ use axum::{
     extract::State,
     http::{header, StatusCode},
     response::IntoResponse,
-    Json,
+    Extension, Json,
 };
 use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
-use crate::models::client_profile::ClientProfile;
+use crate::routes::auth::Caller;
 use crate::models::render_job::{RenderFormat, RenderRequest};
 use crate::state::AppState;
 
 /// Render endpoint — renders and returns the file as a download.
 pub async fn handle_render(
     State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
     Json(req): Json<RenderRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let _permit = state
@@ -24,32 +25,8 @@ pub async fn handle_render(
 
     let start = std::time::Instant::now();
 
-    let profile = match &req.client {
-        Some(slug) => state
-            .db
-            .get_client_profile(slug)
-            .await
-            .map_err(|_| AppError::NotFound(format!("Client profile '{slug}' not found")))?,
-        None => ClientProfile::default_profile(),
-    };
-
-    let mut doc = crate::parser::parse(&req.input_format, &req.content)
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
-
-    if let Some(overrides) = &req.overrides {
-        let fm = doc.frontmatter.get_or_insert_with(Default::default);
-        if let Some(t) = &overrides.title { fm.title = Some(t.clone()); }
-        if let Some(s) = &overrides.subtitle { fm.subtitle = Some(s.clone()); }
-        if let Some(r) = &overrides.recipient { fm.recipient = Some(r.clone()); }
-        if let Some(d) = &overrides.date { fm.date = Some(d.clone()); }
-        if let Some(a) = &overrides.author { fm.author = Some(a.clone()); }
-    }
-
-    let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile)
-        .map_err(|e| AppError::RenderError(e.to_string()))?;
-    branded.logos = crate::brand::assets::fetch_logos(&branded.profile).await;
-    branded.images = crate::brand::assets::fetch_images(&branded.doc.nodes).await;
-    branded.print = req.print;
+    let (branded, source) = crate::brand::source::branded(&state, &caller, &req).await?;
+    let client_slug = branded.profile.slug.clone();
 
     let (bytes, content_type, ext) = match req.format {
         RenderFormat::Pdf | RenderFormat::Both => {
@@ -82,10 +59,11 @@ pub async fn handle_render(
     if let Err(e) = state
         .db
         .log_render(
-            &render_id, req.client.as_deref(),
+            &render_id, source.as_ref().map(|_| client_slug.as_str()),
             &req.document_type.to_string(), format_str,
             Some(&content_hash), None, None, None, None,
             Some(bytes.len() as i32), render_ms as i32, None,
+            source.as_ref().map(|(id, v)| (id.as_str(), *v)),
         )
         .await
     {

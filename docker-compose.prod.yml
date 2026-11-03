@@ -27,6 +27,9 @@ services:
       TYPESET_RATE_LIMIT_PER_MIN: ${TYPESET_RATE_LIMIT_PER_MIN:-10}
       MAX_RENDER_CONCURRENCY: 4
       RENDER_TIMEOUT_SECS: 30
+      # Brands and caller keys come from Clients (see README); empty = off.
+      CLIENTS_URL: ${CLIENTS_URL:-}
+      CLIENTS_SERVICE_KEY: ${CLIENTS_SERVICE_KEY:-}
     depends_on:
       - db
 

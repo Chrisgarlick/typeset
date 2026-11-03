@@ -59,6 +59,7 @@ fn parse_frontmatter_yaml(yaml: &str) -> Frontmatter {
             "author" => fm.author = Some(val),
             "document_type" => fm.document_type = Some(val),
             "client" => fm.client = Some(val),
+            "mode" => fm.mode = Some(val),
             _ => {}
         }
     }

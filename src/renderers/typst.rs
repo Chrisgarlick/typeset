@@ -41,6 +41,7 @@ pub fn render(branded: &BrandedDocument) -> anyhow::Result<Vec<u8>> {
         .into_iter()
         .flatten()
         .chain(branded.images.values())
+        .chain(branded.fonts.iter())
         .collect();
     compile(&source, &assets)
 }
@@ -291,9 +292,9 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         accent_soft = hex_or_default(&p.colour_callout_bg, "#F8F9FA"),
         cover_bg = hex_or_default(&p.cover_bg_colour, "#000000"),
         cover_text = hex_or_default(&p.cover_text_colour, "#FFFFFF"),
-        font_body = font_family(&p.font_body, FontRole::Body),
-        font_heading = font_family(&p.font_heading, FontRole::Heading),
-        font_mono = font_family(&p.font_mono, FontRole::Mono),
+        font_body = family(b, &p.font_body, FontRole::Body),
+        font_heading = family(b, &p.font_heading, FontRole::Heading),
+        font_mono = family(b, &p.font_mono, FontRole::Mono),
         display = (p.font_size_h1 * 1.45).round(),
         h1 = p.font_size_h1,
         h2 = p.font_size_h2,
@@ -1100,19 +1101,6 @@ pub const BUNDLED_FONTS: [&str; 3] = ["Inter", "Inter Tight", "JetBrains Mono"];
 const MONO_ALIASES: [&str; 8] =
     ["courier", "courier new", "monospace", "dejavu sans mono", "menlo", "consolas", "dm mono", "ibm plex mono"];
 
-/// Generic sans names, which take the role's bundled family.
-const SANS_ALIASES: [&str; 6] = ["helvetica", "helvetica neue", "arial", "sans-serif", "system-ui", "inter variable"];
-
-/// Whether a profile font name renders as intended: a bundled family or a
-/// known alias for one. Anything else would silently fall back.
-pub fn is_known_font(name: &str) -> bool {
-    let lower = name.trim().to_ascii_lowercase();
-    BUNDLED_FONTS.iter().any(|f| f.eq_ignore_ascii_case(&lower))
-        || MONO_ALIASES.contains(&lower.as_str())
-        || SANS_ALIASES.contains(&lower.as_str())
-        || matches!(lower.as_str(), "inter display" | "inter tight variable" | "jetbrains mono nl")
-}
-
 /// Map a profile's font name to a bundled family: exact matches pass through,
 /// a few known names map to their closest bundled family, and anything else
 /// (including Helvetica, the old default) falls back by role: Inter for text,
@@ -1136,6 +1124,12 @@ pub fn font_family(name: &str, role: FontRole) -> String {
         },
     };
     mapped.to_string()
+}
+
+/// A library font from Clients passes through by name; anything else maps
+/// to a bundled family (`font_family`).
+fn family(b: &BrandedDocument, name: &str, role: FontRole) -> String {
+    b.font_families.iter().find(|f| f.eq_ignore_ascii_case(name.trim())).cloned().unwrap_or_else(|| font_family(name, role))
 }
 
 /// Where the bundled fonts live: `TYPESET_FONT_DIR`, then the image's
@@ -1181,6 +1175,7 @@ pub fn render_proof(branded: &BrandedDocument, ppi: u32) -> anyhow::Result<Vec<V
         .into_iter()
         .flatten()
         .chain(branded.images.values())
+        .chain(branded.fonts.iter())
         .collect();
     let ppi = ppi.clamp(20, 150).to_string();
     compile_to(&source, &assets, &["--format", "png", "--ppi", &ppi], "page-{0p}.png")
@@ -1200,13 +1195,21 @@ fn compile_to(source: &str, assets: &[&Asset], extra: &[&str], output_name: &str
         f.write_all(source.as_bytes())?;
     }
     for asset in assets {
-        std::fs::write(tmp.path().join(&asset.name), &asset.bytes)?;
+        let path = tmp.path().join(&asset.name);
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        std::fs::write(path, &asset.bytes)?;
+    }
+    // Library fonts from Clients go in `fonts/`, searched before the bundled ones.
+    let mut font_paths = vec![font_dir()];
+    if assets.iter().any(|a| a.name.starts_with("fonts/")) {
+        font_paths.insert(0, tmp.path().join("fonts"));
     }
 
     let result = Command::new("typst")
         .args(["compile", "--root", tmp.path().to_str().unwrap()])
-        .arg("--font-path")
-        .arg(font_dir())
+        .args(font_paths.iter().flat_map(|p| [std::ffi::OsStr::new("--font-path"), p.as_os_str()]))
         .arg("--ignore-system-fonts")
         .args(extra)
         .arg(&input)
@@ -1227,7 +1230,7 @@ fn compile_to(source: &str, assets: &[&Asset], extra: &[&str], output_name: &str
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     #[test]
@@ -1288,6 +1291,24 @@ mod tests {
         let doc = crate::parser::json::parse(input).expect("parse");
         let profile = crate::models::client_profile::ClientProfile::default_profile();
         BrandedDocument::prepare(doc, profile).expect("prepare")
+    }
+
+    /// A brand's library font (from Clients) is passed to Typst by family
+    /// name and embedded, instead of falling back to a bundled family.
+    #[test]
+    fn library_fonts_from_clients_are_used() {
+        let mut b = branded_json(r#"{ "frontmatter": { "title": "Fonts" }, "pages": [{ "blocks": [{ "type": "markdown", "content": "Body text." }] }] }"#);
+        let bytes = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/outfit.ttf")).unwrap();
+        b.fonts = vec![Asset { name: "fonts/outfit.ttf".into(), bytes }];
+        b.font_families = vec!["Outfit".into()];
+        b.profile.font_heading = "Outfit".into();
+        assert!(build_source(&b).contains(r#"font-heading: "Outfit""#));
+        let pdf = render(&b).unwrap();
+        let text = String::from_utf8_lossy(&pdf);
+        assert!(text.contains("Outfit"), "Outfit isn't embedded in the PDF");
+        // Without the file, the same name falls back to the bundled heading family.
+        b.font_families.clear();
+        assert!(build_source(&b).contains(r#"font-heading: "Inter Tight""#));
     }
 
     #[test]
@@ -1551,7 +1572,7 @@ mod tests {
         String::from_utf8_lossy(&out.stdout).split_whitespace().nth(1).map(str::to_string)
     }
 
-    fn gallery_profile() -> crate::models::client_profile::ClientProfile {
+    pub(crate) fn gallery_profile() -> crate::models::client_profile::ClientProfile {
         let mut profile = serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile()).unwrap();
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/gallery_profile.json");
         let overrides: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
