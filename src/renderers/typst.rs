@@ -1299,13 +1299,18 @@ pub(crate) mod tests {
     fn library_fonts_from_clients_are_used() {
         let mut b = branded_json(r#"{ "frontmatter": { "title": "Fonts" }, "pages": [{ "blocks": [{ "type": "markdown", "content": "Body text." }] }] }"#);
         let bytes = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/outfit.ttf")).unwrap();
-        b.fonts = vec![Asset { name: "fonts/outfit.ttf".into(), bytes }];
+        // As the resolver does: a variable font becomes one file per weight.
+        let weights = crate::brand::fonts::static_weights("outfit-test", &bytes).unwrap();
+        b.fonts = weights.iter().map(|(w, data)| Asset { name: format!("fonts/outfit.{w}.ttf"), bytes: data.clone() }).collect();
         b.font_families = vec!["Outfit".into()];
         b.profile.font_heading = "Outfit".into();
         assert!(build_source(&b).contains(r#"font-heading: "Outfit""#));
         let pdf = render(&b).unwrap();
         let text = String::from_utf8_lossy(&pdf);
         assert!(text.contains("Outfit"), "Outfit isn't embedded in the PDF");
+        // Headings use the weight they ask for, not the variable font's default (Thin, 100).
+        assert!(text.contains("Outfit_600wght"), "headings aren't SemiBold");
+        assert!(!text.contains("Outfit_100wght") && !text.contains("Outfit-Thin"), "fell back to Thin");
         // Without the file, the same name falls back to the bundled heading family.
         b.font_families.clear();
         assert!(build_source(&b).contains(r#"font-heading: "Inter Tight""#));

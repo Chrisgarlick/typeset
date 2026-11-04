@@ -41,6 +41,8 @@ sha2 = "0.10"
 
 # Fetching logos at render time
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+# Static weights from variable library fonts (Typst draws only the default)
+allsorts = { version = "0.17", default-features = false, features = ["flate2_rust"] }
 
 [profile.release]
 opt-level = 3

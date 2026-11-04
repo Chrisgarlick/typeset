@@ -106,9 +106,16 @@ pub async fn resolve(
                 continue;
             };
             let ext = if mime == "font/otf" || bytes.starts_with(b"OTTO") { "otf" } else { "ttf" };
-            let file = format!("fonts/{name}.{ext}");
-            if !fonts.iter().any(|f: &Asset| f.name == file) {
-                fonts.push(Asset { name: file, bytes: bytes.to_vec() });
+            if !fonts.iter().any(|f: &Asset| f.name.starts_with(&format!("fonts/{name}."))) {
+                // Typst only draws a variable font's default weight: give it one file per weight.
+                match super::fonts::static_weights(&sha, &bytes) {
+                    Some(weights) => {
+                        for (w, data) in weights.iter() {
+                            fonts.push(Asset { name: format!("fonts/{name}.{w}.ttf"), bytes: data.clone() });
+                        }
+                    }
+                    None => fonts.push(Asset { name: format!("fonts/{name}.{ext}"), bytes: bytes.to_vec() }),
+                }
             }
             if key == "font" {
                 family = Some(found.clone());
