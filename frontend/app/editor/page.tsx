@@ -99,91 +99,93 @@ export default function EditorPage() {
       <Nav />
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 border-b border-border px-4 py-2 shrink-0">
-        <select
-          value={selectedClient}
-          onChange={(e) => setSelectedClient(e.target.value)}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground"
-        >
-          <option value="">Default (no brand)</option>
-          {clients.map((c) => (
-            <option key={c.slug} value={c.slug}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface px-4 py-2.5 shrink-0">
+        <label className="flex items-center gap-2 text-sm text-muted">
+          Brand
+          <select
+            className="kit-select"
+            data-size="sm"
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
+          >
+            <option value="">Default (no brand)</option>
+            {clients.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+                {c.brand_version ? ` · v${c.brand_version}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <select
-          value={docType}
-          onChange={(e) => setDocType(e.target.value)}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground"
-        >
-          <option value="general">General</option>
-          <option value="proposal">Proposal</option>
-          <option value="report">Report</option>
-          <option value="brief">Brief</option>
-          <option value="sop">SOP</option>
-          <option value="invoice">Invoice</option>
-        </select>
+        <label className="flex items-center gap-2 text-sm text-muted">
+          Type
+          <select className="kit-select" data-size="sm" value={docType} onChange={(e) => setDocType(e.target.value)}>
+            <option value="general">General</option>
+            <option value="proposal">Proposal</option>
+            <option value="report">Report</option>
+            <option value="brief">Brief</option>
+            <option value="sop">SOP</option>
+            <option value="invoice">Invoice</option>
+          </select>
+        </label>
 
         <div className="flex-1" />
 
-        {error && (
-          <span className="text-xs text-danger">{error}</span>
-        )}
-
-        <button
-          onClick={handlePreview}
-          disabled={loading}
-          className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
-        >
-          {loading ? "Rendering..." : "Preview"}
+        <button className="kit-button" data-variant="primary" data-size="sm" onClick={handlePreview} disabled={loading} aria-busy={loading}>
+          {loading && (
+            <span className="kit-spinner" data-size="sm" role="status">
+              <span className="kit-vh">Rendering</span>
+            </span>
+          )}
+          {loading ? "Rendering" : "Preview"}
         </button>
 
-        <button
-          onClick={() => handleDownload("pdf")}
-          disabled={loading}
-          className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-foreground hover:bg-surface transition-colors disabled:opacity-50"
-        >
-          PDF
-        </button>
-
-        <button
-          onClick={() => handleDownload("docx")}
-          disabled={loading}
-          className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-foreground hover:bg-surface transition-colors disabled:opacity-50"
-        >
-          DOCX
-        </button>
+        <div className="kit-button-group" role="group" aria-label="Download">
+          <button className="kit-button" data-size="sm" onClick={() => handleDownload("pdf")} disabled={loading}>
+            PDF
+          </button>
+          <button className="kit-button" data-size="sm" onClick={() => handleDownload("docx")} disabled={loading}>
+            DOCX
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="kit-alert m-3 shrink-0" data-tone="bad" role="alert">
+          <div>
+            <p className="kit-alert-title">The render didn&apos;t work</p>
+            <p>{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Editor + Preview */}
       <div className="flex flex-1 min-h-0">
         {/* Markdown editor */}
-        <div className="flex-1 border-r border-border">
+        <div className="flex flex-1 flex-col border-r border-border">
+          <div className="border-b border-border px-4 py-2 text-xs text-muted">Markdown</div>
           <textarea
             value={markdown}
             onChange={(e) => setMarkdown(e.target.value)}
-            className="editor-textarea h-full w-full bg-transparent p-4 text-sm text-foreground outline-none"
+            className="editor-textarea flex-1 w-full bg-transparent p-4 text-foreground outline-none"
             spellCheck={false}
+            aria-label="Markdown"
             placeholder="Write your markdown here..."
           />
         </div>
 
         {/* PDF preview */}
-        <div className="flex-1 flex items-center justify-center bg-surface">
+        <div className="flex flex-1 flex-col bg-surface-2">
+          <div className="border-b border-border px-4 py-2 text-xs text-muted">Preview</div>
           {previewUrl ? (
-            <iframe
-              src={previewUrl}
-              className="h-full w-full"
-              title="PDF Preview"
-            />
+            <iframe src={previewUrl} className="h-full w-full flex-1" title="PDF preview" />
           ) : (
-            <div className="text-center text-muted">
-              <p className="text-sm">Click Preview to render your document</p>
-              <p className="mt-1 text-xs">
-                The branded PDF will appear here
-              </p>
+            <div className="flex flex-1 items-center justify-center p-6">
+              <div className="kit-empty">
+                <p className="kit-empty-title">Nothing rendered yet</p>
+                <p>Press Preview to see the branded PDF here.</p>
+              </div>
             </div>
           )}
         </div>

@@ -1,58 +1,38 @@
 import Link from "next/link";
+import { Nav } from "@/components/nav";
+
+const steps = [
+  ["Write", "Markdown with a little frontmatter: title, client, cover, mode."],
+  ["Brand", "Each client's published brand in Clients: colours, fonts, logos, print settings."],
+  ["Export", "A tagged, accessible PDF or a DOCX, in about a second."],
+];
 
 export default function Home() {
   return (
     <div className="flex h-full flex-col">
-      <nav className="flex items-center justify-between border-b border-border px-6 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold tracking-tight">Typeset</span>
-          <span className="text-xs text-muted">v0.1</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/editor"
-            className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-white hover:bg-accent-hover transition-colors"
-          >
-            New Document
-          </Link>
-          <a
-            href="https://clients.kritano.com"
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
-            Brands ↗
-          </a>
-          <Link
-            href="/history"
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
-            History
-          </Link>
-        </div>
-      </nav>
-
-      <main className="flex flex-1 items-center justify-center">
-        <div className="max-w-xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Markdown to branded docs
-          </h1>
-          <p className="mt-3 text-lg text-muted">
-            Write in Markdown. Apply your client&apos;s brand. Export as PDF or
-            DOCX in under a second.
+      <Nav />
+      <main className="kit-container flex flex-1 flex-col justify-center py-16">
+        <div className="max-w-2xl">
+          <span className="kit-badge" data-tone="accent">Typeset</span>
+          <h1 className="mt-4 text-5xl font-bold leading-tight">Markdown to branded documents.</h1>
+          <p className="mt-4 text-lg text-muted">
+            Write in Markdown, pick a client, and export a PDF or DOCX in their brand.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <Link
-              href="/editor"
-              className="rounded-md bg-accent px-6 py-2.5 text-sm font-medium text-white hover:bg-accent-hover transition-colors"
-            >
-              Open Editor
-            </Link>
-            <a
-              href="https://clients.kritano.com"
-              className="rounded-md border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-surface transition-colors"
-            >
-              Manage brands in Clients
-            </a>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link className="kit-button" data-variant="primary" href="/editor">Open the editor</Link>
+            <a className="kit-button" href="https://clients.kritano.com">Manage brands in Clients ↗</a>
           </div>
+        </div>
+        <div className="kit-grid mt-14" data-min="sm" data-cols="3">
+          {steps.map(([title, body], i) => (
+            <article key={title} className="kit-card">
+              <div className="kit-card-body">
+                <p className="text-sm text-muted">0{i + 1}</p>
+                <h2 className="mt-1 text-lg font-semibold">{title}</h2>
+                <p className="mt-2 text-sm text-muted">{body}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </main>
     </div>

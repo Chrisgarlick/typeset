@@ -5,32 +5,19 @@ import { usePathname } from "next/navigation";
 
 export function Nav() {
   const path = usePathname();
-
-  const link = (href: string, label: string) => (
-    <Link
-      href={href}
-      className={`text-sm transition-colors ${
-        path.startsWith(href)
-          ? "text-foreground font-medium"
-          : "text-muted hover:text-foreground"
-      }`}
-    >
-      {label}
-    </Link>
-  );
+  const current = (href: string) => (path.startsWith(href) ? "page" : undefined);
 
   return (
-    <nav className="flex items-center justify-between border-b border-border px-6 py-3 shrink-0">
-      <Link href="/" className="flex items-center gap-2">
-        <span className="text-lg font-semibold tracking-tight">Typeset</span>
+    <header className="kit-topbar shrink-0">
+      <Link className="kit-topbar-brand" href="/">
+        <span className="kit-avatar" data-size="sm" data-tone="3" aria-hidden="true">T</span>
+        Typeset
       </Link>
-      <div className="flex items-center gap-5">
-        {link("/editor", "Editor")}
-        <a href="https://clients.kritano.com" className="text-sm text-muted hover:text-foreground transition-colors">
-          Brands ↗
-        </a>
-        {link("/history", "History")}
-      </div>
-    </nav>
+      <nav className="kit-topbar-nav" aria-label="Main">
+        <Link href="/editor" aria-current={current("/editor")}>Editor</Link>
+        <Link href="/history" aria-current={current("/history")}>History</Link>
+        <a href="https://clients.kritano.com">Brands ↗</a>
+      </nav>
+    </header>
   );
 }

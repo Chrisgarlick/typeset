@@ -1,33 +1,37 @@
 @import "tailwindcss";
 
+/* Tailwind does layout; colours and type come from kit's tokens (public/kit),
+   so light and dark mode follow the system. */
 @theme inline {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-muted: #a1a1aa;
-  --color-border: #27272a;
-  --color-surface: #18181b;
-  --color-surface-hover: #1f1f23;
-  --color-accent: #3b82f6;
-  --color-accent-hover: #2563eb;
-  --color-danger: #ef4444;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--kit-bg);
+  --color-foreground: var(--kit-fg);
+  --color-muted: var(--kit-fg-2);
+  --color-border: var(--kit-line);
+  --color-surface: var(--kit-surface);
+  --color-surface-2: var(--kit-surface-2);
+  --color-accent: var(--kit-accent);
+  --color-danger: var(--kit-bad);
+  --font-sans: var(--kit-font-ui);
+  --font-mono: var(--kit-font-mono);
+  --font-display: var(--kit-font-display);
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--kit-bg);
+  color: var(--kit-fg);
+  font-family: var(--kit-font-ui);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+h1, h2 {
+  font-family: var(--kit-font-display);
+  letter-spacing: var(--kit-display-tracking);
+}
 
 /* Markdown editor */
 .editor-textarea {
-  font-family: var(--font-mono), monospace;
+  font-family: var(--kit-font-mono);
+  font-size: var(--kit-text-sm);
+  line-height: 1.6;
   tab-size: 2;
   resize: none;
 }

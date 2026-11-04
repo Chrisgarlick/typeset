@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { Nav } from "@/components/nav";
 import { getHistory, type RenderHistoryItem } from "@/lib/api";
 
+const when = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
 export default function HistoryPage() {
   const [items, setItems] = useState<RenderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,81 +21,53 @@ export default function HistoryPage() {
   return (
     <div className="flex h-full flex-col">
       <Nav />
-      <div className="flex-1 overflow-auto p-6">
-        <div className="mx-auto max-w-4xl">
-          <h1 className="text-2xl font-bold mb-6">Render History</h1>
+      <main className="flex-1 overflow-auto">
+        <div className="kit-container py-8">
+          <div className="mb-6 flex items-center gap-3">
+            <h1 className="text-3xl font-bold">Render history</h1>
+            {!loading && <span className="kit-badge">{items.length}</span>}
+          </div>
 
           {loading ? (
-            <p className="text-sm text-muted">Loading...</p>
+            <div className="flex items-center gap-3 text-sm text-muted">
+              <span className="kit-spinner" data-size="sm" role="status">
+                <span className="kit-vh">Loading</span>
+              </span>
+              Loading renders
+            </div>
           ) : items.length === 0 ? (
-            <div className="rounded-lg border border-border p-8 text-center">
-              <p className="text-muted">No renders yet</p>
+            <div className="kit-empty">
+              <p className="kit-empty-title">No renders yet</p>
+              <p>Documents rendered through the API or the editor&apos;s downloads appear here.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="kit-table-wrap" role="region" aria-label="Render history" tabIndex={0}>
+              <table className="kit-table">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wide">
-                    <th className="pb-2 pr-4">Date</th>
-                    <th className="pb-2 pr-4">Client</th>
-                    <th className="pb-2 pr-4">Type</th>
-                    <th className="pb-2 pr-4">Format</th>
-                    <th className="pb-2 pr-4">Time</th>
-                    <th className="pb-2">Links</th>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Client</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Format</th>
+                    <th scope="col" data-numeric>Time</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-border/50 hover:bg-surface transition-colors"
-                    >
-                      <td className="py-3 pr-4 text-muted">
-                        {new Date(item.created_at).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="py-3 pr-4">
-                        {item.client_slug || "—"}
-                      </td>
-                      <td className="py-3 pr-4 capitalize">
-                        {item.document_type}
-                      </td>
-                      <td className="py-3 pr-4 uppercase text-xs font-mono">
-                        {item.format}
-                      </td>
-                      <td className="py-3 pr-4 text-muted">
-                        {item.render_ms ? `${item.render_ms}ms` : "—"}
-                      </td>
-                      <td className="py-3 flex gap-2">
-                        {item.pdf_url && (
-                          <a
-                            href={item.pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-accent hover:text-accent-hover"
-                          >
-                            PDF
-                          </a>
-                        )}
-                        {item.docx_url && (
-                          <a
-                            href={item.docx_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-accent hover:text-accent-hover"
-                          >
-                            DOCX
-                          </a>
-                        )}
-                        {!item.pdf_url && !item.docx_url && (
-                          <span className="text-xs text-muted">—</span>
+                    <tr key={item.id}>
+                      <td className="text-muted">{when(item.created_at)}</td>
+                      <td>
+                        {item.client_slug ? (
+                          <span className="kit-badge" data-tone="accent">{item.client_slug}</span>
+                        ) : (
+                          <span className="text-muted">Default</span>
                         )}
                       </td>
+                      <td className="capitalize">{item.document_type}</td>
+                      <td>
+                        <span className="kit-badge" data-tone="info">{item.format.toUpperCase()}</span>
+                      </td>
+                      <td className="text-muted" data-numeric>{item.render_ms ? `${item.render_ms} ms` : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -100,7 +75,7 @@ export default function HistoryPage() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
