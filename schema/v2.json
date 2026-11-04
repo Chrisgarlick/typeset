@@ -179,6 +179,9 @@
         },
         {
           "$ref": "#/$defs/part"
+        },
+        {
+          "$ref": "#/$defs/chart"
         }
       ]
     },
@@ -908,6 +911,114 @@
           "description": "Text; inline markdown (bold, italic, links, code) allowed."
         }
       }
+    },
+    "chart": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "chart"
+        },
+        "chart": {
+          "enum": [
+            "line",
+            "area",
+            "bar",
+            "donut",
+            "scatter",
+            "histogram",
+            "heatmap",
+            "funnel",
+            "bullet"
+          ],
+          "description": "The kind of chart, drawn by kit's renderer (the same charts as the web)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Names the chart; also its alt text's opening."
+        },
+        "caption": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "labels": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "One per point, row, part, stage or measure."
+        },
+        "series": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "description": "One per label; null leaves a gap."
+              }
+            },
+            "required": [
+              "name",
+              "values"
+            ]
+          }
+        },
+        "format": {
+          "type": "string",
+          "description": "number (default), compact, percent, or currency:GBP (any ISO code)."
+        },
+        "stacked": {
+          "type": "boolean",
+          "default": false,
+          "description": "Bars on top of each other."
+        },
+        "values": {
+          "type": "boolean",
+          "default": false,
+          "description": "Print each bar's value."
+        },
+        "center": {
+          "enum": [
+            "first"
+          ],
+          "description": "Donuts: show the first part in the middle, for a score gauge."
+        },
+        "bins": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Histograms: about how many bins."
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "In points; charts choose their own by default."
+        },
+        "wide": {
+          "type": "boolean",
+          "default": false,
+          "description": "Span the margin column too."
+        }
+      },
+      "required": [
+        "type",
+        "chart",
+        "labels",
+        "series"
+      ],
+      "description": "A chart (line, area, bar, donut, scatter, histogram, heatmap, funnel or bullet) in the document's brand, with its summary as alt text."
     }
   }
 }

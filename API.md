@@ -286,6 +286,7 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 | `facts` | `items: [{ label, value }]` | A label and value list |
 | `score_matrix` | `columns`, `rows: [{ label, values }]` (a `null` value shows a dash), `max`?, `caption`? | Scores by page as a heat table of tinted pills |
 | `bars` | `items: [{ label, value }]`, `unit`?, `target`?, `better`? (`lower` \| `higher`), `caption`? | Horizontal bars with a dashed target line, green within the target and red past it |
+| `chart` | `chart` (`line` \| `area` \| `bar` \| `donut` \| `scatter` \| `histogram` \| `heatmap` \| `funnel` \| `bullet`), `labels`, `series: [{ name, values }]` (a `null` value leaves a gap), `title`?, `caption`?, `format`? (`number` \| `compact` \| `percent` \| `currency:GBP`), `stacked`?, `values`? (print bar values), `center`? (`first`: a donut as a score gauge), `bins`?, `height`?, `wide`? | A chart in the brand's colours and fonts, drawn by kit's renderer (the same charts as the web), with its generated summary as alt text. Scatter takes x and y as two series; bullet takes value and target; heatmap rows are labels and columns are series |
 | `severity_summary` | `counts: { critical, serious, moderate, minor }`, `caption`? | A segmented bar over four counts |
 | `finding` | `title`, `severity`, `why`?, `fix`?, `pages`?, `evidence`? `{ value, label? }` | One headline issue as a card |
 | `highlights` | `items`: one to four findings (as `finding`, without `type`) | Headline issues side by side as compact cards |
@@ -294,7 +295,18 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 | `back_page` | `about`?, `contact`? `{ name?, email?, website?, phone? }` | A closing page on the cover colour |
 | `part` | `title`, `eyebrow`?, `intro`? | A full-page divider starting a part of a combined document (a review, then a proposal). Sections after it belong to the part, section numbers run on, and the contents page groups sections under their parts |
 
-`status` is `good`, `fair`, `poor` or `neutral`. The full JSON Schema is [`schema/v2.json`](./schema/v2.json), and [`examples/gallery.json`](./examples/gallery.json) uses every component.
+`status` is `good`, `fair`, `poor` or `neutral`. The full JSON Schema is [`schema/v2.json`](./schema/v2.json), and [`examples/gallery.json`](./examples/gallery.json) uses every component except `chart`, which [`examples/charts.json`](./examples/charts.json) shows.
+
+In Markdown, a fenced block marked `chart` draws the same chart, with options on the fence line and the data as a table (first column the labels, each other column a series); a JSON body in the fence also works:
+
+````markdown
+```chart type=line format=compact title="Score over time"
+| Month | Score |
+|---|---|
+| Jan | 82 |
+| Feb | 88 |
+```
+````
 
 ---
 

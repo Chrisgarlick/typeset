@@ -64,6 +64,7 @@ fn build_source(branded: &BrandedDocument) -> String {
         section_out: if cover.is_some() { 2 } else { 1 } + u8::from(has_parts),
         in_box: false,
     };
+    super::chart::set_context(chart_context(branded));
     write_preamble(&mut s, branded, &cover, ctx.section_out);
     write_imports(&mut s);
     if let Some(c) = &cover {
@@ -72,6 +73,35 @@ fn build_source(branded: &BrandedDocument) -> String {
     write_body(&mut s, &branded.doc.nodes, consumed_body_h1, ctx);
 
     s
+}
+
+/// What kit's charts need from this document: its colours and fonts as kit
+/// tokens, and the widths they're shown at.
+fn chart_context(b: &BrandedDocument) -> super::chart::ChartContext {
+    let p = &b.profile;
+    let content_mm = paper_width_mm(&p.page_size) - p.margin_left - p.margin_right;
+    let pt = 72.0 / 25.4;
+    super::chart::ChartContext {
+        theme: super::chart::theme(
+            hex_or_default(&p.colour_text, "#1A1A1A"),
+            hex_or_default(&p.colour_secondary, "#555555"),
+            hex_or_default(&p.colour_primary, "#000000"),
+            hex_or_default(&p.colour_background, "#FFFFFF"),
+            hex_or_default(&p.colour_table_header, "#F5F5F5"),
+            hex_or_default(&p.colour_table_border, "#E0E0E0"),
+            hex_or_default(&p.colour_accent, "#0066CC"),
+            hex_or_default(&p.colour_callout_bg, "#F8F9FA"),
+            &family(b, &p.font_body, FontRole::Body),
+            &family(b, &p.font_heading, FontRole::Heading),
+        ),
+        column_pt: f64::from(content_mm * 0.75) * pt,
+        wide_pt: f64::from(content_mm) * pt,
+    }
+}
+
+/// Inline Markdown in a chart caption, as everywhere else.
+pub(crate) fn inline_for_chart(s: &str) -> String {
+    typst_inline(s)
 }
 
 struct CoverData {
@@ -685,6 +715,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                 opt_content(&m.caption),
             ));
         }
+        Component::Chart(c) => s.push_str(&super::chart::typst(c)),
         Component::Bars(b) => {
             let items: Vec<String> = b
                 .items
@@ -979,6 +1010,10 @@ fn write_code_block(s: &mut String, language: Option<&str>, code: &str) {
             s.push_str(code);
             s.push_str("\n  )\n]\n\n");
         }
+        Some(info) if info.split_whitespace().next() == Some("chart") => match super::chart::from_fence(info, code) {
+            Ok(c) => s.push_str(&super::chart::typst(&c)),
+            Err(e) => s.push_str(&format!("#callout(tone: \"warn\", title: [Chart unavailable])[{}]\n\n", typst_content(&e))),
+        },
         Some(lang) => {
             s.push_str(&format!("```{}\n{}\n```\n\n", lang, code));
         }

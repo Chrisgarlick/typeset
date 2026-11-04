@@ -25,11 +25,12 @@ pub enum Component {
     BackPage(BackPage),
     Highlights(Highlights),
     Part(Part),
+    Chart(Chart),
 }
 
 impl Component {
     /// The JSON `type` names of every component.
-    pub const TYPES: [&'static str; 16] = [
+    pub const TYPES: [&'static str; 17] = [
         "opener",
         "callout",
         "findings",
@@ -46,6 +47,7 @@ impl Component {
         "back_page",
         "highlights",
         "part",
+        "chart",
     ];
 
     /// Parse a component from its JSON block, with `type` already removed.
@@ -66,6 +68,11 @@ impl Component {
             "contents" => Component::Contents(serde_json::from_value(value)?),
             "back_page" => Component::BackPage(serde_json::from_value(value)?),
             "part" => Component::Part(serde_json::from_value(value)?),
+            "chart" => {
+                let c: Chart = serde_json::from_value(value)?;
+                c.check().map_err(serde::de::Error::custom)?;
+                Component::Chart(c)
+            }
             "highlights" => {
                 let h: Highlights = serde_json::from_value(value)?;
                 if h.items.is_empty() || h.items.len() > 4 {
@@ -122,6 +129,7 @@ impl Component {
                     format!("{}: {}", r.label, values.join(", "))
                 })
                 .collect(),
+            Component::Chart(c) => c.plain_lines(),
             Component::Bars(b) => b
                 .items
                 .iter()
@@ -528,4 +536,79 @@ pub struct Part {
     pub title: String,
     pub eyebrow: Option<String>,
     pub intro: Option<String>,
+}
+
+/// A chart drawn by kit's renderer (kit-render): the same charts as the
+/// web, in the document's brand. `chart` is the kind of chart.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Chart {
+    /// line, area, bar, donut, scatter, histogram, heatmap, funnel or bullet.
+    pub chart: String,
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    /// One per point (or row, part, stage, measure).
+    pub labels: Vec<String>,
+    pub series: Vec<ChartSeries>,
+    /// number (the default), compact, percent, or currency:GBP.
+    pub format: Option<String>,
+    /// Bars on top of each other.
+    #[serde(default)]
+    pub stacked: bool,
+    /// Print each bar's value.
+    #[serde(default)]
+    pub values: bool,
+    /// Donuts: "first" shows the first part, for a score gauge.
+    pub center: Option<String>,
+    /// Histograms: about how many bins.
+    pub bins: Option<u32>,
+    /// Height in points (charts pick their own by default).
+    pub height: Option<f64>,
+    /// Span the margin column too, like a wide table.
+    #[serde(default)]
+    pub wide: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChartSeries {
+    pub name: String,
+    /// One per label; null leaves a gap.
+    pub values: Vec<Option<f64>>,
+}
+
+impl Chart {
+    pub const KINDS: [&'static str; 9] = ["line", "area", "bar", "donut", "scatter", "histogram", "heatmap", "funnel", "bullet"];
+
+    /// Checks what the schema can't: a known kind, and series that fit the labels.
+    pub fn check(&self) -> Result<(), String> {
+        if !Self::KINDS.contains(&self.chart.as_str()) {
+            return Err(format!("chart: `{}` isn't one of {}", self.chart, Self::KINDS.join(", ")));
+        }
+        if self.labels.is_empty() || self.series.is_empty() {
+            return Err("chart: needs labels and at least one series".to_string());
+        }
+        if let Some(s) = self.series.iter().find(|s| s.values.len() != self.labels.len()) {
+            return Err(format!("chart: series `{}` has {} values for {} labels", s.name, s.values.len(), self.labels.len()));
+        }
+        Ok(())
+    }
+
+    /// The data as text, for DOCX and plain outputs.
+    pub fn plain_lines(&self) -> Vec<String> {
+        let mut lines: Vec<String> = self.title.iter().cloned().collect();
+        for (i, label) in self.labels.iter().enumerate() {
+            let values: Vec<String> = self
+                .series
+                .iter()
+                .map(|s| {
+                    let v = s.values[i].map(|v| format!("{v}")).unwrap_or_else(|| "n/a".to_string());
+                    if self.series.len() > 1 { format!("{} {v}", s.name) } else { v }
+                })
+                .collect();
+            lines.push(format!("{label}: {}", values.join(", ")));
+        }
+        lines.extend(self.caption.iter().cloned());
+        lines
+    }
 }

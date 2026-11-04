@@ -680,3 +680,13 @@
   })
   if full { wide(fig) } else { fig }
 }
+
+/// A chart from kit's renderer (the same charts as the web), as SVG bytes,
+/// with its summary as alt text.
+#let chart-figure(data, alt: "", caption: none, full: false) = {
+  let fig = block(above: t.s6, below: t.s6, breakable: false, width: 100%, {
+    image(data, format: "svg", width: 100%, alt: alt)
+    if caption != none { block(above: t.s3, text(size: t.small, fill: t.ink-muted, caption)) }
+  })
+  if full { wide(fig) } else { fig }
+}

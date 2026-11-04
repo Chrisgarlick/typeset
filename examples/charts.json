@@ -1,0 +1,96 @@
+{
+  "schema": 2,
+  "frontmatter": {
+    "title": "Charts from kit",
+    "subtitle": "The chart component: kit's renderer, the same charts as the web, drawn in the document's brand with their summaries as alt text.",
+    "eyebrow": "Typeset",
+    "author": "Typeset",
+    "date": "4 November 2026",
+    "reference": "TS-CHARTS-1",
+    "cover": "editorial"
+  },
+  "pages": [
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Real data",
+          "title": "chrisgarlick.com, audited",
+          "intro": "Kritano's audit of chrisgarlick.com on 2 November 2026, 39 pages. Five of the six categories score 90 or more; content is where the work is."
+        },
+        {
+          "type": "chart",
+          "chart": "bar",
+          "title": "chrisgarlick.com scores by category",
+          "labels": ["SEO", "Accessibility", "Security", "Performance", "Structured data", "Content"],
+          "series": [{ "name": "Score", "values": [100, 100, 100, 94, 92, 63] }],
+          "values": true,
+          "caption": "Scores out of 100, desktop. Mobile performance 94, mobile accessibility 100."
+        },
+        {
+          "type": "chart",
+          "chart": "heatmap",
+          "title": "Scores by site and category, November 2026",
+          "labels": ["kritano.com", "docs.kritano.com", "chrisgarlick.com"],
+          "series": [
+            { "name": "SEO", "values": [95, 93, 100] },
+            { "name": "A11y", "values": [98, 98, 100] },
+            { "name": "Security", "values": [95, 96, 100] },
+            { "name": "Perf", "values": [97, 97, 94] },
+            { "name": "Data", "values": [91, 86, 92] },
+            { "name": "Content", "values": [64, 44, 63] }
+          ],
+          "wide": true,
+          "caption": "**Content quality** is the category every site still has work to do on."
+        },
+        {
+          "type": "chart",
+          "chart": "donut",
+          "title": "Content quality score",
+          "labels": ["Score", "To 100"],
+          "series": [{ "name": "Content quality", "values": [63, 37] }],
+          "center": "first",
+          "height": 150
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
+          "eyebrow": "Example data",
+          "title": "The other chart types",
+          "intro": "Illustrative figures, to show each kind of chart in print."
+        },
+        {
+          "type": "chart",
+          "chart": "area",
+          "title": "Example: score over a year",
+          "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+          "series": [
+            { "name": "Site A", "values": [62, 64, 63, 70, 74, 73, 78, 81, 80, 84, 86, 88] },
+            { "name": "Site B", "values": [55, 57, 61, 60, 63, 66, 65, 69, 72, 71, 74, 77] }
+          ]
+        },
+        {
+          "type": "chart",
+          "chart": "funnel",
+          "title": "Example: from visit to enquiry",
+          "labels": ["Visited", "Read a service page", "Opened the contact form", "Sent an enquiry"],
+          "series": [{ "name": "People", "values": [12000, 3100, 640, 210] }],
+          "format": "number"
+        },
+        {
+          "type": "chart",
+          "chart": "bullet",
+          "title": "Example: against targets",
+          "labels": ["Largest contentful paint (ms)", "Pages audited", "Accessibility"],
+          "series": [
+            { "name": "Value", "values": [1800, 39, 100] },
+            { "name": "Target", "values": [2500, 50, 95] }
+          ]
+        }
+      ]
+    }
+  ]
+}

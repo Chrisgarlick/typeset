@@ -15,6 +15,8 @@ pulldown-cmark = "0.12"
 
 # PDF generation via Typst (subprocess)
 tempfile = "3"
+# Charts: kit's renderer (the web's charts), run in embedded QuickJS
+kit-render = { git = "https://github.com/Chrisgarlick/kit", rev = "1183446" }
 
 # DOCX generation
 docx-rs = "0.4"
