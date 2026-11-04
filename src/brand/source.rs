@@ -132,20 +132,28 @@ pub async fn resolve(
             }
         }
     }
+    let page_logo = page_logo(&doc, &profile.colour_background);
     let mut logos = Logos::default();
-    for (role, stem) in [("primary", "logo-light"), ("on-dark", "logo-dark")] {
+    for (role, stem) in [(page_logo, "logo-light"), ("on-dark", "logo-dark")] {
         let Some(name) = doc["logos"][role].as_str().and_then(|l| l.strip_prefix("lib:")) else { continue };
         let Some((sha, mime)) = library(name) else { continue };
         let bytes = brands.asset(&sha).await?;
         let Some(ext) = super::assets::image_extension(&mime, &bytes) else { continue };
         let asset = Asset { name: format!("{stem}.{ext}"), bytes: bytes.to_vec() };
-        if role == "primary" {
+        if stem == "logo-light" {
             logos.light = Some(asset);
         } else {
             logos.dark = Some(asset);
         }
     }
     Ok(ResolvedBrand { profile, logos, fonts, families, source: Some((info.id, version)) })
+}
+
+/// The logo for the pages: `on-dark` when the paper is dark (a dark mode)
+/// and the brand has one, otherwise `primary`.
+fn page_logo(doc: &Value, paper: &str) -> &'static str {
+    let dark = rgb(paper).is_some_and(|[r, g, b]| 0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32 <= 128.0);
+    if dark && doc["logos"]["on-dark"].is_string() { "on-dark" } else { "primary" }
 }
 
 /// A font file's family name (typographic family first).
@@ -414,6 +422,14 @@ mod tests {
         let y = brand_yaml(&original);
         assert!(y.contains(&format!("accent: \"{}\"", original.colour_accent.to_uppercase())), "{y}");
         assert!(y.contains("cover: editorial"), "{y}");
+    }
+
+    #[test]
+    fn dark_pages_get_the_on_dark_logo() {
+        let doc = json!({ "logos": { "primary": "lib:logo", "on-dark": "lib:logo-white" } });
+        assert_eq!(page_logo(&doc, "#F7F7FD"), "primary");
+        assert_eq!(page_logo(&doc, "#100F24"), "on-dark");
+        assert_eq!(page_logo(&json!({ "logos": { "primary": "lib:logo" } }), "#100F24"), "primary");
     }
 
     #[test]
