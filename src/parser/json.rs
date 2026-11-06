@@ -6,8 +6,8 @@ use crate::models::document::{
 };
 
 pub fn parse(input: &str) -> anyhow::Result<ParsedDocument> {
-    let doc: JsonDocument =
-        serde_json::from_str(input).map_err(|e| anyhow::anyhow!("invalid JSON document: {e}"))?;
+    let doc: JsonDocument = serde_json::from_str(input)
+        .map_err(|e| anyhow::anyhow!("invalid JSON document: {e}"))?;
     let schema = doc.schema.unwrap_or(1);
     if !(1..=2).contains(&schema) {
         anyhow::bail!("invalid JSON document: `schema` must be 1 or 2, not {schema}");
@@ -32,42 +32,25 @@ pub fn parse(input: &str) -> anyhow::Result<ParsedDocument> {
 
 /// Parse one block. Components (schema 2) are checked strictly and their
 /// errors name the block's path; everything else is a v1 block.
-fn push_value(
-    out: &mut Vec<DocumentNode>,
-    value: &serde_json::Value,
-    schema: u32,
-    path: &str,
-) -> anyhow::Result<()> {
-    let kind = value
-        .get("type")
-        .and_then(|t| t.as_str())
-        .unwrap_or_default();
+fn push_value(out: &mut Vec<DocumentNode>, value: &serde_json::Value, schema: u32, path: &str) -> anyhow::Result<()> {
+    let kind = value.get("type").and_then(|t| t.as_str()).unwrap_or_default();
     if Component::TYPES.contains(&kind) {
         if schema < 2 {
-            anyhow::bail!(
-                "{path}: the `{kind}` block needs \"schema\": 2 at the top of the document"
-            );
+            anyhow::bail!("{path}: the `{kind}` block needs \"schema\": 2 at the top of the document");
         }
         let mut fields = value.clone();
         if let Some(map) = fields.as_object_mut() {
             map.remove("type");
         }
-        let component = Component::from_json(kind, fields)
-            .map_err(|e| anyhow::anyhow!("{path} ({kind}): {e}"))?;
+        let component = Component::from_json(kind, fields).map_err(|e| anyhow::anyhow!("{path} ({kind}): {e}"))?;
         out.push(DocumentNode::Component(component));
         return Ok(());
     }
-    let block: Block =
-        serde_json::from_value(value.clone()).map_err(|e| anyhow::anyhow!("{path}: {e}"))?;
+    let block: Block = serde_json::from_value(value.clone()).map_err(|e| anyhow::anyhow!("{path}: {e}"))?;
     push_block(out, &block, schema, path)
 }
 
-fn push_block(
-    out: &mut Vec<DocumentNode>,
-    block: &Block,
-    schema: u32,
-    path: &str,
-) -> anyhow::Result<()> {
+fn push_block(out: &mut Vec<DocumentNode>, block: &Block, schema: u32, path: &str) -> anyhow::Result<()> {
     match block {
         Block::Heading { level, text } => {
             let id = slugify(text);
@@ -85,9 +68,7 @@ fn push_block(
             out.extend(parsed.nodes);
         }
         Block::BulletList { items } => {
-            out.push(DocumentNode::BulletList {
-                items: items.clone(),
-            });
+            out.push(DocumentNode::BulletList { items: items.clone() });
         }
         Block::OrderedList { items, start } => {
             out.push(DocumentNode::OrderedList {
@@ -110,16 +91,9 @@ fn push_block(
         Block::Blockquote { text } => {
             out.push(DocumentNode::Blockquote { text: text.clone() });
         }
-        Block::Image {
-            url,
-            alt,
-            caption,
-            width,
-        } => {
+        Block::Image { url, alt, caption, width } => {
             if schema >= 2 && alt.as_deref().is_none_or(|a| a.trim().is_empty()) {
-                anyhow::bail!(
-                    "{path} (image): needs `alt` text describing the image, for screen readers"
-                );
+                anyhow::bail!("{path} (image): needs `alt` text describing the image, for screen readers");
             }
             out.push(DocumentNode::Image {
                 url: url.clone(),
@@ -130,21 +104,12 @@ fn push_block(
         }
         Block::Rule => out.push(DocumentNode::HorizontalRule),
         Block::PageBreak => out.push(DocumentNode::PageBreak),
-        Block::Columns {
-            ratios,
-            gutter,
-            children,
-        } => {
+        Block::Columns { ratios, gutter, children } => {
             let mut columns: Vec<StyledColumn> = Vec::new();
             for (c, slot) in children.iter().enumerate() {
                 let mut nodes = Vec::new();
                 for (b, value) in slot.blocks.iter().enumerate() {
-                    push_value(
-                        &mut nodes,
-                        value,
-                        schema,
-                        &format!("{path}.children[{c}].blocks[{b}]"),
-                    )?;
+                    push_value(&mut nodes, value, schema, &format!("{path}.children[{c}].blocks[{b}]"))?;
                 }
                 columns.push(StyledColumn {
                     style: slot.style().filter(|s| !s.is_empty()),
@@ -404,13 +369,8 @@ mod tests {
             { "type": "section", "blocks": [{ "type": "callout", "tone": "warn", "body": "x" }] }
         ]}]}"#;
         let doc = parse(input).unwrap();
-        let DocumentNode::Section { children, .. } = &doc.nodes[0] else {
-            panic!("expected a section")
-        };
-        assert!(matches!(
-            children[0],
-            DocumentNode::Component(Component::Callout(_))
-        ));
+        let DocumentNode::Section { children, .. } = &doc.nodes[0] else { panic!("expected a section") };
+        assert!(matches!(children[0], DocumentNode::Component(Component::Callout(_))));
     }
 
     #[test]
@@ -423,10 +383,7 @@ mod tests {
             )
         };
         assert!(parse(&doc(4)).is_ok());
-        assert!(parse(&doc(5))
-            .unwrap_err()
-            .to_string()
-            .contains("one to four"));
+        assert!(parse(&doc(5)).unwrap_err().to_string().contains("one to four"));
         assert!(parse(&doc(0)).is_err());
     }
 
@@ -435,33 +392,16 @@ mod tests {
         let doc = parse(r#"{ "pages": [{ "blocks": [
             { "type": "image", "url": "https://example.com/a.png", "alt": "A", "caption": "Cap", "width": "full" }
         ]}]}"#).unwrap();
-        let DocumentNode::Image {
-            caption,
-            full_width,
-            ..
-        } = &doc.nodes[0]
-        else {
-            panic!("expected an image")
-        };
+        let DocumentNode::Image { caption, full_width, .. } = &doc.nodes[0] else { panic!("expected an image") };
         assert_eq!(caption.as_deref(), Some("Cap"));
         assert!(*full_width);
     }
 
     #[test]
     fn schema_2_images_need_alt_text() {
-        let doc = |schema: u32| {
-            format!(
-                r#"{{ "schema": {schema}, "pages": [{{ "blocks": [{{ "type": "image", "url": "https://a.test/x.png" }}] }}] }}"#
-            )
-        };
-        assert!(
-            parse(&doc(1)).is_ok(),
-            "version 1 documents render as before"
-        );
-        assert!(parse(&doc(2))
-            .unwrap_err()
-            .to_string()
-            .contains("needs `alt` text"));
+        let doc = |schema: u32| format!(r#"{{ "schema": {schema}, "pages": [{{ "blocks": [{{ "type": "image", "url": "https://a.test/x.png" }}] }}] }}"#);
+        assert!(parse(&doc(1)).is_ok(), "version 1 documents render as before");
+        assert!(parse(&doc(2)).unwrap_err().to_string().contains("needs `alt` text"));
     }
 
     #[test]
@@ -478,13 +418,9 @@ mod tests {
     #[test]
     fn the_json_schema_covers_every_component() {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/schema/v2.json");
-        let schema: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let schema: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
         for kind in Component::TYPES {
-            assert_eq!(
-                schema["$defs"][kind]["properties"]["type"]["const"], kind,
-                "schema/v2.json is missing `{kind}`"
-            );
+            assert_eq!(schema["$defs"][kind]["properties"]["type"]["const"], kind, "schema/v2.json is missing `{kind}`");
         }
     }
 
@@ -497,15 +433,9 @@ mod tests {
             ]
         }"#;
         let doc = parse(input).unwrap();
-        assert_eq!(
-            doc.frontmatter.as_ref().unwrap().title.as_deref(),
-            Some("Hello")
-        );
+        assert_eq!(doc.frontmatter.as_ref().unwrap().title.as_deref(), Some("Hello"));
         assert_eq!(doc.nodes.len(), 1);
-        assert!(matches!(
-            doc.nodes[0],
-            DocumentNode::Heading { level: 2, .. }
-        ));
+        assert!(matches!(doc.nodes[0], DocumentNode::Heading { level: 2, .. }));
     }
 
     #[test]
@@ -538,18 +468,13 @@ mod tests {
         let doc = parse(input).unwrap();
         assert_eq!(doc.nodes.len(), 1);
         match &doc.nodes[0] {
-            DocumentNode::Columns {
-                ratios, children, ..
-            } => {
+            DocumentNode::Columns { ratios, children, .. } => {
                 assert_eq!(ratios, &[1.0, 1.0]);
                 assert_eq!(children.len(), 2);
                 // First slot should have a paragraph + bullet list from markdown
                 assert!(children[0].nodes.len() >= 2);
                 // Second slot has a single paragraph
-                assert!(matches!(
-                    children[1].nodes[0],
-                    DocumentNode::Paragraph { .. }
-                ));
+                assert!(matches!(children[1].nodes[0], DocumentNode::Paragraph { .. }));
                 // No styling specified — style should be None
                 assert!(children[0].style.is_none());
             }

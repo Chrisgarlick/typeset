@@ -30,36 +30,17 @@ impl Caller {
 /// Authentication: `Authorization: Bearer ck_…`, a caller key checked with
 /// Clients (cached 60s, so a revoked key stops working within a minute), or,
 /// while it's still set, the old shared `TYPESET_TOKEN`.
-pub async fn auth_middleware(
-    State(state): State<AppState>,
-    mut request: Request,
-    next: Next,
-) -> Response {
-    let header = request
-        .headers()
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string);
-    let presented = header
-        .as_deref()
-        .and_then(|s| s.strip_prefix("Bearer "))
-        .map(str::trim);
+pub async fn auth_middleware(State(state): State<AppState>, mut request: Request, next: Next) -> Response {
+    let header = request.headers().get("authorization").and_then(|v| v.to_str().ok()).map(str::to_string);
+    let presented = header.as_deref().and_then(|s| s.strip_prefix("Bearer ")).map(str::trim);
 
     let caller = match (presented, &state.config.api_token, &state.brands) {
-        (Some(token), Some(expected), _)
-            if constant_time_eq(token.as_bytes(), expected.as_bytes()) =>
-        {
-            Caller::Legacy
-        }
-        (Some(token), _, Some(brands)) if token.starts_with("ck_") => {
-            match brands.authenticate(header.as_deref()).await {
-                Ok(c) => Caller::Key(c),
-                Err(crate::clients::Error::Unauthorized) => {
-                    return StatusCode::UNAUTHORIZED.into_response()
-                }
-                Err(e) => return AppError::from(e).into_response(),
-            }
-        }
+        (Some(token), Some(expected), _) if constant_time_eq(token.as_bytes(), expected.as_bytes()) => Caller::Legacy,
+        (Some(token), _, Some(brands)) if token.starts_with("ck_") => match brands.authenticate(header.as_deref()).await {
+            Ok(c) => Caller::Key(c),
+            Err(crate::clients::Error::Unauthorized) => return StatusCode::UNAUTHORIZED.into_response(),
+            Err(e) => return AppError::from(e).into_response(),
+        },
         _ => return StatusCode::UNAUTHORIZED.into_response(),
     };
     request.extensions_mut().insert(caller);

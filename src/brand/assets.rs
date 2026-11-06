@@ -68,8 +68,7 @@ pub async fn fetch_images(nodes: &[DocumentNode]) -> HashMap<String, Asset> {
 fn collect_image_urls(nodes: &[DocumentNode], urls: &mut Vec<String>) {
     for node in nodes {
         match node {
-            DocumentNode::Image { url, .. }
-            | DocumentNode::Component(Component::Page(Page { url, .. }))
+            DocumentNode::Image { url, .. } | DocumentNode::Component(Component::Page(Page { url, .. }))
                 if !urls.contains(url) =>
             {
                 urls.push(url.clone())
@@ -98,10 +97,7 @@ async fn fetch_asset(url: Option<&str>, stem: &str) -> Option<Asset> {
     } else {
         fetch_cached(url).await?
     };
-    Some(Asset {
-        name: format!("{stem}.{ext}"),
-        bytes,
-    })
+    Some(Asset { name: format!("{stem}.{ext}"), bytes })
 }
 
 /// An image embedded in the document as `data:image/png;base64,...`, for
@@ -114,13 +110,11 @@ fn decode_data_uri(uri: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
         .strip_prefix("data:")
         .and_then(|h| h.strip_suffix(";base64"))
         .ok_or_else(|| anyhow::anyhow!("only base64 data URIs are read"))?;
-    let bytes =
-        crate::encoding::base64_decode(data).ok_or_else(|| anyhow::anyhow!("invalid base64"))?;
+    let bytes = crate::encoding::base64_decode(data).ok_or_else(|| anyhow::anyhow!("invalid base64"))?;
     if bytes.len() > MAX_BYTES {
         anyhow::bail!("image is over {MAX_BYTES} bytes");
     }
-    let ext = image_extension(mime, &bytes)
-        .ok_or_else(|| anyhow::anyhow!("not a PNG, JPEG, WebP or SVG image ({mime})"))?;
+    let ext = image_extension(mime, &bytes).ok_or_else(|| anyhow::anyhow!("not a PNG, JPEG, WebP or SVG image ({mime})"))?;
     Ok((bytes, ext))
 }
 
@@ -137,10 +131,7 @@ async fn fetch_cached(url: &str) -> Option<(Vec<u8>, &'static str)> {
             None
         }
     };
-    cache()
-        .lock()
-        .unwrap()
-        .insert(url.to_string(), (Instant::now(), result.clone()));
+    cache().lock().unwrap().insert(url.to_string(), (Instant::now(), result.clone()));
     result
 }
 
@@ -153,10 +144,7 @@ async fn fetch(url: &str) -> anyhow::Result<(Vec<u8>, &'static str)> {
         .redirect(reqwest::redirect::Policy::limited(3))
         .build()?;
     let response = client.get(url).send().await?.error_for_status()?;
-    if response
-        .content_length()
-        .is_some_and(|n| n as usize > MAX_BYTES)
-    {
+    if response.content_length().is_some_and(|n| n as usize > MAX_BYTES) {
         anyhow::bail!("image is over {MAX_BYTES} bytes");
     }
     let content_type = response
@@ -204,18 +192,9 @@ mod tests {
 
     #[test]
     fn recognises_image_types() {
-        assert_eq!(
-            image_extension("image/svg+xml; charset=utf-8", b""),
-            Some("svg")
-        );
-        assert_eq!(
-            image_extension("application/octet-stream", b"\x89PNG\r\n"),
-            Some("png")
-        );
-        assert_eq!(
-            image_extension("text/plain", b"<?xml version=\"1.0\"?><svg>"),
-            Some("svg")
-        );
+        assert_eq!(image_extension("image/svg+xml; charset=utf-8", b""), Some("svg"));
+        assert_eq!(image_extension("application/octet-stream", b"\x89PNG\r\n"), Some("png"));
+        assert_eq!(image_extension("text/plain", b"<?xml version=\"1.0\"?><svg>"), Some("svg"));
         assert_eq!(image_extension("text/html", b"<html>"), None);
     }
 
@@ -229,10 +208,7 @@ mod tests {
         };
         let nodes = vec![
             image("https://a.test/1.png"),
-            DocumentNode::Section {
-                style: None,
-                children: vec![image("https://a.test/2.png"), image("https://a.test/1.png")],
-            },
+            DocumentNode::Section { style: None, children: vec![image("https://a.test/2.png"), image("https://a.test/1.png")] },
         ];
         let mut urls = Vec::new();
         collect_image_urls(&nodes, &mut urls);
@@ -242,10 +218,7 @@ mod tests {
     #[test]
     fn reads_data_uri_images() {
         let png = [0x89, b'P', b'N', b'G', 13, 10, 26, 10];
-        let uri = format!(
-            "data:image/png;base64,{}",
-            crate::encoding::base64_encode(&png)
-        );
+        let uri = format!("data:image/png;base64,{}", crate::encoding::base64_encode(&png));
         assert_eq!(decode_data_uri(&uri).unwrap(), (png.to_vec(), "png"));
         assert!(decode_data_uri("data:text/plain;base64,aGk=").is_err());
         assert!(decode_data_uri("data:image/png,raw").is_err());

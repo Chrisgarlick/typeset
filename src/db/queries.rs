@@ -26,9 +26,11 @@ impl Database {
     // --- Client profiles (read only: brands live in Clients; `typeset export-brands`) ---
 
     pub async fn list_client_profiles(&self) -> Result<Vec<ClientProfile>, sqlx::Error> {
-        sqlx::query_as::<_, ClientProfile>("SELECT * FROM client_profiles ORDER BY name")
-            .fetch_all(&self.pool)
-            .await
+        sqlx::query_as::<_, ClientProfile>(
+            "SELECT * FROM client_profiles ORDER BY name",
+        )
+        .fetch_all(&self.pool)
+        .await
     }
 
     // --- Render History ---

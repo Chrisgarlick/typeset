@@ -1,8 +1,8 @@
 use axum::{extract::State, Extension, Json};
 
 use crate::error::AppError;
-use crate::models::render_job::RenderRequest;
 use crate::routes::auth::Caller;
+use crate::models::render_job::RenderRequest;
 use crate::state::AppState;
 
 /// Thumbnails of every page, for checking a layout before rendering the real

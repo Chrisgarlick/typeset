@@ -1,8 +1,8 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use crate::brand::assets::Asset;
 use crate::brand::engine::BrandedDocument;
+use crate::brand::assets::Asset;
 
 /// Fetched images by URL.
 type Images = std::collections::HashMap<String, Asset>;
@@ -28,10 +28,7 @@ impl Ctx<'_> {
     }
 
     fn boxed(&self) -> Self {
-        Ctx {
-            in_box: true,
-            ..*self
-        }
+        Ctx { in_box: true, ..*self }
     }
 }
 use crate::models::components::{Better, Component, FindingCard, Opener};
@@ -60,11 +57,7 @@ fn build_source(branded: &BrandedDocument) -> String {
     let level = section_level(&branded.doc.nodes, consumed_body_h1);
     // Parts sit between the cover's H1 and the sections, pushing sections
     // down a level.
-    let has_parts = branded
-        .doc
-        .nodes
-        .iter()
-        .any(|n| matches!(n, DocumentNode::Component(Component::Part(_))));
+    let has_parts = branded.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::Part(_))));
     let ctx = Ctx {
         images: &branded.images,
         section_level: level,
@@ -126,12 +119,7 @@ struct CoverData {
 /// Templates from before the editorial covers (`minimal`, `bold`, `plain`)
 /// keep the dark cover they had.
 fn cover_style(document: Option<&str>, profile_template: &str) -> &'static str {
-    match document
-        .unwrap_or(profile_template)
-        .trim()
-        .to_ascii_lowercase()
-        .as_str()
-    {
+    match document.unwrap_or(profile_template).trim().to_ascii_lowercase().as_str() {
         "editorial" => "editorial",
         "band" => "band",
         _ => "dark",
@@ -171,10 +159,7 @@ fn extract_cover(branded: &BrandedDocument) -> (Option<CoverData>, bool) {
             date: fm.and_then(|f| f.date.clone()),
             eyebrow: fm.and_then(|f| f.eyebrow.clone()),
             reference: fm.and_then(|f| f.reference.clone()),
-            style: cover_style(
-                fm.and_then(|f| f.cover.as_deref()),
-                &branded.profile.cover_template,
-            ),
+            style: cover_style(fm.and_then(|f| f.cover.as_deref()), &branded.profile.cover_template),
         }),
         consumed_body_h1,
     )
@@ -207,19 +192,12 @@ fn section_level(nodes: &[DocumentNode], consumed_body_h1: bool) -> u8 {
             _ => {}
         }
     }
-    if level == u8::MAX {
-        1
-    } else {
-        level
-    }
+    if level == u8::MAX { 1 } else { level }
 }
 
 /// A logo's path inside the compile root, as a Typst value.
 fn asset_path(asset: &Option<Asset>) -> String {
-    asset
-        .as_ref()
-        .map(|a| typst_string(&a.name))
-        .unwrap_or_else(|| "none".to_string())
+    asset.as_ref().map(|a| typst_string(&a.name)).unwrap_or_else(|| "none".to_string())
 }
 
 /// Bleed added to each edge for print, in millimetres.
@@ -243,12 +221,7 @@ fn paper_width_mm(page_size: &str) -> f32 {
 }
 
 /// Emit the design tokens (`t`) and document facts (`meta`) the theme reads.
-fn write_preamble(
-    s: &mut String,
-    b: &BrandedDocument,
-    cover: &Option<CoverData>,
-    section_level: u8,
-) {
+fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>, section_level: u8) {
     let p = &b.profile;
 
     let doc_title = cover
@@ -262,11 +235,7 @@ fn write_preamble(
     // With a brand mark in the running head, the title moves to the footer.
     let recipient = cover.as_ref().and_then(|c| c.recipient.clone());
     let footer_left = match (has_brand, recipient) {
-        (true, Some(r)) => format!(
-            "{} · Prepared for {}",
-            typst_content(&doc_title),
-            typst_content(&r)
-        ),
+        (true, Some(r)) => format!("{} · Prepared for {}", typst_content(&doc_title), typst_content(&r)),
         (true, None) => typst_content(&doc_title),
         (false, Some(r)) => format!("Prepared for {}", typst_content(&r)),
         (false, None) => typst_content(&doc_title),
@@ -372,16 +341,13 @@ fn write_preamble(
         ml = p.margin_left + bleed,
         mr = p.margin_right + bleed,
         side = (side_mm * 10.0).round() / 10.0,
-        section_need =
-            ((paper_height_mm(&p.page_size) - p.margin_top - p.margin_bottom) * 0.3).round(),
+        section_need = ((paper_height_mm(&p.page_size) - p.margin_top - p.margin_bottom) * 0.3).round(),
         title = typst_string(&doc_title),
         author = match author {
             Some(a) => format!("({},)", typst_string(&a)),
             None => "()".to_string(),
         },
-        description = description
-            .map(|d| typst_string(&d))
-            .unwrap_or_else(|| "none".to_string()),
+        description = description.map(|d| typst_string(&d)).unwrap_or_else(|| "none".to_string()),
         running_title = typst_content(&doc_title),
         footer_left = footer_left,
         page_w = paper_width_mm(&p.page_size) + 2.0 * bleed,
@@ -389,30 +355,18 @@ fn write_preamble(
         print = b.print,
         has_cover = cover.is_some(),
         section_level = section_level,
-        part_level = if b
-            .doc
-            .nodes
-            .iter()
-            .any(|n| matches!(n, DocumentNode::Component(Component::Part(_))))
-        {
+        part_level = if b.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::Part(_)))) {
             (section_level - 1).to_string()
         } else {
             "none".to_string()
         },
         header = p.header_enabled,
         footer = p.footer_enabled,
-        wordmark = wordmark
-            .as_deref()
-            .map(typst_string)
-            .unwrap_or_else(|| "none".to_string()),
+        wordmark = wordmark.as_deref().map(typst_string).unwrap_or_else(|| "none".to_string()),
         logo_light = asset_path(&b.logos.light),
         logo_dark = asset_path(&b.logos.dark),
         has_brand = has_brand,
-        has_back_page = b
-            .doc
-            .nodes
-            .iter()
-            .any(|n| matches!(n, DocumentNode::Component(Component::BackPage(_)))),
+        has_back_page = b.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::BackPage(_)))),
     ));
     s.push('\n');
     s.push_str(THEME);
@@ -446,9 +400,7 @@ fn write_cover(s: &mut String, c: &CoverData, b: &BrandedDocument) {
 
 /// Frontmatter text as Typst content, escaped literally.
 fn plain_arg(text: &Option<String>) -> String {
-    text.as_deref()
-        .map(|t| format!("[{}]", typst_content(t)))
-        .unwrap_or_else(|| "none".to_string())
+    text.as_deref().map(|t| format!("[{}]", typst_content(t))).unwrap_or_else(|| "none".to_string())
 }
 
 /// The cover title's size: the display size, shrunk until the longest word
@@ -457,11 +409,7 @@ fn cover_title_size(title: &str, b: &BrandedDocument) -> f32 {
     let p = &b.profile;
     let display = (p.font_size_h1 * 1.45).round();
     let width_pt = (paper_width_mm(&p.page_size) - p.margin_left - p.margin_right) * 72.0 / 25.4;
-    let longest = title
-        .split_whitespace()
-        .map(|w| w.chars().count())
-        .max()
-        .unwrap_or(1) as f32;
+    let longest = title.split_whitespace().map(|w| w.chars().count()).max().unwrap_or(1) as f32;
     (width_pt * 0.95 / (longest * 0.52)).clamp(24.0, display)
 }
 
@@ -499,9 +447,7 @@ fn write_body(s: &mut String, nodes: &[DocumentNode], consumed_body_h1: bool, ct
                 Some(DocumentNode::Heading { level, .. }) if *level <= section_level
             ) | matches!(
                 nodes.get(i + 1),
-                Some(DocumentNode::Component(
-                    Component::Opener(_) | Component::Part(_)
-                ))
+                Some(DocumentNode::Component(Component::Opener(_) | Component::Part(_)))
             )
         {
             continue;
@@ -559,11 +505,7 @@ fn write_node(s: &mut String, node: &DocumentNode, ctx: Ctx) {
         }
         DocumentNode::OrderedList { items, start } => {
             for (i, item) in items.iter().enumerate() {
-                s.push_str(&format!(
-                    "{}. {}\n",
-                    *start as usize + i,
-                    typst_inline(item)
-                ));
+                s.push_str(&format!("{}. {}\n", *start as usize + i, typst_inline(item)));
             }
             s.push('\n');
         }
@@ -587,27 +529,15 @@ fn write_node(s: &mut String, node: &DocumentNode, ctx: Ctx) {
         DocumentNode::SectionBreak => {
             s.push_str("#section-break()\n\n");
         }
-        DocumentNode::Image {
-            url,
-            alt,
-            caption,
-            full_width,
-        } => {
-            let path = images
-                .get(url)
-                .map(|a| typst_string(&a.name))
-                .unwrap_or_else(|| "none".to_string());
+        DocumentNode::Image { url, alt, caption, full_width } => {
+            let path = images.get(url).map(|a| typst_string(&a.name)).unwrap_or_else(|| "none".to_string());
             s.push_str(&format!(
                 "#figure-image({path}, alt: {}, caption: {}, full: {full_width})\n\n",
                 typst_string(alt),
                 opt_content(caption),
             ));
         }
-        DocumentNode::Columns {
-            ratios,
-            gutter,
-            children,
-        } => {
+        DocumentNode::Columns { ratios, gutter, children } => {
             write_columns(s, ratios, gutter.as_deref(), children, ctx);
         }
         DocumentNode::Section { style, children } => {
@@ -627,15 +557,11 @@ fn content_arg(text: &str) -> String {
 }
 
 fn opt_content(text: &Option<String>) -> String {
-    text.as_deref()
-        .map(content_arg)
-        .unwrap_or_else(|| "none".to_string())
+    text.as_deref().map(content_arg).unwrap_or_else(|| "none".to_string())
 }
 
 fn opt_number(value: Option<f64>) -> String {
-    value
-        .map(|v| format!("{v}"))
-        .unwrap_or_else(|| "none".to_string())
+    value.map(|v| format!("{v}")).unwrap_or_else(|| "none".to_string())
 }
 
 /// Intros longer than this are set at body size rather than enlarged.
@@ -647,9 +573,7 @@ fn write_opener(s: &mut String, o: &Opener, number: Option<usize>, level: u8) {
             "(value: {}, label: {}, status: {})",
             content_arg(&st.value),
             opt_content(&st.label),
-            st.status
-                .map(|v| typst_string(v.as_str()))
-                .unwrap_or_else(|| "none".to_string()),
+            st.status.map(|v| typst_string(v.as_str())).unwrap_or_else(|| "none".to_string()),
         ),
         None => "none".to_string(),
     };
@@ -667,11 +591,7 @@ fn write_opener(s: &mut String, o: &Opener, number: Option<usize>, level: u8) {
 fn finding_args(f: &FindingCard) -> String {
     let pages: Vec<String> = f.pages.iter().map(|p| content_arg(p)).collect();
     let evidence = match &f.evidence {
-        Some(e) => format!(
-            "(value: {}, label: {})",
-            content_arg(&e.value),
-            opt_content(&e.label)
-        ),
+        Some(e) => format!("(value: {}, label: {})", content_arg(&e.value), opt_content(&e.label)),
         None => "none".to_string(),
     };
     format!(
@@ -680,11 +600,7 @@ fn finding_args(f: &FindingCard) -> String {
         typst_string(f.severity.as_str()),
         opt_content(&f.why),
         opt_content(&f.fix),
-        if pages.is_empty() {
-            String::new()
-        } else {
-            format!("{},", pages.join(", "))
-        },
+        if pages.is_empty() { String::new() } else { format!("{},", pages.join(", ")) },
     )
 }
 
@@ -710,14 +626,8 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                         "(title: {}, severity: {}, count: {}, pages: ({}), fix: {})",
                         content_arg(&i.title),
                         typst_string(i.severity.as_str()),
-                        i.count
-                            .map(|c| c.to_string())
-                            .unwrap_or_else(|| "none".to_string()),
-                        if pages.is_empty() {
-                            String::new()
-                        } else {
-                            format!("{},", pages.join(", "))
-                        },
+                        i.count.map(|c| c.to_string()).unwrap_or_else(|| "none".to_string()),
+                        if pages.is_empty() { String::new() } else { format!("{},", pages.join(", ")) },
                         opt_content(&i.fix),
                     )
                 })
@@ -740,11 +650,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                             )
                         })
                         .collect();
-                    format!(
-                        "(title: {}, items: ({},))",
-                        opt_content(&g.title),
-                        items.join(", ")
-                    )
+                    format!("(title: {}, items: ({},))", opt_content(&g.title), items.join(", "))
                 })
                 .collect();
             s.push_str(&format!("#steps(({},))\n\n", groups.join(",\n  ")));
@@ -763,11 +669,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                     )
                 })
                 .collect();
-            s.push_str(&format!(
-                "#scores(({},), caption: {})\n\n",
-                items.join(", "),
-                opt_content(&sc.caption)
-            ));
+            s.push_str(&format!("#scores(({},), caption: {})\n\n", items.join(", "), opt_content(&sc.caption)));
         }
         Component::Metrics(m) => {
             let items: Vec<String> = m
@@ -779,9 +681,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                         content_arg(&i.value),
                         content_arg(&i.label),
                         opt_content(&i.target),
-                        i.status
-                            .map(|v| typst_string(v.as_str()))
-                            .unwrap_or_else(|| "none".to_string()),
+                        i.status.map(|v| typst_string(v.as_str())).unwrap_or_else(|| "none".to_string()),
                     )
                 })
                 .collect();
@@ -791,13 +691,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
             let items: Vec<String> = f
                 .items
                 .iter()
-                .map(|i| {
-                    format!(
-                        "(label: {}, value: {})",
-                        content_arg(&i.label),
-                        content_arg(&i.value)
-                    )
-                })
+                .map(|i| format!("(label: {}, value: {})", content_arg(&i.label), content_arg(&i.value)))
                 .collect();
             s.push_str(&format!("#facts(({},))\n\n", items.join(", ")));
         }
@@ -810,11 +704,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                     let values: Vec<String> = (0..m.columns.len())
                         .map(|i| opt_number(r.values.get(i).copied().flatten()))
                         .collect();
-                    format!(
-                        "(label: {}, values: ({},))",
-                        content_arg(&r.label),
-                        values.join(", ")
-                    )
+                    format!("(label: {}, values: ({},))", content_arg(&r.label), values.join(", "))
                 })
                 .collect();
             s.push_str(&format!(
@@ -835,10 +725,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
             s.push_str(&format!(
                 "#bars(({},), unit: {}, target: {}, better: {}, caption: {})\n\n",
                 items.join(", "),
-                b.unit
-                    .as_deref()
-                    .map(typst_string)
-                    .unwrap_or_else(|| "none".to_string()),
+                b.unit.as_deref().map(typst_string).unwrap_or_else(|| "none".to_string()),
                 opt_number(b.target),
                 typst_string(match b.better {
                     Better::Lower => "lower",
@@ -862,11 +749,7 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
         // A part only means something at the top level; nested, it's a title.
         Component::Part(p) => s.push_str(&format!("#card-title[{}]\n\n", typst_inline(&p.title))),
         Component::Highlights(h) => {
-            let items: Vec<String> = h
-                .items
-                .iter()
-                .map(|f| format!("({})", finding_args(f)))
-                .collect();
+            let items: Vec<String> = h.items.iter().map(|f| format!("({})", finding_args(f))).collect();
             s.push_str(&format!("#highlights(({},))\n\n", items.join(",\n  ")));
         }
         Component::PriorityMatrix(m) => {
@@ -888,15 +771,8 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
             s.push_str(&format!("#contents(title: {})\n\n", opt_content(&c.title)));
         }
         Component::Page(p) => {
-            let path = ctx
-                .images
-                .get(&p.url)
-                .map(|a| typst_string(&a.name))
-                .unwrap_or_else(|| "none".to_string());
-            s.push_str(&format!(
-                "#designed-page({path}, alt: {})\n\n",
-                typst_string(&p.alt)
-            ));
+            let path = ctx.images.get(&p.url).map(|a| typst_string(&a.name)).unwrap_or_else(|| "none".to_string());
+            s.push_str(&format!("#designed-page({path}, alt: {})\n\n", typst_string(&p.alt)));
         }
         Component::BackPage(b) => {
             let contact: Vec<String> = [
@@ -906,20 +782,12 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                 ("Phone", &b.contact.phone),
             ]
             .into_iter()
-            .filter_map(|(label, value)| {
-                value
-                    .as_ref()
-                    .map(|v| format!("({}, {})", typst_string(label), content_arg(v)))
-            })
+            .filter_map(|(label, value)| value.as_ref().map(|v| format!("({}, {})", typst_string(label), content_arg(v))))
             .collect();
             s.push_str(&format!(
                 "#back-page(about: {}, contact: ({}))\n\n",
                 opt_content(&b.about),
-                if contact.is_empty() {
-                    String::new()
-                } else {
-                    format!("{},", contact.join(", "))
-                },
+                if contact.is_empty() { String::new() } else { format!("{},", contact.join(", ")) },
             ));
         }
     }
@@ -1043,19 +911,8 @@ fn write_styled_block(s: &mut String, style: &BlockStyle, inner: &str) {
 /// Colour tokens a style may name instead of a hex value, so authors stay on
 /// brand.
 const COLOUR_TOKENS: [&str; 13] = [
-    "ink",
-    "ink-muted",
-    "heading",
-    "paper",
-    "surface",
-    "rule",
-    "accent",
-    "accent-soft",
-    "cover-bg",
-    "cover-text",
-    "good",
-    "fair",
-    "poor",
+    "ink", "ink-muted", "heading", "paper", "surface", "rule", "accent", "accent-soft", "cover-bg",
+    "cover-text", "good", "fair", "poor",
 ];
 
 /// Length tokens a style may name instead of a raw length.
@@ -1084,30 +941,20 @@ fn length_value(value: Option<&str>, default: &str) -> String {
 }
 
 fn is_hex(s: &str) -> bool {
-    s.starts_with('#') && s.len() == 7 && s[1..].chars().all(|c| c.is_ascii_hexdigit())
+    s.starts_with('#')
+        && s.len() == 7
+        && s[1..].chars().all(|c| c.is_ascii_hexdigit())
 }
 
 /// Accepts a length string like "8mm", "12pt", "1em". Falls back to `default`
 /// if the input is missing or fails a permissive sanity check.
 fn typst_length(value: Option<&str>, default: &str) -> String {
-    let Some(v) = value else {
-        return default.to_string();
-    };
+    let Some(v) = value else { return default.to_string() };
     let trimmed = v.trim();
     let ok = !trimmed.is_empty()
-        && trimmed
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
-        && trimmed
-            .chars()
-            .next()
-            .map(|c| c.is_ascii_digit() || c == '-' || c == '.')
-            .unwrap_or(false);
-    if ok {
-        trimmed.to_string()
-    } else {
-        default.to_string()
-    }
+        && trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
+        && trimmed.chars().next().map(|c| c.is_ascii_digit() || c == '-' || c == '.').unwrap_or(false);
+    if ok { trimmed.to_string() } else { default.to_string() }
 }
 
 /// Column widths for a table too wide for the text column: a column whose
@@ -1167,15 +1014,10 @@ fn write_code_block(s: &mut String, language: Option<&str>, code: &str) {
             s.push_str(code);
             s.push_str("\n  )\n]\n\n");
         }
-        Some(info) if info.split_whitespace().next() == Some("chart") => {
-            match super::chart::from_fence(info, code) {
-                Ok(c) => s.push_str(&super::chart::typst(&c)),
-                Err(e) => s.push_str(&format!(
-                    "#callout(tone: \"warn\", title: [Chart unavailable])[{}]\n\n",
-                    typst_content(&e)
-                )),
-            }
-        }
+        Some(info) if info.split_whitespace().next() == Some("chart") => match super::chart::from_fence(info, code) {
+            Ok(c) => s.push_str(&super::chart::typst(&c)),
+            Err(e) => s.push_str(&format!("#callout(tone: \"warn\", title: [Chart unavailable])[{}]\n\n", typst_content(&e))),
+        },
         Some(lang) => {
             s.push_str(&format!("```{}\n{}\n```\n\n", lang, code));
         }
@@ -1241,13 +1083,9 @@ fn typst_inline(s: &str) -> String {
             Event::Start(Tag::Strong) => out.push_str("#strong["),
             Event::Start(Tag::Emphasis) => out.push_str("#emph["),
             Event::Start(Tag::Strikethrough) => out.push_str("#strike["),
-            Event::End(TagEnd::Strong)
-            | Event::End(TagEnd::Emphasis)
-            | Event::End(TagEnd::Strikethrough) => out.push(']'),
+            Event::End(TagEnd::Strong) | Event::End(TagEnd::Emphasis) | Event::End(TagEnd::Strikethrough) => out.push(']'),
             Event::Start(Tag::Link { dest_url, .. }) => {
-                let safe = ["https://", "http://", "mailto:"]
-                    .iter()
-                    .any(|p| dest_url.starts_with(p));
+                let safe = ["https://", "http://", "mailto:"].iter().any(|p| dest_url.starts_with(p));
                 if safe {
                     out.push_str(&format!("#link({})[", typst_string(&dest_url)));
                 }
@@ -1299,16 +1137,8 @@ pub enum FontRole {
 pub const BUNDLED_FONTS: [&str; 3] = ["Inter", "Inter Tight", "JetBrains Mono"];
 
 /// Monospace names that map to JetBrains Mono.
-const MONO_ALIASES: [&str; 8] = [
-    "courier",
-    "courier new",
-    "monospace",
-    "dejavu sans mono",
-    "menlo",
-    "consolas",
-    "dm mono",
-    "ibm plex mono",
-];
+const MONO_ALIASES: [&str; 8] =
+    ["courier", "courier new", "monospace", "dejavu sans mono", "menlo", "consolas", "dm mono", "ibm plex mono"];
 
 /// Map a profile's font name to a bundled family: exact matches pass through,
 /// a few known names map to their closest bundled family, and anything else
@@ -1316,10 +1146,7 @@ const MONO_ALIASES: [&str; 8] = [
 /// Inter Tight for headings, JetBrains Mono for code.
 pub fn font_family(name: &str, role: FontRole) -> String {
     let trimmed = name.trim();
-    if let Some(found) = BUNDLED_FONTS
-        .iter()
-        .find(|f| f.eq_ignore_ascii_case(trimmed))
-    {
+    if let Some(found) = BUNDLED_FONTS.iter().find(|f| f.eq_ignore_ascii_case(trimmed)) {
         return found.to_string();
     }
     let lower = trimmed.to_ascii_lowercase();
@@ -1341,11 +1168,7 @@ pub fn font_family(name: &str, role: FontRole) -> String {
 /// A library font from Clients passes through by name; anything else maps
 /// to a bundled family (`font_family`).
 fn family(b: &BrandedDocument, name: &str, role: FontRole) -> String {
-    b.font_families
-        .iter()
-        .find(|f| f.eq_ignore_ascii_case(name.trim()))
-        .cloned()
-        .unwrap_or_else(|| font_family(name, role))
+    b.font_families.iter().find(|f| f.eq_ignore_ascii_case(name.trim())).cloned().unwrap_or_else(|| font_family(name, role))
 }
 
 /// Where the bundled fonts live: `TYPESET_FONT_DIR`, then the image's
@@ -1394,23 +1217,13 @@ pub fn render_proof(branded: &BrandedDocument, ppi: u32) -> anyhow::Result<Vec<V
         .chain(branded.fonts.iter())
         .collect();
     let ppi = ppi.clamp(20, 150).to_string();
-    compile_to(
-        &source,
-        &assets,
-        &["--format", "png", "--ppi", &ppi],
-        "page-{0p}.png",
-    )
+    compile_to(&source, &assets, &["--format", "png", "--ppi", &ppi], "page-{0p}.png")
 }
 
 /// Run `typst compile` in a temporary root and return the output files in
 /// order: one for a PDF, one per page for an output pattern like
 /// `page-{0p}.png`.
-fn compile_to(
-    source: &str,
-    assets: &[&Asset],
-    extra: &[&str],
-    output_name: &str,
-) -> anyhow::Result<Vec<Vec<u8>>> {
+fn compile_to(source: &str, assets: &[&Asset], extra: &[&str], output_name: &str) -> anyhow::Result<Vec<Vec<u8>>> {
     let tmp = tempfile::tempdir()?;
     let input = tmp.path().join("doc.typ");
     let out_dir = tmp.path().join("out");
@@ -1435,11 +1248,7 @@ fn compile_to(
 
     let result = Command::new("typst")
         .args(["compile", "--root", tmp.path().to_str().unwrap()])
-        .args(
-            font_paths
-                .iter()
-                .flat_map(|p| [std::ffi::OsStr::new("--font-path"), p.as_os_str()]),
-        )
+        .args(font_paths.iter().flat_map(|p| [std::ffi::OsStr::new("--font-path"), p.as_os_str()]))
         .arg("--ignore-system-fonts")
         .args(extra)
         .arg(&input)
@@ -1454,9 +1263,7 @@ fn compile_to(
         anyhow::bail!("typst compile failed:\n{}", stderr);
     }
 
-    let mut paths: Vec<_> = std::fs::read_dir(&out_dir)?
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .collect();
+    let mut paths: Vec<_> = std::fs::read_dir(&out_dir)?.filter_map(|e| e.ok().map(|e| e.path())).collect();
     paths.sort();
     paths.iter().map(|p| Ok(std::fs::read(p)?)).collect()
 }
@@ -1491,10 +1298,7 @@ pub(crate) mod tests {
 
     #[test]
     fn inline_text_stays_escaped() {
-        assert_eq!(
-            typst_inline("Cost #1 is $5 <fast>"),
-            r"Cost \#1 is \$5 \<fast\>"
-        );
+        assert_eq!(typst_inline("Cost #1 is $5 <fast>"), r"Cost \#1 is \$5 \<fast\>");
         // A literal asterisk with no partner is text, not emphasis.
         assert_eq!(typst_inline("5 * 3"), r"5 \* 3");
     }
@@ -1502,18 +1306,12 @@ pub(crate) mod tests {
     #[test]
     fn inline_links_only_allow_web_and_mail_schemes() {
         assert_eq!(typst_inline("[x](javascript:alert(1))"), "x");
-        assert_eq!(
-            typst_inline("[x](mailto:a@b.com)"),
-            r#"#link("mailto:a@b.com")[x]"#
-        );
+        assert_eq!(typst_inline("[x](mailto:a@b.com)"), r#"#link("mailto:a@b.com")[x]"#);
     }
 
     #[test]
     fn block_syntax_in_inline_text_is_kept_literal() {
-        assert_eq!(
-            typst_inline("# not a heading *really*"),
-            typst_content("# not a heading *really*")
-        );
+        assert_eq!(typst_inline("# not a heading *really*"), typst_content("# not a heading *really*"));
         assert_eq!(typst_inline("- not a list"), typst_content("- not a list"));
     }
 
@@ -1524,10 +1322,7 @@ pub(crate) mod tests {
         assert_eq!(font_family("Helvetica", FontRole::Heading), "Inter Tight");
         assert_eq!(font_family("Helvetica", FontRole::Body), "Inter");
         assert_eq!(font_family("DM Mono", FontRole::Mono), "JetBrains Mono");
-        assert_eq!(
-            font_family("Instrument Serif", FontRole::Heading),
-            "Inter Tight"
-        );
+        assert_eq!(font_family("Instrument Serif", FontRole::Heading), "Inter Tight");
         assert_eq!(font_family("Comic Sans", FontRole::Body), "Inter");
     }
 
@@ -1541,23 +1336,11 @@ pub(crate) mod tests {
     /// name and embedded, instead of falling back to a bundled family.
     #[test]
     fn library_fonts_from_clients_are_used() {
-        let mut b = branded_json(
-            r#"{ "frontmatter": { "title": "Fonts" }, "pages": [{ "blocks": [{ "type": "markdown", "content": "Body text." }] }] }"#,
-        );
-        let bytes = std::fs::read(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests/fixtures/outfit.ttf"
-        ))
-        .unwrap();
+        let mut b = branded_json(r#"{ "frontmatter": { "title": "Fonts" }, "pages": [{ "blocks": [{ "type": "markdown", "content": "Body text." }] }] }"#);
+        let bytes = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/outfit.ttf")).unwrap();
         // As the resolver does: a variable font becomes one file per weight.
         let weights = crate::brand::fonts::static_weights("outfit-test", &bytes).unwrap();
-        b.fonts = weights
-            .iter()
-            .map(|(w, data)| Asset {
-                name: format!("fonts/outfit.{w}.ttf"),
-                bytes: data.clone(),
-            })
-            .collect();
+        b.fonts = weights.iter().map(|(w, data)| Asset { name: format!("fonts/outfit.{w}.ttf"), bytes: data.clone() }).collect();
         b.font_families = vec!["Outfit".into()];
         b.profile.font_heading = "Outfit".into();
         assert!(build_source(&b).contains(r#"font-heading: "Outfit""#));
@@ -1566,10 +1349,7 @@ pub(crate) mod tests {
         assert!(text.contains("Outfit"), "Outfit isn't embedded in the PDF");
         // Headings use the weight they ask for, not the variable font's default (Thin, 100).
         assert!(text.contains("Outfit_600wght"), "headings aren't SemiBold");
-        assert!(
-            !text.contains("Outfit_100wght") && !text.contains("Outfit-Thin"),
-            "fell back to Thin"
-        );
+        assert!(!text.contains("Outfit_100wght") && !text.contains("Outfit-Thin"), "fell back to Thin");
         // Without the file, the same name falls back to the bundled heading family.
         b.font_families.clear();
         assert!(build_source(&b).contains(r#"font-heading: "Inter Tight""#));
@@ -1577,16 +1357,14 @@ pub(crate) mod tests {
 
     #[test]
     fn sections_are_numbered_from_the_top_heading_level() {
-        let source = build_source(&branded_json(
-            r#"{
+        let source = build_source(&branded_json(r#"{
             "frontmatter": { "title": "Doc" },
             "pages": [
                 { "blocks": [{ "type": "heading", "level": 2, "text": "First" },
                              { "type": "heading", "level": 3, "text": "Inside" }] },
                 { "blocks": [{ "type": "heading", "level": 2, "text": "Second" }] }
             ]
-        }"#,
-        ));
+        }"#));
         assert!(source.contains("#heading(level: 2, supplement: [01])[First]"));
         assert!(source.contains("#heading(level: 2, supplement: [02])[Second]"));
         assert!(source.contains("=== Inside"));
@@ -1598,11 +1376,7 @@ pub(crate) mod tests {
 
     #[test]
     fn table_columns_fit_short_content_and_share_the_rest() {
-        let headers = vec![
-            "Issue".to_string(),
-            "Severity".to_string(),
-            "What to do".to_string(),
-        ];
+        let headers = vec!["Issue".to_string(), "Severity".to_string(), "What to do".to_string()];
         let rows = vec![vec![
             "Images have no alternative text describing them for screen readers".to_string(),
             "Critical".to_string(),
@@ -1615,16 +1389,14 @@ pub(crate) mod tests {
 
     #[test]
     fn headings_in_styled_boxes_become_card_titles() {
-        let source = build_source(&branded_json(
-            r##"{
+        let source = build_source(&branded_json(r##"{
             "pages": [{ "blocks": [{
                 "type": "section",
                 "background": "#111111",
                 "text_color": "#FFFFFF",
                 "blocks": [{ "type": "heading", "level": 3, "text": "Card" }]
             }]}]
-        }"##,
-        ));
+        }"##));
         // A card title isn't a heading: it stays out of the structure and bookmarks.
         assert!(source.contains("#card-title[Card]"), "{source}");
         assert!(!source.contains("=== Card"));
@@ -1636,9 +1408,7 @@ pub(crate) mod tests {
         let b = branded_json(r#"{ "pages": [] }"#);
         let display = (b.profile.font_size_h1 * 1.45).round();
         assert_eq!(cover_title_size("Short title", &b), display);
-        assert!(
-            cover_title_size("Website review: averyveryverylongdomainname.co.uk", &b) < display
-        );
+        assert!(cover_title_size("Website review: averyveryverylongdomainname.co.uk", &b) < display);
     }
 
     #[test]
@@ -1666,12 +1436,7 @@ pub(crate) mod tests {
     }
 
     fn hex(c: [f64; 3]) -> String {
-        format!(
-            "#{:02X}{:02X}{:02X}",
-            c[0].round() as u8,
-            c[1].round() as u8,
-            c[2].round() as u8
-        )
+        format!("#{:02X}{:02X}{:02X}", c[0].round() as u8, c[1].round() as u8, c[2].round() as u8)
     }
 
     /// `tint(c, amount)` from components.typ: the colour mixed into paper.
@@ -1694,28 +1459,14 @@ pub(crate) mod tests {
             for (name, c) in STATUS {
                 let checks = [
                     ("on paper", contrast_ratio(c, paper).unwrap(), 4.5),
-                    (
-                        "badge",
-                        contrast_ratio(&darken(c, 0.10), &tint(c, paper, 0.85)).unwrap(),
-                        4.5,
-                    ),
-                    (
-                        "pill",
-                        contrast_ratio(&darken(c, 0.20), &tint(c, paper, 0.82)).unwrap(),
-                        4.5,
-                    ),
+                    ("badge", contrast_ratio(&darken(c, 0.10), &tint(c, paper, 0.85)).unwrap(), 4.5),
+                    ("pill", contrast_ratio(&darken(c, 0.20), &tint(c, paper, 0.82)).unwrap(), 4.5),
                 ];
                 for (pair, ratio, min) in checks {
-                    assert!(
-                        ratio >= min,
-                        "{name} {pair} on {paper}: {ratio:.2}:1 is below {min}:1"
-                    );
+                    assert!(ratio >= min, "{name} {pair} on {paper}: {ratio:.2}:1 is below {min}:1");
                 }
             }
-            assert!(
-                contrast_ratio(paper, "#B42318").unwrap() >= 4.5,
-                "critical badge text on {paper}"
-            );
+            assert!(contrast_ratio(paper, "#B42318").unwrap() >= 4.5, "critical badge text on {paper}");
         }
     }
 
@@ -1756,8 +1507,7 @@ pub(crate) mod tests {
         }"#;
         let doc = crate::parser::json::parse(input).expect("parse");
         let profile = crate::models::client_profile::ClientProfile::default_profile();
-        let branded =
-            crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+        let branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
         let bytes = render(&branded).expect("render");
         let pdf = String::from_utf8_lossy(&bytes);
 
@@ -1781,14 +1531,8 @@ pub(crate) mod tests {
                 "unexpected font {name} in {names:?}"
             );
         }
-        assert!(
-            names.iter().any(|n| n.starts_with("InterTight")),
-            "headings should use Inter Tight: {names:?}"
-        );
-        assert!(
-            names.iter().any(|n| n.starts_with("JetBrainsMono")),
-            "code should use JetBrains Mono: {names:?}"
-        );
+        assert!(names.iter().any(|n| n.starts_with("InterTight")), "headings should use Inter Tight: {names:?}");
+        assert!(names.iter().any(|n| n.starts_with("JetBrainsMono")), "code should use JetBrains Mono: {names:?}");
     }
 
     /// Render a local file for design review. Not a test: run with
@@ -1807,19 +1551,15 @@ pub(crate) mod tests {
         } else {
             crate::parser::markdown::parse(&content)
         };
-        let mut profile =
-            serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile())
-                .unwrap();
+        let mut profile = serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile()).unwrap();
         if let Ok(path) = std::env::var("TYPESET_PREVIEW_PROFILE") {
-            let overrides: serde_json::Value =
-                serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            let overrides: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
             for (k, v) in overrides.as_object().unwrap() {
                 profile[k] = v.clone();
             }
         }
         let profile = serde_json::from_value(profile).expect("profile");
-        let mut branded =
-            crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
+        let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
         branded.print = std::env::var("TYPESET_PREVIEW_PRINT").is_ok();
         std::fs::write(format!("{out}.typ"), build_source(&branded)).unwrap();
         std::fs::write(&out, render(&branded).expect("render")).unwrap();
@@ -1834,18 +1574,13 @@ pub(crate) mod tests {
             return;
         }
         let pages: Vec<String> = (1..=14)
-            .map(|i| {
-                format!(
-                    r#"{{ "blocks": [{{ "type": "heading", "level": 2, "text": "Section {i}" }},
+            .map(|i| format!(
+                r#"{{ "blocks": [{{ "type": "heading", "level": 2, "text": "Section {i}" }},
                    {{ "type": "paragraph", "text": "{}" }}] }}"#,
-                    "Words to fill some of the page. ".repeat(i * 6)
-                )
-            })
+                "Words to fill some of the page. ".repeat(i * 6)
+            ))
             .collect();
-        let input = format!(
-            r#"{{ "frontmatter": {{ "title": "Many" }}, "pages": [{}] }}"#,
-            pages.join(",")
-        );
+        let input = format!(r#"{{ "frontmatter": {{ "title": "Many" }}, "pages": [{}] }}"#, pages.join(","));
         let source = build_source(&branded_json(&input));
 
         let tmp = tempfile::tempdir().unwrap();
@@ -1868,8 +1603,7 @@ pub(crate) mod tests {
     /// The Typst version the Docker image pins; snapshots are only
     /// comparable when rendered by the same version.
     fn pinned_typst_version() -> String {
-        let dockerfile =
-            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/Dockerfile")).unwrap();
+        let dockerfile = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/Dockerfile")).unwrap();
         dockerfile
             .lines()
             .find_map(|l| l.trim().strip_prefix("ARG TYPST_VERSION="))
@@ -1878,26 +1612,14 @@ pub(crate) mod tests {
     }
 
     fn installed_typst_version() -> Option<String> {
-        let out = std::process::Command::new("typst")
-            .arg("--version")
-            .output()
-            .ok()?;
-        String::from_utf8_lossy(&out.stdout)
-            .split_whitespace()
-            .nth(1)
-            .map(str::to_string)
+        let out = std::process::Command::new("typst").arg("--version").output().ok()?;
+        String::from_utf8_lossy(&out.stdout).split_whitespace().nth(1).map(str::to_string)
     }
 
     pub(crate) fn gallery_profile() -> crate::models::client_profile::ClientProfile {
-        let mut profile =
-            serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile())
-                .unwrap();
-        let path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests/fixtures/gallery_profile.json"
-        );
-        let overrides: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let mut profile = serde_json::to_value(crate::models::client_profile::ClientProfile::default_profile()).unwrap();
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/gallery_profile.json");
+        let overrides: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
         for (k, v) in overrides.as_object().unwrap() {
             profile[k] = v.clone();
         }
@@ -1932,11 +1654,7 @@ pub(crate) mod tests {
             .arg(tmp.path().join("page-{0p}.png"))
             .output()
             .unwrap();
-        assert!(
-            out.status.success(),
-            "{}",
-            String::from_utf8_lossy(&out.stderr)
-        );
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
 
         let mut pages: Vec<_> = std::fs::read_dir(tmp.path())
             .unwrap()
@@ -1954,14 +1672,7 @@ pub(crate) mod tests {
                 }
             }
             for page in &pages {
-                std::fs::copy(
-                    page,
-                    snapshots.join(format!(
-                        "gallery-{}",
-                        page.file_name().unwrap().to_string_lossy()
-                    )),
-                )
-                .unwrap();
+                std::fs::copy(page, snapshots.join(format!("gallery-{}", page.file_name().unwrap().to_string_lossy()))).unwrap();
             }
             return;
         }
@@ -1978,11 +1689,7 @@ pub(crate) mod tests {
             }
         }
         let approved_count = std::fs::read_dir(&snapshots)
-            .map(|d| {
-                d.flatten()
-                    .filter(|e| e.path().extension().is_some_and(|x| x == "png"))
-                    .count()
-            })
+            .map(|d| d.flatten().filter(|e| e.path().extension().is_some_and(|x| x == "png")).count())
             .unwrap_or(0);
         assert!(
             failed.is_empty() && approved_count == pages.len(),
@@ -1997,31 +1704,21 @@ pub(crate) mod tests {
         if !typst_available() {
             return;
         }
-        let b = branded_json(
-            r#"{ "schema": 2, "frontmatter": { "title": "Tagged" }, "pages": [
+        let b = branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Tagged" }, "pages": [
             { "blocks": [{ "type": "opener", "title": "One" }, { "type": "heading", "level": 3, "text": "Sub" },
                          { "type": "section", "background": "surface", "blocks": [{ "type": "heading", "level": 4, "text": "Card" }] }] }
-        ]}"#,
-        );
+        ]}"#);
         let pdf = render(&b).unwrap();
         let text = String::from_utf8_lossy(&pdf);
-        assert!(
-            text.contains("pdfuaid"),
-            "the PDF should declare PDF/UA conformance"
-        );
+        assert!(text.contains("pdfuaid"), "the PDF should declare PDF/UA conformance");
     }
 
     #[test]
     fn print_adds_bleed_and_cmyk() {
-        let mut b = branded_json(
-            r#"{ "frontmatter": { "title": "Print" }, "pages": [{ "blocks": [{ "type": "paragraph", "text": "x" }] }] }"#,
-        );
+        let mut b = branded_json(r#"{ "frontmatter": { "title": "Print" }, "pages": [{ "blocks": [{ "type": "paragraph", "text": "x" }] }] }"#);
         b.print = true;
         let source = build_source(&b);
-        assert!(
-            source.contains("page-width: 216mm,") && source.contains("page-height: 303mm,"),
-            "A4 plus 3mm a side"
-        );
+        assert!(source.contains("page-width: 216mm,") && source.contains("page-height: 303mm,"), "A4 plus 3mm a side");
         assert!(source.contains("print: true,"));
         // The theme converts every colour token to CMYK when meta.print is
         // set (checked by hand: the content streams use only k/K operators).
@@ -2032,34 +1729,23 @@ pub(crate) mod tests {
 
     #[test]
     fn parts_divide_a_combined_document_and_stay_pdf_ua() {
-        let b = branded_json(
-            r#"{ "schema": 2, "frontmatter": { "title": "Pack" }, "pages": [
+        let b = branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Pack" }, "pages": [
             { "blocks": [{ "type": "contents" }] },
             { "blocks": [{ "type": "part", "title": "Review", "intro": "The review." }] },
             { "blocks": [{ "type": "opener", "title": "Summary" }, { "type": "heading", "level": 3, "text": "Sub" }] },
             { "blocks": [{ "type": "part", "title": "Proposal" }] },
             { "blocks": [{ "type": "opener", "title": "Scope" }] }
-        ]}"#,
-        );
+        ]}"#);
         let source = build_source(&b);
         // Cover H1, parts H2, sections H3, so heading levels never skip.
-        assert!(
-            source.contains(r#"#part-divider(number: "1", level: 2, title: [Review]"#),
-            "{source}"
-        );
+        assert!(source.contains(r#"#part-divider(number: "1", level: 2, title: [Review]"#), "{source}");
         assert!(source.contains(r#"#opener(number: "01", level: 3, title: [Summary]"#));
-        assert!(
-            source.contains(r#"#opener(number: "02", level: 3, title: [Scope]"#),
-            "section numbers run on"
-        );
+        assert!(source.contains(r#"#opener(number: "02", level: 3, title: [Scope]"#), "section numbers run on");
         assert!(source.contains("==== Sub"));
         assert!(source.contains("part-level: 2,"));
         if typst_available() {
             let pdf = render(&b).unwrap();
-            assert!(
-                String::from_utf8_lossy(&pdf).contains("pdfuaid"),
-                "should still be PDF/UA"
-            );
+            assert!(String::from_utf8_lossy(&pdf).contains("pdfuaid"), "should still be PDF/UA");
         }
     }
 
@@ -2068,9 +1754,7 @@ pub(crate) mod tests {
         if !typst_available() {
             return;
         }
-        let b = branded_json(
-            r#"{ "frontmatter": { "title": "Proof" }, "pages": [{ "blocks": [{ "type": "paragraph", "text": "Body." }] }] }"#,
-        );
+        let b = branded_json(r#"{ "frontmatter": { "title": "Proof" }, "pages": [{ "blocks": [{ "type": "paragraph", "text": "Body." }] }] }"#);
         let pages = render_proof(&b, 30).unwrap();
         assert_eq!(pages.len(), 2, "a cover and one body page");
         assert!(pages.iter().all(|p| p.starts_with(b"\x89PNG")));
@@ -2103,40 +1787,27 @@ pub(crate) mod tests {
 
     #[test]
     fn openers_are_numbered_sections() {
-        let source = build_source(&branded_json(
-            r#"{ "schema": 2, "frontmatter": { "title": "Doc" }, "pages": [
+        let source = build_source(&branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Doc" }, "pages": [
             { "blocks": [{ "type": "opener", "title": "First" }, { "type": "heading", "level": 3, "text": "Sub" }] },
             { "blocks": [{ "type": "heading", "level": 2, "text": "Second" }] }
-        ]}"#,
-        ));
-        assert!(
-            source.contains(r#"#opener(number: "01", level: 2, title: [First]"#),
-            "{source}"
-        );
+        ]}"#));
+        assert!(source.contains(r#"#opener(number: "01", level: 2, title: [First]"#), "{source}");
         assert!(source.contains("#heading(level: 2, supplement: [02])[Second]"));
         assert!(source.contains("section-level: 2,"));
     }
 
     #[test]
     fn fetched_images_render_and_missing_ones_get_a_placeholder() {
-        let mut b = branded_json(
-            r#"{ "pages": [{ "blocks": [
+        let mut b = branded_json(r#"{ "pages": [{ "blocks": [
             { "type": "image", "url": "https://example.com/a.png", "alt": "A", "caption": "Cap" },
             { "type": "image", "url": "https://example.com/missing.png", "alt": "B" }
-        ]}]}"#,
-        );
+        ]}]}"#);
         b.images.insert(
             "https://example.com/a.png".to_string(),
-            Asset {
-                name: "img-0.png".to_string(),
-                bytes: Vec::new(),
-            },
+            Asset { name: "img-0.png".to_string(), bytes: Vec::new() },
         );
         let source = build_source(&b);
-        assert!(
-            source.contains(r#"#figure-image("img-0.png", alt: "A", caption: [Cap], full: false)"#),
-            "{source}"
-        );
+        assert!(source.contains(r#"#figure-image("img-0.png", alt: "A", caption: [Cap], full: false)"#), "{source}");
         assert!(source.contains(r#"#figure-image(none, alt: "B", caption: none, full: false)"#));
     }
 
@@ -2145,25 +1816,14 @@ pub(crate) mod tests {
     #[test]
     fn designed_pages_are_whole_pages() {
         let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="595" height="842"><rect width="595" height="842" fill="green"/></svg>"#;
-        let mut b = branded_json(
-            r#"{ "schema": 2, "pages": [{ "blocks": [
+        let mut b = branded_json(r#"{ "schema": 2, "pages": [{ "blocks": [
             { "type": "page", "url": "https://example.com/p1.svg", "alt": "Page one" },
             { "type": "page", "url": "https://example.com/missing.svg", "alt": "Page two" },
             { "type": "paragraph", "text": "After." }
-        ]}]}"#,
-        );
-        b.images.insert(
-            "https://example.com/p1.svg".to_string(),
-            Asset {
-                name: "img-0.svg".to_string(),
-                bytes: svg.to_vec(),
-            },
-        );
+        ]}]}"#);
+        b.images.insert("https://example.com/p1.svg".to_string(), Asset { name: "img-0.svg".to_string(), bytes: svg.to_vec() });
         let source = build_source(&b);
-        assert!(
-            source.contains(r#"#designed-page("img-0.svg", alt: "Page one")"#),
-            "{source}"
-        );
+        assert!(source.contains(r#"#designed-page("img-0.svg", alt: "Page one")"#), "{source}");
         assert!(source.contains(r#"#designed-page(none, alt: "Page two")"#));
         if typst_available() {
             let pages = render_proof(&b, 20).unwrap();
@@ -2174,27 +1834,21 @@ pub(crate) mod tests {
 
     #[test]
     fn page_blocks_need_alt_text() {
-        let err = crate::parser::json::parse(
-            r#"{ "schema": 2, "pages": [{ "blocks": [{ "type": "page", "url": "https://example.com/p.svg" }] }] }"#,
-        );
+        let err = crate::parser::json::parse(r#"{ "schema": 2, "pages": [{ "blocks": [{ "type": "page", "url": "https://example.com/p.svg" }] }] }"#);
         assert!(err.is_err());
     }
 
     #[test]
     fn the_back_page_is_left_out_of_the_page_total() {
-        let source = build_source(&branded_json(
-            r#"{ "schema": 2, "pages": [{ "blocks": [
+        let source = build_source(&branded_json(r#"{ "schema": 2, "pages": [{ "blocks": [
             { "type": "paragraph", "text": "x" }, { "type": "back_page", "about": "About." }
-        ]}]}"#,
-        ));
+        ]}]}"#));
         assert!(source.contains("has-back-page: true,"));
     }
 
     #[test]
     fn the_wordmark_replaces_the_title_in_the_running_head() {
-        let mut b = branded_json(
-            r#"{ "frontmatter": { "title": "Doc", "recipient": "Lee" }, "pages": [] }"#,
-        );
+        let mut b = branded_json(r#"{ "frontmatter": { "title": "Doc", "recipient": "Lee" }, "pages": [] }"#);
         b.profile.wordmark = Some("Chris Garlick".to_string());
         let source = build_source(&b);
         assert!(source.contains(r#"wordmark: "Chris Garlick","#));
@@ -2210,8 +1864,8 @@ pub(crate) mod tests {
             return;
         }
 
-        let path =
-            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/ai-strategy.json");
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("examples/ai-strategy.json");
         let Ok(json) = std::fs::read_to_string(&path) else {
             eprintln!("ai-strategy.json not present — skipping");
             return;
@@ -2280,8 +1934,8 @@ pub(crate) mod tests {
             return;
         }
 
-        let md_path =
-            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sample.md");
+        let md_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/sample.md");
         let md = std::fs::read_to_string(&md_path).expect("read sample.md");
 
         let doc = crate::parser::markdown::parse(&md);

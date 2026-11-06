@@ -5,21 +5,12 @@
 use crate::state::AppState;
 
 pub async fn poll(state: &AppState) -> anyhow::Result<usize> {
-    let Some(brands) = state.brands.as_ref() else {
-        return Ok(0);
-    };
+    let Some(brands) = state.brands.as_ref() else { return Ok(0) };
     let pool = state.db.pool();
-    let mut cursor: i64 =
-        sqlx::query_scalar("SELECT last_event FROM clients_event_cursor WHERE id = 1")
-            .fetch_optional(pool)
-            .await?
-            .unwrap_or(0);
+    let mut cursor: i64 = sqlx::query_scalar("SELECT last_event FROM clients_event_cursor WHERE id = 1").fetch_optional(pool).await?.unwrap_or(0);
     let mut handled = 0;
     loop {
-        let batch = brands
-            .events(cursor)
-            .await
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        let batch = brands.events(cursor).await.map_err(|e| anyhow::anyhow!("{e}"))?;
         if batch.is_empty() {
             return Ok(handled);
         }
@@ -32,11 +23,7 @@ pub async fn poll(state: &AppState) -> anyhow::Result<usize> {
                     .execute(pool)
                     .await?
                     .rows_affected();
-                tracing::info!(
-                    client = e.slug().unwrap_or(""),
-                    removed,
-                    "client deleted in Clients: render history removed"
-                );
+                tracing::info!(client = e.slug().unwrap_or(""), removed, "client deleted in Clients: render history removed");
             }
             cursor = e.id;
             sqlx::query("INSERT INTO clients_event_cursor (id, last_event) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET last_event = EXCLUDED.last_event")

@@ -6,8 +6,8 @@ use axum::{
 };
 
 use crate::error::AppError;
-use crate::models::render_job::RenderRequest;
 use crate::routes::auth::Caller;
+use crate::models::render_job::RenderRequest;
 use crate::state::AppState;
 
 /// Preview endpoint — renders and returns bytes inline (browser-displayable).

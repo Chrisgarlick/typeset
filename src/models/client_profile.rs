@@ -70,6 +70,7 @@ pub struct ClientProfile {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+
 /// WCAG contrast ratio between two `#RRGGBB` colours (the theme's own checks).
 #[cfg(test)]
 pub fn contrast_ratio(a: &str, b: &str) -> Option<f64> {
@@ -80,11 +81,7 @@ pub fn contrast_ratio(a: &str, b: &str) -> Option<f64> {
         }
         let channel = |i: usize| -> Option<f64> {
             let c = u8::from_str_radix(&hex[i..i + 2], 16).ok()? as f64 / 255.0;
-            Some(if c <= 0.03928 {
-                c / 12.92
-            } else {
-                ((c + 0.055) / 1.055).powf(2.4)
-            })
+            Some(if c <= 0.03928 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) })
         };
         Some(0.2126 * channel(0)? + 0.7152 * channel(2)? + 0.0722 * channel(4)?)
     }
@@ -92,6 +89,7 @@ pub fn contrast_ratio(a: &str, b: &str) -> Option<f64> {
     let (hi, lo) = if la > lb { (la, lb) } else { (lb, la) };
     Some((hi + 0.05) / (lo + 0.05))
 }
+
 
 impl ClientProfile {
     /// Default profile used when no client slug is provided

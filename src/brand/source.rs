@@ -28,13 +28,8 @@ pub struct ResolvedBrand {
 
 /// Parses the request's document and brands it: the shared start of every
 /// render, preview and proof. Returns the document and where its brand came from.
-pub async fn branded(
-    state: &AppState,
-    caller: &Caller,
-    req: &RenderRequest,
-) -> Result<(BrandedDocument, Option<(String, i64)>), AppError> {
-    let mut doc = crate::parser::parse(&req.input_format, &req.content)
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+pub async fn branded(state: &AppState, caller: &Caller, req: &RenderRequest) -> Result<(BrandedDocument, Option<(String, i64)>), AppError> {
+    let mut doc = crate::parser::parse(&req.input_format, &req.content).map_err(|e| AppError::BadRequest(e.to_string()))?;
     if let Some(overrides) = &req.overrides {
         let fm = doc.frontmatter.get_or_insert_with(Default::default);
         if let Some(t) = &overrides.title {
@@ -54,22 +49,11 @@ pub async fn branded(
         }
     }
     let fm = doc.frontmatter.as_ref();
-    let slug = req
-        .client
-        .clone()
-        .or_else(|| fm.and_then(|f| f.client.clone()));
+    let slug = req.client.clone().or_else(|| fm.and_then(|f| f.client.clone()));
     let mode = fm.and_then(|f| f.mode.clone());
-    let brand = resolve(
-        state,
-        caller,
-        slug.as_deref(),
-        req.brand_version,
-        mode.as_deref(),
-    )
-    .await?;
+    let brand = resolve(state, caller, slug.as_deref(), req.brand_version, mode.as_deref()).await?;
 
-    let mut branded = BrandedDocument::prepare(doc, brand.profile)
-        .map_err(|e| AppError::RenderError(e.to_string()))?;
+    let mut branded = BrandedDocument::prepare(doc, brand.profile).map_err(|e| AppError::RenderError(e.to_string()))?;
     branded.logos = brand.logos;
     branded.fonts = brand.fonts;
     branded.font_families = brand.families;
@@ -93,22 +77,12 @@ pub async fn resolve(
         }
         let profile = ClientProfile::default_profile();
         let logos = super::assets::fetch_logos(&profile).await;
-        return Ok(ResolvedBrand {
-            profile,
-            logos,
-            fonts: vec![],
-            families: vec![],
-            source: None,
-        });
+        return Ok(ResolvedBrand { profile, logos, fonts: vec![], families: vec![], source: None });
     };
     if !caller.may(slug) {
-        return Err(AppError::Forbidden(format!(
-            "this key can't use client `{slug}`"
-        )));
+        return Err(AppError::Forbidden(format!("this key can't use client `{slug}`")));
     }
-    let brands = state.brands.as_ref().ok_or_else(|| {
-        AppError::Unavailable("Typeset isn't connected to Clients (CLIENTS_URL)".into())
-    })?;
+    let brands = state.brands.as_ref().ok_or_else(|| AppError::Unavailable("Typeset isn't connected to Clients (CLIENTS_URL)".into()))?;
     let info = brands.client(slug).await?;
     let (version, doc) = brands.brand(slug, version).await?;
     let mut profile = profile_from_brand(slug, &doc, mode).map_err(AppError::BadRequest)?;
@@ -116,10 +90,7 @@ pub async fn resolve(
     // Library files the brand names, by their frozen hash.
     let library = |name: &str| -> Option<(String, String)> {
         let a = &doc["assets"][name];
-        Some((
-            a["sha256"].as_str()?.to_string(),
-            a["mime"].as_str().unwrap_or("").to_string(),
-        ))
+        Some((a["sha256"].as_str()?.to_string(), a["mime"].as_str().unwrap_or("").to_string()))
     };
     let mut fonts = vec![];
     let mut families = vec![];
@@ -127,44 +98,23 @@ pub async fn resolve(
         let t = &doc["type"][role];
         let mut family = None;
         for key in ["font", "italic-font"] {
-            let Some(name) = t[key].as_str().and_then(|f| f.strip_prefix("lib:")) else {
-                continue;
-            };
-            let Some((sha, mime)) = library(name) else {
-                continue;
-            };
+            let Some(name) = t[key].as_str().and_then(|f| f.strip_prefix("lib:")) else { continue };
+            let Some((sha, mime)) = library(name) else { continue };
             let bytes = brands.asset(&sha).await?;
             let Some(found) = family_name(&bytes) else {
-                tracing::warn!(
-                    client = slug,
-                    font = name,
-                    "library font without a family name; using the bundled fallback"
-                );
+                tracing::warn!(client = slug, font = name, "library font without a family name; using the bundled fallback");
                 continue;
             };
-            let ext = if mime == "font/otf" || bytes.starts_with(b"OTTO") {
-                "otf"
-            } else {
-                "ttf"
-            };
-            if !fonts
-                .iter()
-                .any(|f: &Asset| f.name.starts_with(&format!("fonts/{name}.")))
-            {
+            let ext = if mime == "font/otf" || bytes.starts_with(b"OTTO") { "otf" } else { "ttf" };
+            if !fonts.iter().any(|f: &Asset| f.name.starts_with(&format!("fonts/{name}."))) {
                 // Typst only draws a variable font's default weight: give it one file per weight.
                 match super::fonts::static_weights(&sha, &bytes) {
                     Some(weights) => {
                         for (w, data) in weights.iter() {
-                            fonts.push(Asset {
-                                name: format!("fonts/{name}.{w}.ttf"),
-                                bytes: data.clone(),
-                            });
+                            fonts.push(Asset { name: format!("fonts/{name}.{w}.ttf"), bytes: data.clone() });
                         }
                     }
-                    None => fonts.push(Asset {
-                        name: format!("fonts/{name}.{ext}"),
-                        bytes: bytes.to_vec(),
-                    }),
+                    None => fonts.push(Asset { name: format!("fonts/{name}.{ext}"), bytes: bytes.to_vec() }),
                 }
             }
             if key == "font" {
@@ -185,60 +135,31 @@ pub async fn resolve(
     let page_logo = page_logo(&doc, &profile.colour_background);
     let mut logos = Logos::default();
     for (role, stem) in [(page_logo, "logo-light"), ("on-dark", "logo-dark")] {
-        let Some(name) = doc["logos"][role]
-            .as_str()
-            .and_then(|l| l.strip_prefix("lib:"))
-        else {
-            continue;
-        };
-        let Some((sha, mime)) = library(name) else {
-            continue;
-        };
+        let Some(name) = doc["logos"][role].as_str().and_then(|l| l.strip_prefix("lib:")) else { continue };
+        let Some((sha, mime)) = library(name) else { continue };
         let bytes = brands.asset(&sha).await?;
-        let Some(ext) = super::assets::image_extension(&mime, &bytes) else {
-            continue;
-        };
-        let asset = Asset {
-            name: format!("{stem}.{ext}"),
-            bytes: bytes.to_vec(),
-        };
+        let Some(ext) = super::assets::image_extension(&mime, &bytes) else { continue };
+        let asset = Asset { name: format!("{stem}.{ext}"), bytes: bytes.to_vec() };
         if stem == "logo-light" {
             logos.light = Some(asset);
         } else {
             logos.dark = Some(asset);
         }
     }
-    Ok(ResolvedBrand {
-        profile,
-        logos,
-        fonts,
-        families,
-        source: Some((info.id, version)),
-    })
+    Ok(ResolvedBrand { profile, logos, fonts, families, source: Some((info.id, version)) })
 }
 
 /// The logo for the pages: `on-dark` when the paper is dark (a dark mode)
 /// and the brand has one, otherwise `primary`.
 fn page_logo(doc: &Value, paper: &str) -> &'static str {
-    let dark = rgb(paper).is_some_and(|[r, g, b]| {
-        0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32 <= 128.0
-    });
-    if dark && doc["logos"]["on-dark"].is_string() {
-        "on-dark"
-    } else {
-        "primary"
-    }
+    let dark = rgb(paper).is_some_and(|[r, g, b]| 0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32 <= 128.0);
+    if dark && doc["logos"]["on-dark"].is_string() { "on-dark" } else { "primary" }
 }
 
 /// A font file's family name (typographic family first).
 fn family_name(bytes: &[u8]) -> Option<String> {
     let face = ttf_parser::Face::parse(bytes, 0).ok()?;
-    let name = |id| {
-        face.names()
-            .into_iter()
-            .filter(|n| n.name_id == id)
-            .find_map(|n| n.to_string())
-    };
+    let name = |id| face.names().into_iter().filter(|n| n.name_id == id).find_map(|n| n.to_string());
     name(ttf_parser::name_id::TYPOGRAPHIC_FAMILY).or_else(|| name(ttf_parser::name_id::FAMILY))
 }
 
@@ -246,51 +167,24 @@ fn family_name(bytes: &[u8]) -> Option<String> {
 
 /// A published brand as a `ClientProfile` (fonts are the names in the brand;
 /// `resolve` swaps library fonts for their family names).
-pub fn profile_from_brand(
-    slug: &str,
-    doc: &Value,
-    mode: Option<&str>,
-) -> Result<ClientProfile, String> {
+pub fn profile_from_brand(slug: &str, doc: &Value, mode: Option<&str>) -> Result<ClientProfile, String> {
     let mut p = ClientProfile::default_profile();
     p.slug = slug.to_string();
     p.name = doc["name"].as_str().unwrap_or(slug).to_string();
 
     let mut palette = doc["palette"].as_object().cloned().unwrap_or_default();
     // `light` (or nothing) is the base palette, unless the brand has a mode by that name.
-    let mode = mode
-        .filter(|m| !m.is_empty())
-        .filter(|m| *m != "light" || doc["modes"].get("light").is_some());
+    let mode = mode.filter(|m| !m.is_empty()).filter(|m| *m != "light" || doc["modes"].get("light").is_some());
     if let Some(m) = mode {
-        let over = doc["modes"]
-            .get(m)
-            .and_then(Value::as_object)
-            .ok_or_else(|| {
-                let known: Vec<&str> = doc["modes"]
-                    .as_object()
-                    .map(|o| o.keys().map(String::as_str).collect())
-                    .unwrap_or_default();
-                format!(
-                    "the brand has no `{m}` mode ({})",
-                    if known.is_empty() {
-                        "it has none".into()
-                    } else {
-                        known.join(", ")
-                    }
-                )
-            })?;
+        let over = doc["modes"].get(m).and_then(Value::as_object).ok_or_else(|| {
+            let known: Vec<&str> = doc["modes"].as_object().map(|o| o.keys().map(String::as_str).collect()).unwrap_or_default();
+            format!("the brand has no `{m}` mode ({})", if known.is_empty() { "it has none".into() } else { known.join(", ") })
+        })?;
         palette.extend(over.clone());
     }
-    let paper = palette
-        .get("paper")
-        .and_then(Value::as_str)
-        .and_then(rgb)
-        .unwrap_or([255, 255, 255]);
+    let paper = palette.get("paper").and_then(Value::as_str).and_then(rgb).unwrap_or([255, 255, 255]);
     let colour = |role: &str, field: &mut String| {
-        if let Some(c) = palette
-            .get(role)
-            .and_then(Value::as_str)
-            .and_then(|h| flat_hex(h, paper))
-        {
+        if let Some(c) = palette.get(role).and_then(Value::as_str).and_then(|h| flat_hex(h, paper)) {
             *field = c;
         }
     };
@@ -327,12 +221,7 @@ pub fn profile_from_brand(
         p.page_size = page.to_string();
     }
     let m = &print["margins"];
-    for (key, field) in [
-        ("top", &mut p.margin_top),
-        ("bottom", &mut p.margin_bottom),
-        ("left", &mut p.margin_left),
-        ("right", &mut p.margin_right),
-    ] {
+    for (key, field) in [("top", &mut p.margin_top), ("bottom", &mut p.margin_bottom), ("left", &mut p.margin_left), ("right", &mut p.margin_right)] {
         if let Some(v) = length_mm(&m[key]) {
             *field = v;
         }
@@ -349,12 +238,7 @@ pub fn profile_from_brand(
     }
     p.watermark_text = print["watermark"].as_str().map(str::to_string);
     let size = &print["size"];
-    for (key, field) in [
-        ("body", &mut p.font_size_base),
-        ("h1", &mut p.font_size_h1),
-        ("h2", &mut p.font_size_h2),
-        ("h3", &mut p.font_size_h3),
-    ] {
+    for (key, field) in [("body", &mut p.font_size_base), ("h1", &mut p.font_size_h1), ("h2", &mut p.font_size_h2), ("h3", &mut p.font_size_h3)] {
         if let Some(v) = length_pt(&size[key]) {
             *field = v;
         }
@@ -376,18 +260,9 @@ fn rgb(hex: &str) -> Option<[u8; 3]> {
 fn flat_hex(hex: &str, paper: [u8; 3]) -> Option<String> {
     let [r, g, b] = rgb(hex)?;
     let h = hex.trim_start_matches('#');
-    let a = if h.len() == 8 {
-        u8::from_str_radix(&h[6..8], 16).ok()? as f32 / 255.0
-    } else {
-        1.0
-    };
+    let a = if h.len() == 8 { u8::from_str_radix(&h[6..8], 16).ok()? as f32 / 255.0 } else { 1.0 };
     let mix = |c: u8, p: u8| (c as f32 * a + p as f32 * (1.0 - a)).round() as u8;
-    Some(format!(
-        "#{:02X}{:02X}{:02X}",
-        mix(r, paper[0]),
-        mix(g, paper[1]),
-        mix(b, paper[2])
-    ))
+    Some(format!("#{:02X}{:02X}{:02X}", mix(r, paper[0]), mix(g, paper[1]), mix(b, paper[2])))
 }
 
 /// `22mm`, `2.2cm`, `1in`, `62pt`, or a number (millimetres).
@@ -532,36 +407,12 @@ mod tests {
         // Everything the Typst renderer reads comes back the same.
         let typst_fields = |p: &ClientProfile| {
             (
-                [
-                    &p.colour_background,
-                    &p.colour_text,
-                    &p.colour_secondary,
-                    &p.colour_primary,
-                    &p.colour_accent,
-                ]
-                .map(|c| c.to_uppercase()),
-                [
-                    &p.colour_table_header,
-                    &p.colour_table_border,
-                    &p.colour_callout_bg,
-                    &p.cover_bg_colour,
-                    &p.cover_text_colour,
-                ]
-                .map(|c| c.to_uppercase()),
-                (
-                    p.font_heading.clone(),
-                    p.font_body.clone(),
-                    p.font_mono.clone(),
-                    p.wordmark.clone(),
-                    p.page_size.clone(),
-                ),
-                [
-                    p.font_size_base,
-                    p.font_size_h1,
-                    p.font_size_h2,
-                    p.font_size_h3,
-                    p.line_height,
-                ],
+                [&p.colour_background, &p.colour_text, &p.colour_secondary, &p.colour_primary, &p.colour_accent]
+                    .map(|c| c.to_uppercase()),
+                [&p.colour_table_header, &p.colour_table_border, &p.colour_callout_bg, &p.cover_bg_colour, &p.cover_text_colour]
+                    .map(|c| c.to_uppercase()),
+                (p.font_heading.clone(), p.font_body.clone(), p.font_mono.clone(), p.wordmark.clone(), p.page_size.clone()),
+                [p.font_size_base, p.font_size_h1, p.font_size_h2, p.font_size_h3, p.line_height],
                 [p.margin_top, p.margin_bottom, p.margin_left, p.margin_right],
                 (p.cover_template.clone(), p.header_enabled, p.footer_enabled),
             )
@@ -569,13 +420,7 @@ mod tests {
         assert_eq!(typst_fields(&back), typst_fields(&original));
         // And the YAML for Clients carries the same values.
         let y = brand_yaml(&original);
-        assert!(
-            y.contains(&format!(
-                "accent: \"{}\"",
-                original.colour_accent.to_uppercase()
-            )),
-            "{y}"
-        );
+        assert!(y.contains(&format!("accent: \"{}\"", original.colour_accent.to_uppercase())), "{y}");
         assert!(y.contains("cover: editorial"), "{y}");
     }
 
@@ -584,10 +429,7 @@ mod tests {
         let doc = json!({ "logos": { "primary": "lib:logo", "on-dark": "lib:logo-white" } });
         assert_eq!(page_logo(&doc, "#F7F7FD"), "primary");
         assert_eq!(page_logo(&doc, "#100F24"), "on-dark");
-        assert_eq!(
-            page_logo(&json!({ "logos": { "primary": "lib:logo" } }), "#100F24"),
-            "primary"
-        );
+        assert_eq!(page_logo(&json!({ "logos": { "primary": "lib:logo" } }), "#100F24"), "primary");
     }
 
     #[test]
@@ -599,27 +441,11 @@ mod tests {
             "print": { "margins": { "top": "1in", "left": "2cm" }, "size": { "body": "12px" } },
         });
         let light = profile_from_brand("acme", &doc, None).unwrap();
-        assert_eq!(
-            light.colour_table_border, "#7F7F7F",
-            "black at 128/255 over white"
-        );
-        assert_eq!(
-            (light.margin_top, light.margin_left, light.font_size_base),
-            (25.4, 20.0, 9.0)
-        );
+        assert_eq!(light.colour_table_border, "#7F7F7F", "black at 128/255 over white");
+        assert_eq!((light.margin_top, light.margin_left, light.font_size_base), (25.4, 20.0, 9.0));
         let dark = profile_from_brand("acme", &doc, Some("dark")).unwrap();
-        assert_eq!(
-            (dark.colour_background.as_str(), dark.colour_text.as_str()),
-            ("#000000", "#FFFFFF")
-        );
-        assert_eq!(
-            profile_from_brand("acme", &doc, Some("light"))
-                .unwrap()
-                .colour_background,
-            "#FFFFFF"
-        );
-        assert!(profile_from_brand("acme", &doc, Some("sepia"))
-            .unwrap_err()
-            .contains("no `sepia` mode (dark)"));
+        assert_eq!((dark.colour_background.as_str(), dark.colour_text.as_str()), ("#000000", "#FFFFFF"));
+        assert_eq!(profile_from_brand("acme", &doc, Some("light")).unwrap().colour_background, "#FFFFFF");
+        assert!(profile_from_brand("acme", &doc, Some("sepia")).unwrap_err().contains("no `sepia` mode (dark)"));
     }
 }
