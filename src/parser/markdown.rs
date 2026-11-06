@@ -1,4 +1,4 @@
-use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd, CodeBlockKind};
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 
 use crate::models::document::{DocumentNode, Frontmatter, ParsedDocument};
 
@@ -44,7 +44,11 @@ fn parse_frontmatter_yaml(yaml: &str) -> Frontmatter {
             continue;
         }
         let key = parts[0].trim();
-        let val = parts[1].trim().trim_matches('"').trim_matches('\'').to_string();
+        let val = parts[1]
+            .trim()
+            .trim_matches('"')
+            .trim_matches('\'')
+            .to_string();
         if val.is_empty() {
             continue;
         }
@@ -150,7 +154,11 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
                 code_lang = match kind {
                     CodeBlockKind::Fenced(lang) => {
                         let l = lang.to_string();
-                        if l.is_empty() { None } else { Some(l) }
+                        if l.is_empty() {
+                            None
+                        } else {
+                            Some(l)
+                        }
                     }
                     CodeBlockKind::Indented => None,
                 };
@@ -245,7 +253,9 @@ fn build_nodes<'a>(parser: Parser<'a>) -> Vec<DocumentNode> {
                 text_buf.clear();
             }
 
-            Event::Start(Tag::Image { dest_url, title, .. }) => {
+            Event::Start(Tag::Image {
+                dest_url, title, ..
+            }) => {
                 in_image = true;
                 image_url = dest_url.to_string();
                 image_alt.clear();
@@ -338,13 +348,7 @@ fn escape_inline(text: &str) -> String {
 fn slugify(text: &str) -> String {
     text.to_lowercase()
         .chars()
-        .map(|c| {
-            if c.is_alphanumeric() {
-                c
-            } else {
-                '-'
-            }
-        })
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
         .collect::<String>()
         .split('-')
         .filter(|s| !s.is_empty())
@@ -362,7 +366,10 @@ mod tests {
         let DocumentNode::Paragraph { text } = &doc.nodes[0] else {
             panic!("expected a paragraph");
         };
-        assert_eq!(text, r"A **bold** and *soft* [link](https://example.com), with `x` and 5 \* 3.");
+        assert_eq!(
+            text,
+            r"A **bold** and *soft* [link](https://example.com), with `x` and 5 \* 3."
+        );
     }
 
     #[test]

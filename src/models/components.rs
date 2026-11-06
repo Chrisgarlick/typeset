@@ -23,6 +23,7 @@ pub enum Component {
     PriorityMatrix(PriorityMatrix),
     Contents(Contents),
     BackPage(BackPage),
+    Page(Page),
     Highlights(Highlights),
     Part(Part),
     Chart(Chart),
@@ -30,7 +31,7 @@ pub enum Component {
 
 impl Component {
     /// The JSON `type` names of every component.
-    pub const TYPES: [&'static str; 17] = [
+    pub const TYPES: [&'static str; 18] = [
         "opener",
         "callout",
         "findings",
@@ -45,6 +46,7 @@ impl Component {
         "priority_matrix",
         "contents",
         "back_page",
+        "page",
         "highlights",
         "part",
         "chart",
@@ -67,6 +69,7 @@ impl Component {
             "priority_matrix" => Component::PriorityMatrix(serde_json::from_value(value)?),
             "contents" => Component::Contents(serde_json::from_value(value)?),
             "back_page" => Component::BackPage(serde_json::from_value(value)?),
+            "page" => Component::Page(serde_json::from_value(value)?),
             "part" => Component::Part(serde_json::from_value(value)?),
             "chart" => {
                 let c: Chart = serde_json::from_value(value)?;
@@ -76,11 +79,17 @@ impl Component {
             "highlights" => {
                 let h: Highlights = serde_json::from_value(value)?;
                 if h.items.is_empty() || h.items.len() > 4 {
-                    return Err(serde::de::Error::custom("highlights takes one to four items"));
+                    return Err(serde::de::Error::custom(
+                        "highlights takes one to four items",
+                    ));
                 }
                 Component::Highlights(h)
             }
-            other => return Err(serde::de::Error::custom(format!("unknown component `{other}`"))),
+            other => {
+                return Err(serde::de::Error::custom(format!(
+                    "unknown component `{other}`"
+                )))
+            }
         })
     }
 
@@ -93,12 +102,21 @@ impl Component {
                 lines.extend(o.intro.clone());
                 lines
             }
-            Component::Callout(c) => c.title.iter().chain(std::iter::once(&c.body)).cloned().collect(),
+            Component::Callout(c) => c
+                .title
+                .iter()
+                .chain(std::iter::once(&c.body))
+                .cloned()
+                .collect(),
             Component::Findings(f) => f
                 .items
                 .iter()
                 .map(|i| {
-                    let fix = i.fix.as_deref().map(|f| format!(" {f}")).unwrap_or_default();
+                    let fix = i
+                        .fix
+                        .as_deref()
+                        .map(|f| format!(" {f}"))
+                        .unwrap_or_default();
                     format!("[{}] {}.{fix}", i.severity.label(), i.title)
                 })
                 .collect(),
@@ -115,8 +133,16 @@ impl Component {
                 .iter()
                 .map(|i| format!("{}: {} / {}", i.label, i.value, i.max))
                 .collect(),
-            Component::Metrics(m) => m.items.iter().map(|i| format!("{}: {}", i.label, i.value)).collect(),
-            Component::Facts(f) => f.items.iter().map(|i| format!("{}: {}", i.label, i.value)).collect(),
+            Component::Metrics(m) => m
+                .items
+                .iter()
+                .map(|i| format!("{}: {}", i.label, i.value))
+                .collect(),
+            Component::Facts(f) => f
+                .items
+                .iter()
+                .map(|i| format!("{}: {}", i.label, i.value))
+                .collect(),
             Component::ScoreMatrix(m) => m
                 .rows
                 .iter()
@@ -124,7 +150,10 @@ impl Component {
                     let values: Vec<String> = r
                         .values
                         .iter()
-                        .map(|v| v.map(|v| format!("{v}")).unwrap_or_else(|| "n/a".to_string()))
+                        .map(|v| {
+                            v.map(|v| format!("{v}"))
+                                .unwrap_or_else(|| "n/a".to_string())
+                        })
                         .collect();
                     format!("{}: {}", r.label, values.join(", "))
                 })
@@ -133,7 +162,14 @@ impl Component {
             Component::Bars(b) => b
                 .items
                 .iter()
-                .map(|i| format!("{}: {}{}", i.label, i.value, b.unit.as_deref().unwrap_or("")))
+                .map(|i| {
+                    format!(
+                        "{}: {}{}",
+                        i.label,
+                        i.value,
+                        b.unit.as_deref().unwrap_or("")
+                    )
+                })
                 .collect(),
             Component::SeveritySummary(s) => vec![format!(
                 "Critical {}, serious {}, moderate {}, minor {}",
@@ -148,11 +184,21 @@ impl Component {
             Component::PriorityMatrix(m) => m
                 .items
                 .iter()
-                .map(|i| format!("{} (impact {}, effort {})", i.label, i.impact.as_str(), i.effort.as_str()))
+                .map(|i| {
+                    format!(
+                        "{} (impact {}, effort {})",
+                        i.label,
+                        i.impact.as_str(),
+                        i.effort.as_str()
+                    )
+                })
                 .collect(),
             Component::Contents(_) => Vec::new(),
             Component::BackPage(b) => b.about.iter().cloned().chain(b.contact.lines()).collect(),
-            Component::Part(p) => std::iter::once(p.title.clone()).chain(p.intro.clone()).collect(),
+            Component::Page(p) => vec![p.alt.clone()],
+            Component::Part(p) => std::iter::once(p.title.clone())
+                .chain(p.intro.clone())
+                .collect(),
             Component::Highlights(h) => h
                 .items
                 .iter()
@@ -295,7 +341,10 @@ pub struct Steps {
 
 impl Steps {
     pub fn groups(&self) -> impl Iterator<Item = StepGroup> + '_ {
-        let single = (!self.items.is_empty()).then(|| StepGroup { title: None, items: self.items.clone() });
+        let single = (!self.items.is_empty()).then(|| StepGroup {
+            title: None,
+            items: self.items.clone(),
+        });
         single.into_iter().chain(self.groups.iter().cloned())
     }
 }
@@ -505,6 +554,17 @@ pub struct BackPage {
     pub contact: Contact,
 }
 
+/// A whole page that is one image, edge to edge: a page designed elsewhere
+/// (Design's A4 frames). It isn't numbered and has no header or footer.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Page {
+    /// An `https` URL or a `data:` URI (SVG or PNG).
+    pub url: String,
+    /// What the page says, for screen readers.
+    pub alt: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct Contact {
@@ -516,7 +576,11 @@ pub struct Contact {
 
 impl Contact {
     pub fn lines(&self) -> Vec<String> {
-        [&self.name, &self.email, &self.website, &self.phone].into_iter().flatten().cloned().collect()
+        [&self.name, &self.email, &self.website, &self.phone]
+            .into_iter()
+            .flatten()
+            .cloned()
+            .collect()
     }
 }
 
@@ -578,18 +642,41 @@ pub struct ChartSeries {
 }
 
 impl Chart {
-    pub const KINDS: [&'static str; 9] = ["line", "area", "bar", "donut", "scatter", "histogram", "heatmap", "funnel", "bullet"];
+    pub const KINDS: [&'static str; 9] = [
+        "line",
+        "area",
+        "bar",
+        "donut",
+        "scatter",
+        "histogram",
+        "heatmap",
+        "funnel",
+        "bullet",
+    ];
 
     /// Checks what the schema can't: a known kind, and series that fit the labels.
     pub fn check(&self) -> Result<(), String> {
         if !Self::KINDS.contains(&self.chart.as_str()) {
-            return Err(format!("chart: `{}` isn't one of {}", self.chart, Self::KINDS.join(", ")));
+            return Err(format!(
+                "chart: `{}` isn't one of {}",
+                self.chart,
+                Self::KINDS.join(", ")
+            ));
         }
         if self.labels.is_empty() || self.series.is_empty() {
             return Err("chart: needs labels and at least one series".to_string());
         }
-        if let Some(s) = self.series.iter().find(|s| s.values.len() != self.labels.len()) {
-            return Err(format!("chart: series `{}` has {} values for {} labels", s.name, s.values.len(), self.labels.len()));
+        if let Some(s) = self
+            .series
+            .iter()
+            .find(|s| s.values.len() != self.labels.len())
+        {
+            return Err(format!(
+                "chart: series `{}` has {} values for {} labels",
+                s.name,
+                s.values.len(),
+                self.labels.len()
+            ));
         }
         Ok(())
     }
@@ -602,8 +689,14 @@ impl Chart {
                 .series
                 .iter()
                 .map(|s| {
-                    let v = s.values[i].map(|v| format!("{v}")).unwrap_or_else(|| "n/a".to_string());
-                    if self.series.len() > 1 { format!("{} {v}", s.name) } else { v }
+                    let v = s.values[i]
+                        .map(|v| format!("{v}"))
+                        .unwrap_or_else(|| "n/a".to_string());
+                    if self.series.len() > 1 {
+                        format!("{} {v}", s.name)
+                    } else {
+                        v
+                    }
                 })
                 .collect();
             lines.push(format!("{label}: {}", values.join(", ")));

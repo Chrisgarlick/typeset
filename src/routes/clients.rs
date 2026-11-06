@@ -12,14 +12,20 @@ use crate::error::AppError;
 use crate::routes::auth::Caller;
 use crate::state::AppState;
 
-const MOVED: &str = "Brands are managed in Clients now (https://clients.kritano.com); Typeset only reads them.";
+const MOVED: &str =
+    "Brands are managed in Clients now (https://clients.kritano.com); Typeset only reads them.";
 
 fn brands(state: &AppState) -> Result<&crate::clients::BrandClient, AppError> {
-    state.brands.as_deref().ok_or_else(|| AppError::Unavailable("Typeset isn't connected to Clients (CLIENTS_URL)".into()))
+    state.brands.as_deref().ok_or_else(|| {
+        AppError::Unavailable("Typeset isn't connected to Clients (CLIENTS_URL)".into())
+    })
 }
 
 /// Every client this key may use: `[{ slug, name, brand_version }]`.
-pub async fn list_clients(State(state): State<AppState>, Extension(caller): Extension<Caller>) -> Result<Json<Vec<Value>>, AppError> {
+pub async fn list_clients(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Json<Vec<Value>>, AppError> {
     let all = brands(&state)?.clients().await?;
     Ok(Json(
         all.into_iter()
@@ -36,7 +42,14 @@ pub async fn get_client(
     Path(slug): Path<String>,
     Query(q): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<Value>, AppError> {
-    let brand = crate::brand::source::resolve(&state, &caller, Some(&slug), None, q.get("mode").map(String::as_str)).await?;
+    let brand = crate::brand::source::resolve(
+        &state,
+        &caller,
+        Some(&slug),
+        None,
+        q.get("mode").map(String::as_str),
+    )
+    .await?;
     let p = &brand.profile;
     Ok(Json(json!({
         "slug": p.slug,

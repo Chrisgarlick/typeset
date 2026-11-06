@@ -67,12 +67,9 @@ pub async fn rate_limit_middleware(
                 "error": format!("Rate limit exceeded — try again in {retry_after}s"),
                 "status": 429,
             });
-            let mut resp =
-                (StatusCode::TOO_MANY_REQUESTS, axum::Json(body)).into_response();
-            resp.headers_mut().insert(
-                "retry-after",
-                retry_after.to_string().parse().unwrap(),
-            );
+            let mut resp = (StatusCode::TOO_MANY_REQUESTS, axum::Json(body)).into_response();
+            resp.headers_mut()
+                .insert("retry-after", retry_after.to_string().parse().unwrap());
             Err(resp)
         }
     }

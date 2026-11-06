@@ -1,7 +1,7 @@
-pub mod render;
+pub mod auth;
+pub mod clients;
+pub mod health;
+pub mod history;
 pub mod preview;
 pub mod proof;
-pub mod clients;
-pub mod history;
-pub mod health;
-pub mod auth;
+pub mod render;

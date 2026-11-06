@@ -661,6 +661,17 @@
   ]
 ]
 
+/// A whole page that is one image, edge to edge (into the bleed in print):
+/// a page designed elsewhere. It isn't counted in "Page n of N".
+#let designed-page(path, alt: "") = page(margin: 0mm, header: none, footer: none)[
+  #counter(page).update(n => n - 1)
+  #if path != none {
+    image(path, width: 100%, height: 100%, fit: "cover", alt: if alt == "" { none } else { alt })
+  } else {
+    align(center + horizon, text(size: t.small, fill: t.ink-muted)[Page image unavailable#if alt != "" [: #alt]])
+  }
+]
+
 // ---------------------------------------------------------------------------
 // Figures
 // ---------------------------------------------------------------------------

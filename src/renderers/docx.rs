@@ -32,13 +32,7 @@ pub fn render(branded: &BrandedDocument) -> anyhow::Result<Vec<u8>> {
     // Page size and margins
     docx = docx
         .page_size(w, h)
-        .page_margin(
-            PageMargin::new()
-                .top(mt)
-                .bottom(mb)
-                .left(ml)
-                .right(mr),
-        );
+        .page_margin(PageMargin::new().top(mt).bottom(mb).left(ml).right(mr));
 
     let mut buf = Vec::new();
     docx.build().pack(&mut std::io::Cursor::new(&mut buf))?;
@@ -49,10 +43,22 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
     match node {
         DocumentNode::Heading { level, text, .. } => {
             let (size, colour_hex) = match level {
-                1 => ((branded.profile.font_size_h1 * 2.0) as usize, &branded.profile.colour_primary),
-                2 => ((branded.profile.font_size_h2 * 2.0) as usize, &branded.profile.colour_secondary),
-                3 => ((branded.profile.font_size_h3 * 2.0) as usize, &branded.profile.colour_text),
-                _ => (((branded.profile.font_size_base + 1.0) * 2.0) as usize, &branded.profile.colour_text),
+                1 => (
+                    (branded.profile.font_size_h1 * 2.0) as usize,
+                    &branded.profile.colour_primary,
+                ),
+                2 => (
+                    (branded.profile.font_size_h2 * 2.0) as usize,
+                    &branded.profile.colour_secondary,
+                ),
+                3 => (
+                    (branded.profile.font_size_h3 * 2.0) as usize,
+                    &branded.profile.colour_text,
+                ),
+                _ => (
+                    ((branded.profile.font_size_base + 1.0) * 2.0) as usize,
+                    &branded.profile.colour_text,
+                ),
             };
             let colour = colour_hex.trim_start_matches('#');
             let run = Run::new().add_text(text).size(size).bold().color(colour);
@@ -115,7 +121,11 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
         }
 
         DocumentNode::Table { headers, rows } => {
-            let header_bg = branded.profile.colour_table_header.trim_start_matches('#').to_string();
+            let header_bg = branded
+                .profile
+                .colour_table_header
+                .trim_start_matches('#')
+                .to_string();
             let mut table_rows = vec![];
 
             // Header row
@@ -173,9 +183,7 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
             docx.add_paragraph(para)
         }
 
-        DocumentNode::HorizontalRule => {
-            docx.add_paragraph(Paragraph::new().add_run(Run::new()))
-        }
+        DocumentNode::HorizontalRule => docx.add_paragraph(Paragraph::new().add_run(Run::new())),
 
         DocumentNode::PageBreak | DocumentNode::SectionBreak => {
             let run = Run::new().add_break(BreakType::Page);
@@ -214,7 +222,10 @@ fn render_node(docx: Docx, node: &DocumentNode, branded: &BrandedDocument) -> Do
 }
 
 fn add_cover_page(mut docx: Docx, branded: &BrandedDocument) -> Docx {
-    let title = branded.doc.frontmatter.as_ref()
+    let title = branded
+        .doc
+        .frontmatter
+        .as_ref()
         .and_then(|f| f.title.clone())
         .unwrap_or_else(|| "Untitled".to_string());
 
@@ -233,7 +244,12 @@ fn add_cover_page(mut docx: Docx, branded: &BrandedDocument) -> Docx {
     docx = docx.add_paragraph(Paragraph::new().add_run(title_run));
 
     // Subtitle
-    if let Some(sub) = branded.doc.frontmatter.as_ref().and_then(|f| f.subtitle.clone()) {
+    if let Some(sub) = branded
+        .doc
+        .frontmatter
+        .as_ref()
+        .and_then(|f| f.subtitle.clone())
+    {
         let sub_colour = branded.profile.colour_secondary.trim_start_matches('#');
         let sub_run = Run::new()
             .add_text(&sub)
@@ -243,7 +259,12 @@ fn add_cover_page(mut docx: Docx, branded: &BrandedDocument) -> Docx {
     }
 
     // Recipient
-    if let Some(recip) = branded.doc.frontmatter.as_ref().and_then(|f| f.recipient.clone()) {
+    if let Some(recip) = branded
+        .doc
+        .frontmatter
+        .as_ref()
+        .and_then(|f| f.recipient.clone())
+    {
         docx = docx.add_paragraph(Paragraph::new());
         let run = Run::new()
             .add_text(&format!("Prepared for: {recip}"))
@@ -252,7 +273,12 @@ fn add_cover_page(mut docx: Docx, branded: &BrandedDocument) -> Docx {
     }
 
     // Date
-    if let Some(date) = branded.doc.frontmatter.as_ref().and_then(|f| f.date.clone()) {
+    if let Some(date) = branded
+        .doc
+        .frontmatter
+        .as_ref()
+        .and_then(|f| f.date.clone())
+    {
         let run = Run::new()
             .add_text(&date)
             .size((branded.profile.font_size_base * 2.0) as usize);

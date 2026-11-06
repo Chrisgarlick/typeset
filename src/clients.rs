@@ -17,7 +17,7 @@
 #![allow(dead_code)]
 
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::Digest;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -49,7 +49,9 @@ pub struct Caller {
 
 impl Caller {
     pub fn may(&self, slug: &str) -> bool {
-        self.clients.as_ref().is_none_or(|c| c.iter().any(|s| s == slug))
+        self.clients
+            .as_ref()
+            .is_none_or(|c| c.iter().any(|s| s == slug))
     }
 }
 
@@ -108,7 +110,9 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::Unauthorized => f.write_str("unknown or revoked key"),
-            Error::Forbidden(m) | Error::NotFound(m) | Error::Unavailable(m) | Error::Other(m) => f.write_str(m),
+            Error::Forbidden(m) | Error::NotFound(m) | Error::Unavailable(m) | Error::Other(m) => {
+                f.write_str(m)
+            }
         }
     }
 }
@@ -156,7 +160,9 @@ impl BrandClient {
     }
 
     fn get(&self, path: &str) -> reqwest::RequestBuilder {
-        self.http.get(self.url(path)).bearer_auth(&self.cfg.service_key)
+        self.http
+            .get(self.url(path))
+            .bearer_auth(&self.cfg.service_key)
     }
 
     async fn check(r: reqwest::Response) -> Result<reqwest::Response, Error> {
@@ -165,7 +171,11 @@ impl BrandClient {
             401 => Err(Error::Other("Clients refused this service key".into())),
             403 => Err(Error::Other("this key isn't a service key".into())),
             404 => Err(Error::NotFound(
-                r.json::<Value>().await.ok().and_then(|v| v["detail"].as_str().map(str::to_string)).unwrap_or_else(|| "not found".into()),
+                r.json::<Value>()
+                    .await
+                    .ok()
+                    .and_then(|v| v["detail"].as_str().map(str::to_string))
+                    .unwrap_or_else(|| "not found".into()),
             )),
             s => Err(Error::Unavailable(format!("Clients answered {s}"))),
         }
@@ -188,10 +198,20 @@ impl BrandClient {
             .json(&json!({ "token": token }))
             .send()
             .await;
-        let r = Self::check(r.map_err(|e| Error::Unavailable(format!("Clients can't be reached: {e}")))?).await?;
+        let r = Self::check(
+            r.map_err(|e| Error::Unavailable(format!("Clients can't be reached: {e}")))?,
+        )
+        .await?;
         let v: Value = r.json().await.map_err(|e| Error::Other(e.to_string()))?;
-        let caller = if v["active"] == true { serde_json::from_value(v).ok() } else { None };
-        self.keys.lock().unwrap().insert(h, (Instant::now(), caller.clone()));
+        let caller = if v["active"] == true {
+            serde_json::from_value(v).ok()
+        } else {
+            None
+        };
+        self.keys
+            .lock()
+            .unwrap()
+            .insert(h, (Instant::now(), caller.clone()));
         Ok(caller)
     }
 
@@ -204,25 +224,42 @@ impl BrandClient {
             .ok_or(Error::Unauthorized)?;
         match self.introspect(token).await? {
             Some(c) if c.kind == "caller" => Ok(c),
-            Some(_) => Err(Error::Forbidden("service keys can't render; use a caller key".into())),
+            Some(_) => Err(Error::Forbidden(
+                "service keys can't render; use a caller key".into(),
+            )),
             None => Err(Error::Unauthorized),
         }
     }
 
     /// Drops cached answers for a revoked key (the `key.revoked` event).
     pub fn forget_key(&self, key_id: &str) {
-        self.keys.lock().unwrap().retain(|_, (_, c)| c.as_ref().is_none_or(|c| c.id != key_id));
+        self.keys
+            .lock()
+            .unwrap()
+            .retain(|_, (_, c)| c.as_ref().is_none_or(|c| c.id != key_id));
     }
 
     // --- brands ----------------------------------------------------------------
 
     fn disk(&self, slug: &str, version: i64) -> Option<PathBuf> {
-        (!slug.is_empty() && slug.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'))
-            .then(|| self.cfg.cache_dir.join("brands").join(slug).join(format!("v{version}.json")))
+        (!slug.is_empty()
+            && slug
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'))
+        .then(|| {
+            self.cfg
+                .cache_dir
+                .join("brands")
+                .join(slug)
+                .join(format!("v{version}.json"))
+        })
     }
 
     fn remember(&self, slug: &str, version: i64, doc: &Arc<Value>) {
-        self.versions.lock().unwrap().insert((slug.to_string(), version), doc.clone());
+        self.versions
+            .lock()
+            .unwrap()
+            .insert((slug.to_string(), version), doc.clone());
         if let Some(p) = self.disk(slug, version).filter(|p| !p.exists()) {
             let _ = std::fs::create_dir_all(p.parent().unwrap());
             let _ = std::fs::write(&p, doc.to_string());
@@ -231,7 +268,11 @@ impl BrandClient {
 
     /// A client's brand: a pinned version, or the latest published one.
     /// Returns the version and the published document (motion/specs/brand.md).
-    pub async fn brand(&self, slug: &str, version: Option<i64>) -> Result<(i64, Arc<Value>), Error> {
+    pub async fn brand(
+        &self,
+        slug: &str,
+        version: Option<i64>,
+    ) -> Result<(i64, Arc<Value>), Error> {
         match version {
             Some(v) => self.pinned(slug, v).await.map(|d| (v, d)),
             None => self.latest_brand(slug).await,
@@ -242,17 +283,34 @@ impl BrandClient {
         if let Some(d) = self.versions.lock().unwrap().get(&(slug.to_string(), v)) {
             return Ok(d.clone());
         }
-        if let Some(d) = self.disk(slug, v).and_then(|p| std::fs::read(p).ok()).and_then(|b| serde_json::from_slice::<Value>(&b).ok()) {
+        if let Some(d) = self
+            .disk(slug, v)
+            .and_then(|p| std::fs::read(p).ok())
+            .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+        {
             let d = Arc::new(d);
-            self.versions.lock().unwrap().insert((slug.to_string(), v), d.clone());
+            self.versions
+                .lock()
+                .unwrap()
+                .insert((slug.to_string(), v), d.clone());
             return Ok(d);
         }
         let r = self
             .get(&format!("/v1/clients/{slug}/brand/{v}"))
             .send()
             .await
-            .map_err(|e| Error::Unavailable(format!("Clients can't be reached and `{slug}` v{v} isn't cached: {e}")))?;
-        let d: Arc<Value> = Arc::new(Self::check(r).await?.json().await.map_err(|e| Error::Other(e.to_string()))?);
+            .map_err(|e| {
+                Error::Unavailable(format!(
+                    "Clients can't be reached and `{slug}` v{v} isn't cached: {e}"
+                ))
+            })?;
+        let d: Arc<Value> = Arc::new(
+            Self::check(r)
+                .await?
+                .json()
+                .await
+                .map_err(|e| Error::Other(e.to_string()))?,
+        );
         self.remember(slug, v, &d);
         Ok(d)
     }
@@ -267,7 +325,11 @@ impl BrandClient {
             Ok(r) => r,
             Err(e) => {
                 // Clients is down: use what we have (D21).
-                return cached.ok_or_else(|| Error::Unavailable(format!("Clients can't be reached and `{slug}` isn't cached: {e}")));
+                return cached.ok_or_else(|| {
+                    Error::Unavailable(format!(
+                        "Clients can't be reached and `{slug}` isn't cached: {e}"
+                    ))
+                });
             }
         };
         if r.status().as_u16() == 304 {
@@ -281,10 +343,15 @@ impl BrandClient {
             Err(e) => return Err(e),
         };
         let d: Value = r.json().await.map_err(|e| Error::Other(e.to_string()))?;
-        let v = d["version"].as_i64().ok_or_else(|| Error::Other("the brand has no version".into()))?;
+        let v = d["version"]
+            .as_i64()
+            .ok_or_else(|| Error::Other("the brand has no version".into()))?;
         let d = Arc::new(d);
         self.remember(slug, v, &d);
-        self.latest.lock().unwrap().insert(slug.to_string(), (v, d.clone()));
+        self.latest
+            .lock()
+            .unwrap()
+            .insert(slug.to_string(), (v, d.clone()));
         Ok((v, d))
     }
 
@@ -299,35 +366,67 @@ impl BrandClient {
         if let Some(c) = self.clients.lock().unwrap().get(slug) {
             return Ok(c.clone());
         }
-        let r = self.get(&format!("/v1/clients/{slug}")).send().await.map_err(|e| Error::Unavailable(e.to_string()))?;
-        let c: ClientInfo = Self::check(r).await?.json().await.map_err(|e| Error::Other(e.to_string()))?;
-        self.clients.lock().unwrap().insert(slug.to_string(), c.clone());
+        let r = self
+            .get(&format!("/v1/clients/{slug}"))
+            .send()
+            .await
+            .map_err(|e| Error::Unavailable(e.to_string()))?;
+        let c: ClientInfo = Self::check(r)
+            .await?
+            .json()
+            .await
+            .map_err(|e| Error::Other(e.to_string()))?;
+        self.clients
+            .lock()
+            .unwrap()
+            .insert(slug.to_string(), c.clone());
         Ok(c)
     }
 
     /// Every client this service key can see.
     pub async fn clients(&self) -> Result<Vec<ClientInfo>, Error> {
-        let r = self.get("/v1/clients").send().await.map_err(|e| Error::Unavailable(e.to_string()))?;
-        Self::check(r).await?.json().await.map_err(|e| Error::Other(e.to_string()))
+        let r = self
+            .get("/v1/clients")
+            .send()
+            .await
+            .map_err(|e| Error::Unavailable(e.to_string()))?;
+        Self::check(r)
+            .await?
+            .json()
+            .await
+            .map_err(|e| Error::Other(e.to_string()))
     }
 
     /// A client's library: names → files, for `lib:` references outside the brand.
     pub async fn library(&self, slug: &str) -> Result<Vec<LibraryAsset>, Error> {
-        let r = self.get(&format!("/v1/clients/{slug}/assets")).send().await.map_err(|e| Error::Unavailable(e.to_string()))?;
-        Self::check(r).await?.json().await.map_err(|e| Error::Other(e.to_string()))
+        let r = self
+            .get(&format!("/v1/clients/{slug}/assets"))
+            .send()
+            .await
+            .map_err(|e| Error::Unavailable(e.to_string()))?;
+        Self::check(r)
+            .await?
+            .json()
+            .await
+            .map_err(|e| Error::Other(e.to_string()))
     }
 
     // --- assets ----------------------------------------------------------------
 
     fn asset_path(&self, sha: &str) -> Option<PathBuf> {
-        (sha.len() == 64 && sha.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
-            .then(|| self.cfg.cache_dir.join("assets").join(&sha[..2]).join(sha))
+        (sha.len() == 64
+            && sha
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
+        .then(|| self.cfg.cache_dir.join("assets").join(&sha[..2]).join(sha))
     }
 
     /// A library file by its SHA-256 (from a brand's `assets`). Verified, and
     /// kept on disk until the cache is full.
     pub async fn asset(&self, sha: &str) -> Result<Arc<Vec<u8>>, Error> {
-        let p = self.asset_path(sha).ok_or_else(|| Error::Other(format!("`{sha}` isn't a SHA-256")))?;
+        let p = self
+            .asset_path(sha)
+            .ok_or_else(|| Error::Other(format!("`{sha}` isn't a SHA-256")))?;
         if let Ok(b) = tokio::fs::read(&p).await {
             if sha256(&b) == sha {
                 return Ok(Arc::new(b));
@@ -337,8 +436,17 @@ impl BrandClient {
             .get(&format!("/v1/assets/{sha}"))
             .send()
             .await
-            .map_err(|e| Error::Unavailable(format!("Clients can't be reached and asset {sha} isn't cached: {e}")))?;
-        let b = Self::check(r).await?.bytes().await.map_err(|e| Error::Unavailable(e.to_string()))?.to_vec();
+            .map_err(|e| {
+                Error::Unavailable(format!(
+                    "Clients can't be reached and asset {sha} isn't cached: {e}"
+                ))
+            })?;
+        let b = Self::check(r)
+            .await?
+            .bytes()
+            .await
+            .map_err(|e| Error::Unavailable(e.to_string()))?
+            .to_vec();
         if sha256(&b) != sha {
             return Err(Error::Other(format!("asset {sha} arrived corrupted")));
         }
@@ -359,7 +467,11 @@ impl BrandClient {
         for d in std::fs::read_dir(&root).into_iter().flatten().flatten() {
             for f in std::fs::read_dir(d.path()).into_iter().flatten().flatten() {
                 if let Ok(m) = f.metadata() {
-                    files.push((m.modified().unwrap_or(std::time::UNIX_EPOCH), m.len(), f.path()));
+                    files.push((
+                        m.modified().unwrap_or(std::time::UNIX_EPOCH),
+                        m.len(),
+                        f.path(),
+                    ));
                 }
             }
         }
@@ -379,8 +491,16 @@ impl BrandClient {
 
     /// Events after a cursor, oldest first (at most 100).
     pub async fn events(&self, after: i64) -> Result<Vec<Event>, Error> {
-        let r = self.get(&format!("/v1/events?after={after}&limit=100")).send().await.map_err(|e| Error::Unavailable(e.to_string()))?;
-        Self::check(r).await?.json().await.map_err(|e| Error::Other(e.to_string()))
+        let r = self
+            .get(&format!("/v1/events?after={after}&limit=100"))
+            .send()
+            .await
+            .map_err(|e| Error::Unavailable(e.to_string()))?;
+        Self::check(r)
+            .await?
+            .json()
+            .await
+            .map_err(|e| Error::Other(e.to_string()))
     }
 
     /// Applies the cache side of an event (renderers do their own part, such
@@ -416,8 +536,11 @@ impl BrandClient {
             .json(&json!({ "code": code, "app": app }))
             .send()
             .await;
-        let v: Value =
-            Self::check(r.map_err(|e| Error::Unavailable(e.to_string()))?).await?.json().await.map_err(|e| Error::Other(e.to_string()))?;
+        let v: Value = Self::check(r.map_err(|e| Error::Unavailable(e.to_string()))?)
+            .await?
+            .json()
+            .await
+            .map_err(|e| Error::Other(e.to_string()))?;
         Ok(v["active"] == true)
     }
 }

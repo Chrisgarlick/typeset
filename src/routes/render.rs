@@ -7,8 +7,8 @@ use axum::{
 use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
-use crate::routes::auth::Caller;
 use crate::models::render_job::{RenderFormat, RenderRequest};
+use crate::routes::auth::Caller;
 use crate::state::AppState;
 
 /// Render endpoint — renders and returns the file as a download.
@@ -37,7 +37,11 @@ pub async fn handle_render(
         RenderFormat::Docx => {
             let b = crate::renderers::docx::render(&branded)
                 .map_err(|e| AppError::RenderError(e.to_string()))?;
-            (b, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx")
+            (
+                b,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "docx",
+            )
         }
     };
 
@@ -59,10 +63,18 @@ pub async fn handle_render(
     if let Err(e) = state
         .db
         .log_render(
-            &render_id, source.as_ref().map(|_| client_slug.as_str()),
-            &req.document_type.to_string(), format_str,
-            Some(&content_hash), None, None, None, None,
-            Some(bytes.len() as i32), render_ms as i32, None,
+            &render_id,
+            source.as_ref().map(|_| client_slug.as_str()),
+            &req.document_type.to_string(),
+            format_str,
+            Some(&content_hash),
+            None,
+            None,
+            None,
+            None,
+            Some(bytes.len() as i32),
+            render_ms as i32,
+            None,
             source.as_ref().map(|(id, v)| (id.as_str(), *v)),
         )
         .await

@@ -175,6 +175,9 @@
           "$ref": "#/$defs/back_page"
         },
         {
+          "$ref": "#/$defs/page"
+        },
+        {
           "$ref": "#/$defs/highlights"
         },
         {
@@ -772,6 +775,29 @@
         "type"
       ],
       "description": "A contents list of the document's sections, on a page of its own."
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "page"
+        },
+        "url": {
+          "type": "string",
+          "description": "An https URL or a data: URI (SVG or PNG), at most 5 MB."
+        },
+        "alt": {
+          "type": "string",
+          "description": "What the page says, for screen readers."
+        }
+      },
+      "required": [
+        "type",
+        "url",
+        "alt"
+      ],
+      "description": "A whole page that is one image, edge to edge (into the bleed in print): a page designed elsewhere, such as Design's A4 frames. Not numbered, no header or footer."
     },
     "back_page": {
       "type": "object",
