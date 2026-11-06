@@ -54,6 +54,11 @@ fn build_source(branded: &BrandedDocument) -> String {
     let mut s = String::with_capacity(4096);
 
     let (cover, consumed_body_h1) = extract_cover(branded);
+    // A designed page first is the cover: the title still names the PDF,
+    // but no cover is generated.
+    let designed_cover = matches!(branded.doc.nodes.first(), Some(DocumentNode::Component(Component::Page(_))));
+    let (cover, consumed_body_h1) = if designed_cover && consumed_body_h1 { (None, false) } else { (cover, consumed_body_h1) };
+    let shown_cover = cover.as_ref().filter(|_| !designed_cover);
     let level = section_level(&branded.doc.nodes, consumed_body_h1);
     // Parts sit between the cover's H1 and the sections, pushing sections
     // down a level.
@@ -61,13 +66,13 @@ fn build_source(branded: &BrandedDocument) -> String {
     let ctx = Ctx {
         images: &branded.images,
         section_level: level,
-        section_out: if cover.is_some() { 2 } else { 1 } + u8::from(has_parts),
+        section_out: if shown_cover.is_some() { 2 } else { 1 } + u8::from(has_parts),
         in_box: false,
     };
     super::chart::set_context(chart_context(branded));
-    write_preamble(&mut s, branded, &cover, ctx.section_out);
+    write_preamble(&mut s, branded, &cover, shown_cover.is_some(), ctx.section_out);
     write_imports(&mut s);
-    if let Some(c) = &cover {
+    if let Some(c) = shown_cover {
         write_cover(&mut s, c, branded);
     }
     write_body(&mut s, &branded.doc.nodes, consumed_body_h1, ctx);
@@ -221,7 +226,7 @@ fn paper_width_mm(page_size: &str) -> f32 {
 }
 
 /// Emit the design tokens (`t`) and document facts (`meta`) the theme reads.
-fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>, section_level: u8) {
+fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>, has_cover: bool, section_level: u8) {
     let p = &b.profile;
 
     let doc_title = cover
@@ -353,7 +358,7 @@ fn write_preamble(s: &mut String, b: &BrandedDocument, cover: &Option<CoverData>
         page_w = paper_width_mm(&p.page_size) + 2.0 * bleed,
         page_h = paper_height_mm(&p.page_size) + 2.0 * bleed,
         print = b.print,
-        has_cover = cover.is_some(),
+        has_cover = has_cover,
         section_level = section_level,
         part_level = if b.doc.nodes.iter().any(|n| matches!(n, DocumentNode::Component(Component::Part(_)))) {
             (section_level - 1).to_string()
@@ -1816,7 +1821,7 @@ pub(crate) mod tests {
     #[test]
     fn designed_pages_are_whole_pages() {
         let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="595" height="842"><rect width="595" height="842" fill="green"/></svg>"#;
-        let mut b = branded_json(r#"{ "schema": 2, "pages": [{ "blocks": [
+        let mut b = branded_json(r#"{ "schema": 2, "frontmatter": { "title": "Brochure" }, "pages": [{ "blocks": [
             { "type": "page", "url": "https://example.com/p1.svg", "alt": "Page one" },
             { "type": "page", "url": "https://example.com/missing.svg", "alt": "Page two" },
             { "type": "paragraph", "text": "After." }
@@ -1825,6 +1830,7 @@ pub(crate) mod tests {
         let source = build_source(&b);
         assert!(source.contains(r#"#designed-page("img-0.svg", alt: "Page one")"#), "{source}");
         assert!(source.contains(r#"#designed-page(none, alt: "Page two")"#));
+        assert!(!source.contains("#cover("), "a designed page first is the cover");
         if typst_available() {
             let pages = render_proof(&b, 20).unwrap();
             assert_eq!(pages.len(), 3, "two designed pages and one body page");
