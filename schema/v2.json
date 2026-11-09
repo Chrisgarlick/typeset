@@ -154,6 +154,12 @@
           "$ref": "#/$defs/facts"
         },
         {
+          "$ref": "#/$defs/checklist"
+        },
+        {
+          "$ref": "#/$defs/tree"
+        },
+        {
           "$ref": "#/$defs/score_matrix"
         },
         {
@@ -465,6 +471,81 @@
         "items"
       ],
       "description": "Headline figures, up to four per row."
+    },
+    "tree": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tree"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/tree_item"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "A nested list (a sitemap, an outline), each level indented under a guide line. Up to 12 levels."
+    },
+    "tree_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text; inline markdown (bold, italic, links, code) allowed."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tree_item"
+          }
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "checklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "checklist"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Text; inline markdown (bold, italic, links, code) allowed."
+              },
+              "done": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "text"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "description": "Things to do or check, each ticked or not (acceptance criteria, launch lists). The boxes are drawn."
     },
     "facts": {
       "type": "object",

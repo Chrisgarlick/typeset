@@ -457,6 +457,59 @@
       "blocks": [
         {
           "type": "opener",
+          "eyebrow": "Planning",
+          "title": "Before launch",
+          "intro": "A checklist draws its own boxes; a tree keeps every level of a nested list."
+        },
+        {
+          "type": "checklist",
+          "items": [
+            {
+              "text": "Alt text on every product photo",
+              "done": true
+            },
+            {
+              "text": "Checkout tested with a **screen reader**",
+              "done": true
+            },
+            {
+              "text": "Contrast fixed on the sale banner"
+            },
+            {
+              "text": "Redirects from the old ring category pages"
+            }
+          ]
+        },
+        {
+          "type": "tree",
+          "items": [
+            {
+              "text": "**Home** `/`",
+              "children": [
+                {
+                  "text": "**Engagement rings** `/engagement-rings`: the category most visitors arrive at",
+                  "children": [
+                    {
+                      "text": "**Ring** `/engagement-rings/:slug`"
+                    }
+                  ]
+                },
+                {
+                  "text": "**Bespoke** `/bespoke`: book a design appointment"
+                },
+                {
+                  "text": "**Contact** `/contact`"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "opener",
           "eyebrow": "Reference",
           "title": "About this review",
           "intro": "Facts set out label and value, with labels in the margin column."

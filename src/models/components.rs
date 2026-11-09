@@ -27,11 +27,13 @@ pub enum Component {
     Highlights(Highlights),
     Part(Part),
     Chart(Chart),
+    Checklist(Checklist),
+    Tree(Tree),
 }
 
 impl Component {
     /// The JSON `type` names of every component.
-    pub const TYPES: [&'static str; 18] = [
+    pub const TYPES: [&'static str; 20] = [
         "opener",
         "callout",
         "findings",
@@ -50,6 +52,8 @@ impl Component {
         "highlights",
         "part",
         "chart",
+        "checklist",
+        "tree",
     ];
 
     /// Parse a component from its JSON block, with `type` already removed.
@@ -71,6 +75,14 @@ impl Component {
             "back_page" => Component::BackPage(serde_json::from_value(value)?),
             "page" => Component::Page(serde_json::from_value(value)?),
             "part" => Component::Part(serde_json::from_value(value)?),
+            "checklist" => Component::Checklist(serde_json::from_value(value)?),
+            "tree" => {
+                let t: Tree = serde_json::from_value(value)?;
+                if t.depth() > Tree::MAX_DEPTH {
+                    return Err(serde::de::Error::custom(format!("a tree nests at most {} levels", Tree::MAX_DEPTH)));
+                }
+                Component::Tree(t)
+            }
             "chart" => {
                 let c: Chart = serde_json::from_value(value)?;
                 c.check().map_err(serde::de::Error::custom)?;
@@ -157,6 +169,12 @@ impl Component {
             Component::BackPage(b) => b.about.iter().cloned().chain(b.contact.lines()).collect(),
             Component::Page(p) => vec![p.alt.clone()],
             Component::Part(p) => std::iter::once(p.title.clone()).chain(p.intro.clone()).collect(),
+            Component::Tree(t) => t.plain_lines(),
+            Component::Checklist(c) => c
+                .items
+                .iter()
+                .map(|i| format!("{} {}", if i.done { "[x]" } else { "[ ]" }, i.text))
+                .collect(),
             Component::Highlights(h) => h
                 .items
                 .iter()
@@ -370,6 +388,61 @@ pub struct Facts {
 pub struct Fact {
     pub label: String,
     pub value: String,
+}
+
+/// A nested list: a sitemap, an outline.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Tree {
+    pub items: Vec<TreeItem>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TreeItem {
+    pub text: String,
+    #[serde(default)]
+    pub children: Vec<TreeItem>,
+}
+
+impl Tree {
+    pub const MAX_DEPTH: usize = 12;
+
+    pub fn depth(&self) -> usize {
+        fn d(items: &[TreeItem]) -> usize {
+            items.iter().map(|i| 1 + d(&i.children)).max().unwrap_or(0)
+        }
+        d(&self.items)
+    }
+
+    /// Indented lines, for renderers without a design for it (DOCX).
+    pub fn plain_lines(&self) -> Vec<String> {
+        fn walk(items: &[TreeItem], depth: usize, out: &mut Vec<String>) {
+            for i in items {
+                out.push(format!("{}{}", "  ".repeat(depth), i.text));
+                walk(&i.children, depth + 1, out);
+            }
+        }
+        let mut out = Vec::new();
+        walk(&self.items, 0, &mut out);
+        out
+    }
+}
+
+/// Things to do or check, each ticked or not: acceptance criteria, launch
+/// lists. The box is drawn, so no font needs check-box glyphs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Checklist {
+    pub items: Vec<CheckItem>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CheckItem {
+    pub text: String,
+    #[serde(default)]
+    pub done: bool,
 }
 
 /// A heat table: scores by page (rows) and category (columns).

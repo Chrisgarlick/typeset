@@ -396,6 +396,42 @@
   )).flatten(),
 )))
 
+/// A nested list (a sitemap, an outline): each level indented under a guide
+/// line, every entry keeping its own text.
+#let tree-level(items) = stack(spacing: t.s3, ..items.map(i => {
+  // The dot sits on the first line, however many lines the text takes.
+  grid(columns: (0.9em, 1fr), align: (left + top, left),
+    block(height: 0.95em, align(horizon, circle(radius: 1.8pt, fill: t.accent))), i.text)
+  if i.children.len() > 0 {
+    block(above: t.s3, inset: (left: 0.3em), stroke: (left: t.hairline + t.rule),
+      pad(left: 0.9em, tree-level(i.children)))
+  }
+}))
+
+#let tree(items) = block(above: t.s4, below: t.s5, tree-level(items))
+
+/// Things to do or check: a drawn box, ticked in the accent colour when
+/// done. Done items say so in words too, for screen readers and greyscale.
+#let check-box(done) = box(width: 0.85em, height: 0.85em, baseline: 0.12em, {
+  rect(width: 100%, height: 100%, radius: 2pt, stroke: 0.9pt + (if done { t.accent } else { t.ink-muted }),
+    fill: if done { tint(t.accent, amount: 88%) } else { none })
+  if done {
+    place(top + left, curve(
+      stroke: (paint: t.accent, thickness: 1.4pt, cap: "round", join: "round"),
+      curve.move((0.2em, 0.45em)), curve.line((0.38em, 0.63em)), curve.line((0.68em, 0.22em)),
+    ))
+  }
+})
+
+#let checklist(items) = block(above: t.s4, below: t.s5, grid(
+  columns: (1.4em, 1fr),
+  row-gutter: t.s3,
+  ..items.map(i => (
+    check-box(i.done),
+    if i.done { [#i.text #text(size: t.eyebrow, fill: t.ink-muted)[(done)]] } else { i.text },
+  )).flatten(),
+))
+
 // ---------------------------------------------------------------------------
 // Data visuals
 // ---------------------------------------------------------------------------
@@ -680,8 +716,20 @@
 /// grid. `path` is `none` when the image couldn't be fetched: a framed
 /// placeholder shows the alt text instead.
 #let figure-image(path, alt: "", caption: none, full: false) = {
+  let alt = if alt == "" { none } else { alt }
+  // A tall image (a top-to-bottom flowchart, say) is scaled to fit about
+  // three quarters of the page, so it's never clipped and stays on the page
+  // with the heading above it. Wide ones keep the full width.
   let body = if path != none {
-    block(width: 100%, stroke: t.hairline + t.rule, clip: true, radius: t.r-sm, image(path, width: 100%, alt: if alt == "" { none } else { alt }))
+    layout(size => {
+      let natural = measure(image(path, width: size.width))
+      let max-h = size.height * 0.75
+      if natural.height > max-h {
+        block(width: 100%, align(center, block(stroke: t.hairline + t.rule, clip: true, radius: t.r-sm, image(path, height: max-h, alt: alt))))
+      } else {
+        block(width: 100%, stroke: t.hairline + t.rule, clip: true, radius: t.r-sm, image(path, width: 100%, alt: alt))
+      }
+    })
   } else {
     block(width: 100%, height: 48pt, fill: t.surface, radius: t.r-sm, align(center + horizon, text(size: t.small, fill: t.ink-muted)[Image unavailable#if alt != "" [: #alt]]))
   }

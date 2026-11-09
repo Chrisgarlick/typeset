@@ -556,6 +556,18 @@ fn write_node(s: &mut String, node: &DocumentNode, ctx: Ctx) {
 // Components: each becomes a call to its function in components.typ
 // ---------------------------------------------------------------------------
 
+/// Tree items as a Typst array of `(text, children)` dictionaries.
+fn tree_arg(items: &[crate::models::components::TreeItem]) -> String {
+    let parts: Vec<String> = items
+        .iter()
+        .map(|i| format!("(text: {}, children: {})", content_arg(&i.text), tree_arg(&i.children)))
+        .collect();
+    match parts.len() {
+        0 => "()".to_string(),
+        _ => format!("({},)", parts.join(", ")),
+    }
+}
+
 /// Text with inline formatting, as Typst content.
 fn content_arg(text: &str) -> String {
     format!("[{}]", typst_inline(text))
@@ -691,6 +703,17 @@ fn write_component(s: &mut String, component: &Component, ctx: Ctx) {
                 })
                 .collect();
             s.push_str(&format!("#metrics(({},))\n\n", items.join(", ")));
+        }
+        Component::Tree(t) => {
+            s.push_str(&format!("#tree({})\n\n", tree_arg(&t.items)));
+        }
+        Component::Checklist(c) => {
+            let items: Vec<String> = c
+                .items
+                .iter()
+                .map(|i| format!("(text: {}, done: {})", content_arg(&i.text), i.done))
+                .collect();
+            s.push_str(&format!("#checklist(({},))\n\n", items.join(", ")));
         }
         Component::Facts(f) => {
             let items: Vec<String> = f
@@ -1393,6 +1416,38 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn checklists_and_trees_become_components() {
+        let source = build_source(&branded_json(r##"{
+            "schema": 2,
+            "pages": [{ "blocks": [
+                { "type": "checklist", "items": [{ "text": "Cards **work**", "done": true }, { "text": "Receipts" }] },
+                { "type": "tree", "items": [{ "text": "Home", "children": [{ "text": "Shop" }, { "text": "About" }] }] }
+            ]}]
+        }"##));
+        assert!(
+            source.contains("#checklist(((text: [Cards #strong[work]], done: true), (text: [Receipts], done: false),))"),
+            "{source}"
+        );
+        assert!(
+            source.contains("#tree(((text: [Home], children: ((text: [Shop], children: ()), (text: [About], children: ()),)),))"),
+            "{source}"
+        );
+    }
+
+    #[test]
+    fn checklist_and_tree_reject_bad_input() {
+        let parse = |block: &str| crate::parser::json::parse(&format!(r#"{{ "schema": 2, "pages": [{{ "blocks": [{block}] }}] }}"#));
+        assert!(parse(r#"{ "type": "checklist", "items": [{ "text": "a", "ticked": true }] }"#).is_err(), "unknown field");
+        let mut deep = r#"{ "text": "leaf" }"#.to_string();
+        for _ in 0..13 {
+            deep = format!(r#"{{ "text": "x", "children": [{deep}] }}"#);
+        }
+        let err = parse(&format!(r#"{{ "type": "tree", "items": [{deep}] }}"#)).unwrap_err().to_string();
+        assert!(err.contains("at most 12 levels"), "{err}");
+        assert!(parse(r#"{ "type": "tree", "items": [{ "text": "a", "children": [] }] }"#).is_ok());
+    }
+
+    #[test]
     fn headings_in_styled_boxes_become_card_titles() {
         let source = build_source(&branded_json(r##"{
             "pages": [{ "blocks": [{
@@ -1566,6 +1621,10 @@ pub(crate) mod tests {
         let profile = serde_json::from_value(profile).expect("profile");
         let mut branded = crate::brand::engine::BrandedDocument::prepare(doc, profile).expect("prepare");
         branded.print = std::env::var("TYPESET_PREVIEW_PRINT").is_ok();
+        // Images as the server would have them (data URIs and HTTPS fetches).
+        branded.images = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(crate::brand::assets::fetch_images(&branded.doc.nodes));
         std::fs::write(format!("{out}.typ"), build_source(&branded)).unwrap();
         std::fs::write(&out, render(&branded).expect("render")).unwrap();
     }

@@ -270,7 +270,7 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 
 **Version 1 blocks** (no `schema`, or `"schema": 1`): `heading`, `paragraph`, `markdown`, `bullet_list`, `ordered_list`, `table`, `code`, `blockquote`, `image`, `rule`, `page_break`, `columns` and `section`. These keep working.
 
-- `image` takes `url`, `alt` (required in schema 2 documents), and optionally `caption` and `width` (`column`, the default, or `full`). `url` is an HTTPS address, fetched before rendering, or a base64 data URI (`data:image/jpeg;base64,...`) for images that shouldn't be public. PNG, JPEG, WebP or SVG, up to 5 MB each, at most 24 per document; a whole request can be up to 25 MB. An image that can't be used shows a placeholder with its alt text.
+- `image` takes `url`, `alt` (required in schema 2 documents), and optionally `caption` and `width` (`column`, the default, or `full`). A tall image is scaled down to about three quarters of the page height, so it's never clipped and stays with the heading above it. `url` is an HTTPS address, fetched before rendering, or a base64 data URI (`data:image/jpeg;base64,...`) for images that shouldn't be public. PNG, JPEG, WebP or SVG, up to 5 MB each, at most 24 per document; a whole request can be up to 25 MB. An image that can't be used shows a placeholder with its alt text.
 - `section` and `columns` styles accept brand token names instead of raw values: colours `ink`, `ink-muted`, `heading`, `paper`, `surface`, `rule`, `accent`, `accent-soft`, `cover-bg`, `cover-text`, `good`, `fair`, `poor`; lengths `s1` to `s9`, `r-sm`, `r-md`, `hairline`, `heavy`. Hex colours and raw lengths still work.
 
 **Version 2 components** need `"schema": 2`. They say what something is; the theme decides how it looks. They reject unknown fields, and text fields accept inline markdown.
@@ -284,6 +284,8 @@ Each entry in `pages` is a section boundary: it starts a new page only when the 
 | `scores` | `items: [{ label, value, max? (100), benchmark? }]`, `caption`? | Two to five score gauges |
 | `metrics` | `items: [{ value, label, target?, status? }]` | Headline figures with a status rule |
 | `facts` | `items: [{ label, value }]` | A label and value list |
+| `tree` | `items: [{ text, children? }]`, up to 12 levels | A nested list (a sitemap, an outline): each level indented under a guide line |
+| `checklist` | `items: [{ text, done? }]` | Things to do or check, as drawn tick boxes (ticked in the accent colour, with "(done)" in words). Board uses it for acceptance criteria and checklists |
 | `score_matrix` | `columns`, `rows: [{ label, values }]` (a `null` value shows a dash), `max`?, `caption`? | Scores by page as a heat table of tinted pills |
 | `bars` | `items: [{ label, value }]`, `unit`?, `target`?, `better`? (`lower` \| `higher`), `caption`? | Horizontal bars with a dashed target line, green within the target and red past it |
 | `chart` | `chart` (`line` \| `area` \| `bar` \| `donut` \| `scatter` \| `histogram` \| `heatmap` \| `funnel` \| `bullet`), `labels`, `series: [{ name, values }]` (a `null` value leaves a gap), `title`?, `caption`?, `format`? (`number` \| `compact` \| `percent` \| `currency:GBP`), `stacked`?, `values`? (print bar values), `center`? (`first`: a donut as a score gauge), `bins`?, `height`?, `wide`? | A chart in the brand's colours and fonts, drawn by kit's renderer (the same charts as the web), with its generated summary as alt text. Scatter takes x and y as two series; bullet takes value and target; heatmap rows are labels and columns are series |
