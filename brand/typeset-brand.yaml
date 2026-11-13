@@ -1,0 +1,44 @@
+brand: 1
+name: Typeset
+
+# Typeset's own look: a brutalist editorial showroom. Grey canvas, white
+# cards, black slabs; highlighter yellow and an editor's blue pencil for
+# the marks. The documents it makes bring the colour.
+palette:
+  paper: "#E5E5E5"        # canvas: page background
+  surface: "#FFFFFF"      # cards, panels, the nav pill
+  ink: "#0A0A0A"
+  ink-muted: "#444444"
+  heading: "#0A0A0A"
+  rule: "#C6C6C6"
+  accent: "#1F3BFF"       # blue pencil: links, focus, frontmatter keys
+  accent-soft: "#FFF100"  # highlighter: tags, highlights, numbers on black
+  accent-2: "#D1FFCA"     # mint: small status marks only
+  on-accent: "#FFFFFF"
+  inverse: "#0A0A0A"
+  on-inverse: "#FFFFFF"
+  good: "#1F7A4D"
+  fair: "#966010"
+  poor: "#B42318"
+
+type:
+  display: { font: "lib:barlow-condensed-bold", weight: 700, tracking: -0.01em, leading: 0.88 }
+  heading: { font: "Inter", weight: 500, tracking: -0.02em, leading: 1.1 }
+  body:    { font: "Inter", weight: 400, tracking: -0.01em, leading: 1.35 }
+  mono:    { font: "JetBrains Mono", weight: 400 }
+
+shape:
+  radius: { sm: 8px, md: 24px, lg: 32px }
+  stroke: 1.5px
+
+logos:
+  primary: "lib:typeset-logo"
+  on-dark: "lib:typeset-logo-on-dark"
+  mark: "lib:typeset-mark"
+wordmark: Typeset
+
+print:
+  page: A4
+  cover: band
+  header: true
+  footer: true
