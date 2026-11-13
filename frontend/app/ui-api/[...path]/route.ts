@@ -6,7 +6,7 @@
 const API_URL = process.env.TYPESET_API_URL || "http://localhost:3200";
 
 // Only the endpoints the UI uses.
-const ALLOWED = new Set(["clients", "render", "preview", "proof", "history"]);
+const ALLOWED = new Set(["clients", "render", "preview", "proof", "history", "health"]);
 
 // Response headers worth passing back to the browser.
 const PASS_HEADERS = ["content-type", "content-disposition", "retry-after"];

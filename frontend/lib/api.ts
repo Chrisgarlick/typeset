@@ -28,6 +28,16 @@ export async function getClients(): Promise<Client[]> {
 
 // --- Render ---
 
+/** The document types Typeset renders, with their names. */
+export const TYPE_LABELS: Record<string, string> = {
+  general: "General",
+  proposal: "Proposal",
+  report: "Report",
+  brief: "Brief",
+  sop: "SOP",
+  invoice: "Invoice",
+};
+
 export interface RenderRequest {
   client?: string;
   /** A published brand version to pin to; the latest when omitted. */
@@ -83,18 +93,37 @@ export interface RenderHistoryItem {
   document_type: string;
   format: string;
   status: string;
+  /** The document's frontmatter (title, subtitle, author…), when it had one. */
+  frontmatter: Record<string, unknown> | null;
   pdf_url: string | null;
   docx_url: string | null;
+  page_count: number | null;
   render_ms: number | null;
+  brand_version: number | null;
   created_at: string;
 }
 
+/** The API keeps at most this many per request. */
+export const HISTORY_MAX = 100;
+
 export async function getHistory(
   limit = 20,
-  offset = 0
+  offset = 0,
+  format?: string
 ): Promise<RenderHistoryItem[]> {
-  const res = await apiFetch(
-    `/history?limit=${limit}&offset=${offset}`
-  );
+  const q = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (format) q.set("format", format);
+  const res = await apiFetch(`/history?${q}`);
   return res.json();
+}
+
+// --- Health ---
+
+export async function getHealth(): Promise<boolean> {
+  try {
+    await apiFetch("/health");
+    return true;
+  } catch {
+    return false;
+  }
 }

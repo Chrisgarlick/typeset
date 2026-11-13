@@ -1,0 +1,8 @@
+# kit's choices for the Typeset theme, over what kit brand derives from the brand.
+light:
+  good: "#17663F"          # the brand's #1F7A4D is 3.88:1 on surface-2; darker passes
+dark:
+  accent: "#7A8BFF"        # blue pencil, lifted to read on the dark surfaces
+  good: "#4FA77A"
+  warn: "#C08A3E"
+  bad: "#E0766D"
