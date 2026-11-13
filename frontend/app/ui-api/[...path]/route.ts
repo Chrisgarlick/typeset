@@ -1,6 +1,6 @@
 // Server-side proxy from the browser to the Rust API. The API token is read
 // from the server's environment and added here, so it never reaches the
-// browser bundle. nginx puts this route behind basic auth (see
+// browser bundle. nginx lets only allowlisted IPs reach the site (see
 // typeset.nginx.conf) — without that, it would let anyone use the API.
 
 const API_URL = process.env.TYPESET_API_URL || "http://localhost:3200";
