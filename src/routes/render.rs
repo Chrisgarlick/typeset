@@ -50,6 +50,9 @@ pub async fn handle_render(
         format!("{:x}", hasher.finalize())
     };
 
+    // The frontmatter (title, subtitle…), so History can name the document.
+    let frontmatter = branded.doc.frontmatter.as_ref().and_then(|f| serde_json::to_value(f).ok());
+
     let format_str = match req.format {
         RenderFormat::Pdf => "pdf",
         RenderFormat::Docx => "docx",
@@ -61,7 +64,7 @@ pub async fn handle_render(
         .log_render(
             &render_id, source.as_ref().map(|_| client_slug.as_str()),
             &req.document_type.to_string(), format_str,
-            Some(&content_hash), None, None, None, None,
+            Some(&content_hash), frontmatter.as_ref(), None, None, None,
             Some(bytes.len() as i32), render_ms as i32, None,
             source.as_ref().map(|(id, v)| (id.as_str(), *v)),
         )

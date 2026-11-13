@@ -36,14 +36,14 @@ function Stats({ items }: { items: RenderHistoryItem[] }) {
   }).length;
   const ms = median(items.flatMap((i) => (i.render_ms ? [i.render_ms] : [])));
   const brands = new Set(items.flatMap((i) => (i.client_slug ? [i.client_slug] : []))).size;
-  const pages = items.reduce((n, i) => n + (i.page_count ?? 0), 0);
+  const week = items.filter((i) => now.getTime() - new Date(i.created_at).getTime() < 7 * 864e5).length;
   const capped = items.length === HISTORY_MAX;
 
   const tiles: [string, string, string?][] = [
     ["Renders this month", `${thisMonth}${capped && thisMonth === items.length ? "+" : ""}`],
     ms === null ? ["Median render", "—"] : ms < 1000 ? ["Median render", String(ms), "ms"] : ["Median render", (ms / 1000).toFixed(1), "s"],
     ["Brands used", String(brands)],
-    ["Pages set", pages.toLocaleString("en-GB")],
+    ["Last 7 days", `${week}${capped && week === items.length ? "+" : ""}`],
   ];
 
   return (
