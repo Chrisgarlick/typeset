@@ -141,12 +141,10 @@ function History() {
                 <th scope="col">Type</th>
                 <th scope="col">Format</th>
                 <th scope="col" data-numeric>Time</th>
-                <th scope="col"><span className="sr-only">Download</span></th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => {
-                const url = item.pdf_url ?? item.docx_url;
                 return (
                   <tr key={item.id}>
                     <td className="ts-cell-date">{when(item.created_at)}</td>
@@ -164,19 +162,11 @@ function History() {
                     <td>{TYPE_LABELS[item.document_type] ?? item.document_type}</td>
                     <td>
                       <span className="flex gap-2">
-                        {item.pdf_url && <span className="kit-badge" data-tone="neutral">PDF</span>}
-                        {item.docx_url && <span className="kit-badge" data-variant="outline">DOCX</span>}
-                        {!item.pdf_url && !item.docx_url && <span className="kit-badge" data-variant="outline">{item.format}</span>}
+                        {item.format !== "docx" && <span className="kit-badge" data-tone="neutral">PDF</span>}
+                        {item.format !== "pdf" && <span className="kit-badge" data-variant="outline">DOCX</span>}
                       </span>
                     </td>
                     <td data-numeric>{item.render_ms ? `${item.render_ms.toLocaleString("en-GB")} ms` : "—"}</td>
-                    <td>
-                      {url && (
-                        <a className="kit-button" data-variant="ghost" data-size="sm" href={url} aria-label={`Download ${titleOf(item)}`}>
-                          ↓
-                        </a>
-                      )}
-                    </td>
                   </tr>
                 );
               })}
