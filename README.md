@@ -229,6 +229,8 @@ date: <YYYY-MM-DD or free-form>
 
 # Local development
 
+On a fresh clone, run `bin/setup` first (checks the tools, makes `.env`, creates the local database, installs packages).
+
 ```bash
 # Prerequisites: Rust 1.95+, Postgres, Typst CLI (`brew install typst`)
 cargo run                       # starts API on :3200
