@@ -1078,14 +1078,28 @@ fn typst_string(s: &str) -> String {
 /// Escape a string for use in Typst markup content (inside `[ ... ]`).
 fn typst_content(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
+    // At the start of a line, "- ", "+ ", "1. " and "/ " start lists in
+    // Typst markup; "/" anywhere can start a "//" comment.
+    let mut line_start = true;
+    let mut leading_digits = false;
     for ch in s.chars() {
         match ch {
-            '\\' | '#' | '$' | '*' | '_' | '`' | '~' | '<' | '>' | '@' | '=' | '[' | ']' => {
+            '\\' | '#' | '$' | '*' | '_' | '`' | '~' | '<' | '>' | '@' | '=' | '[' | ']' | '/' => {
+                out.push('\\');
+                out.push(ch);
+            }
+            '-' | '+' if line_start => {
+                out.push('\\');
+                out.push(ch);
+            }
+            '.' if leading_digits => {
                 out.push('\\');
                 out.push(ch);
             }
             _ => out.push(ch),
         }
+        leading_digits = (line_start || leading_digits) && ch.is_ascii_digit();
+        line_start = ch == '\n' || (line_start && (ch == ' ' || ch == '\t'));
     }
     out
 }
@@ -1309,6 +1323,19 @@ pub(crate) mod tests {
     fn typst_content_escapes_specials() {
         assert_eq!(typst_content("a#b"), r"a\#b");
         assert_eq!(typst_content("a*b"), r"a\*b");
+    }
+
+    #[test]
+    fn typst_content_never_starts_a_list_or_comment() {
+        // "/ (homepage)" as a fact's value made Typst expect a term list's colon.
+        assert_eq!(typst_content("/ (homepage)"), r"\/ (homepage)");
+        assert_eq!(typst_content("- 3 to 5"), r"\- 3 to 5");
+        assert_eq!(typst_content("  + plus"), r"  \+ plus");
+        assert_eq!(typst_content("12. twelfth"), r"12\. twelfth");
+        assert_eq!(typst_content("a // b"), r"a \/\/ b");
+        // Mid-line hyphens, signs and decimals stay as they are.
+        assert_eq!(typst_content("well-known, -5, +3, 4.2 MB"), "well-known, -5, +3, 4.2 MB");
+        assert_eq!(typst_content("one\n- two"), "one\n\\- two");
     }
 
     #[test]
